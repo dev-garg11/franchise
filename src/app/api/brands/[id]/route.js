@@ -7,7 +7,7 @@ export async function PATCH(request, { params }) {
     const { id } = resolvedParams;
     const body = await request.json();
 
-    const updated = updateBrand(id, body);
+    const updated = await updateBrand(id, body);
     if (!updated) {
       return NextResponse.json({ error: "Brand not found" }, { status: 404 });
     }
@@ -23,7 +23,7 @@ export async function DELETE(request, { params }) {
     const resolvedParams = await params;
     const { id } = resolvedParams;
 
-    const deleted = deleteBrand(id);
+    const deleted = await deleteBrand(id);
     if (!deleted) {
       return NextResponse.json({ error: "Brand not found" }, { status: 404 });
     }

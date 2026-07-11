@@ -7,7 +7,7 @@ export async function GET(request) {
     const filterStatus = searchParams.get("status"); // Approved, Pending, etc.
     const featured = searchParams.get("featured"); // true/false
 
-    let brands = getBrands();
+    let brands = await getBrands();
 
     if (filterStatus) {
       brands = brands.filter(b => b.status === filterStatus);
@@ -31,7 +31,7 @@ export async function POST(request) {
       return NextResponse.json({ error: "Missing required fields (name, email, phone)" }, { status: 400 });
     }
 
-    const saved = saveBrand(body);
+    const saved = await saveBrand(body);
     return NextResponse.json({ success: true, brand: saved }, { status: 201 });
   } catch (error) {
     return NextResponse.json({ error: "Failed to save brand registration" }, { status: 500 });

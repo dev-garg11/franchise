@@ -1,111 +1,199 @@
 import fs from "fs";
 import path from "path";
+import mongoose from "mongoose";
+import Brand from "../../models/Brand";
+import Investor from "../../models/Investor";
 
-const dataFilePath = path.join(process.cwd(), "src/lib/data.json");
-const investorsFilePath = path.join(process.cwd(), "src/lib/investors.json");
+const MONGODB_URI = process.env.MONGODB_URI;
 
-// Ensure files exist
-function initDB() {
-  if (!fs.existsSync(dataFilePath)) {
-    fs.writeFileSync(dataFilePath, JSON.stringify([], null, 2), "utf8");
+if (!MONGODB_URI) {
+  throw new Error("Please define the MONGODB_URI environment variable inside .env");
+}
+
+let cached = global.mongoose;
+
+if (!cached) {
+  cached = global.mongoose = { conn: null, promise: null };
+}
+
+async function dbConnect() {
+  if (cached.conn) {
+    return cached.conn;
   }
-  if (!fs.existsSync(investorsFilePath)) {
-    fs.writeFileSync(investorsFilePath, JSON.stringify([], null, 2), "utf8");
+
+  if (!cached.promise) {
+    const opts = {
+      bufferCommands: false,
+    };
+
+    cached.promise = mongoose.connect(MONGODB_URI, opts).then((mongooseInstance) => {
+      console.log("Connected to MongoDB via Next.js Mongoose connection helper");
+      return mongooseInstance;
+    });
+  }
+
+  try {
+    cached.conn = await cached.promise;
+    await seedDatabase();
+  } catch (e) {
+    cached.promise = null;
+    throw e;
+  }
+
+  return cached.conn;
+}
+async function seedDatabase() {
+  try {
+    const brandCount = await Brand.countDocuments();
+    if (brandCount === 0) {
+      const dataFilePath = path.join(process.cwd(), "src/lib/data.json");
+      if (fs.existsSync(dataFilePath)) {
+        const brandsData = JSON.parse(fs.readFileSync(dataFilePath, "utf8"));
+        if (brandsData.length > 0) {
+          const validatedBrands = brandsData.map(b => ({
+            ...b,
+            password: b.password || "password123",
+            minInvestment: b.minInvestment || 0,
+            maxInvestment: b.maxInvestment || 0,
+            category: b.category || "General"
+          }));
+          await Brand.insertMany(validatedBrands, { ordered: false });
+          console.log(`Seeded ${validatedBrands.length} brands from data.json to MongoDB.`);
+        }
+      }
+    }
+
+    const investorCount = await Investor.countDocuments();
+    if (investorCount === 0) {
+      const investorsFilePath = path.join(process.cwd(), "src/lib/investors.json");
+      if (fs.existsSync(investorsFilePath)) {
+        const investorsData = JSON.parse(fs.readFileSync(investorsFilePath, "utf8"));
+        if (investorsData.length > 0) {
+          const validatedInvestors = investorsData.map(i => ({
+            ...i,
+            password: i.password || "password123",
+            budgetMin: i.budgetMin || 0,
+            budgetMax: i.budgetMax || 0
+          }));
+          await Investor.insertMany(validatedInvestors, { ordered: false });
+          console.log(`Seeded ${validatedInvestors.length} investors from investors.json to MongoDB.`);
+        }
+      }
+    }
+  } catch (error) {
+    console.error("Error during Next.js DB seeding:", error);
   }
 }
 
-export function getBrands() {
-  initDB();
+
+export async function getBrands() {
+  await dbConnect();
   try {
-    const fileContent = fs.readFileSync(dataFilePath, "utf8");
-    return JSON.parse(fileContent);
+    const brands = await Brand.find({}).sort({ createdAt: -1 }).lean();
+    return brands.map(b => ({
+      ...b,
+      id: b.id || b._id.toString()
+    }));
   } catch (error) {
-    console.error("Error reading brands:", error);
+    console.error("Error reading brands from MongoDB:", error);
     return [];
   }
 }
 
-export function saveBrand(brand) {
-  initDB();
+export async function saveBrand(brandData) {
+  await dbConnect();
   try {
-    const brands = getBrands();
-    const newBrand = {
-      id: brand.id || `brand-${Date.now()}`,
-      status: brand.status || "Pending",
-      featured: brand.featured || false,
-      createdAt: brand.createdAt || new Date().toISOString(),
-      ...brand
+    const id = brandData.id || `brand-${Date.now()}`;
+    const brand = new Brand({
+      ...brandData,
+      id,
+      status: brandData.status || "Pending",
+      featured: brandData.featured || false,
+      createdAt: brandData.createdAt || new Date()
+    });
+    const saved = await brand.save();
+    const obj = saved.toObject();
+    return {
+      ...obj,
+      id: obj.id || obj._id.toString()
     };
-    brands.push(newBrand);
-    fs.writeFileSync(dataFilePath, JSON.stringify(brands, null, 2), "utf8");
-    return newBrand;
   } catch (error) {
-    console.error("Error saving brand:", error);
+    console.error("Error saving brand to MongoDB:", error);
     throw error;
   }
 }
 
-export function updateBrand(id, updatedFields) {
-  initDB();
+export async function updateBrand(id, updatedFields) {
+  await dbConnect();
   try {
-    const brands = getBrands();
-    const index = brands.findIndex(b => b.id === id);
-    if (index === -1) return null;
+    const query = mongoose.Types.ObjectId.isValid(id)
+      ? { $or: [{ _id: id }, { id }] }
+      : { id };
 
-    brands[index] = {
-      ...brands[index],
-      ...updatedFields
+    const updated = await Brand.findOneAndUpdate(
+      query,
+      { $set: updatedFields },
+      { new: true }
+    ).lean();
+
+    if (!updated) return null;
+
+    return {
+      ...updated,
+      id: updated.id || updated._id.toString()
     };
-
-    fs.writeFileSync(dataFilePath, JSON.stringify(brands, null, 2), "utf8");
-    return brands[index];
   } catch (error) {
-    console.error("Error updating brand:", error);
+    console.error("Error updating brand in MongoDB:", error);
     throw error;
   }
 }
 
-export function deleteBrand(id) {
-  initDB();
+export async function deleteBrand(id) {
+  await dbConnect();
   try {
-    let brands = getBrands();
-    const beforeLength = brands.length;
-    brands = brands.filter(b => b.id !== id);
-    if (brands.length === beforeLength) return false;
+    const query = mongoose.Types.ObjectId.isValid(id)
+      ? { $or: [{ _id: id }, { id }] }
+      : { id };
 
-    fs.writeFileSync(dataFilePath, JSON.stringify(brands, null, 2), "utf8");
-    return true;
+    const result = await Brand.deleteOne(query);
+    return result.deletedCount > 0;
   } catch (error) {
-    console.error("Error deleting brand:", error);
+    console.error("Error deleting brand from MongoDB:", error);
     throw error;
   }
 }
 
-export function getInvestors() {
-  initDB();
+export async function getInvestors() {
+  await dbConnect();
   try {
-    const fileContent = fs.readFileSync(investorsFilePath, "utf8");
-    return JSON.parse(fileContent);
+    const investors = await Investor.find({}).sort({ createdAt: -1 }).lean();
+    return investors.map(i => ({
+      ...i,
+      id: i.id || i._id.toString()
+    }));
   } catch (error) {
-    console.error("Error reading investors:", error);
+    console.error("Error reading investors from MongoDB:", error);
     return [];
   }
 }
 
-export function saveInvestor(investor) {
-  initDB();
+export async function saveInvestor(investorData) {
+  await dbConnect();
   try {
-    const investors = getInvestors();
-    const newInvestor = {
-      id: `investor-${Date.now()}`,
-      createdAt: new Date().toISOString(),
-      ...investor
+    const id = investorData.id || `investor-${Date.now()}`;
+    const investor = new Investor({
+      ...investorData,
+      id,
+      createdAt: investorData.createdAt || new Date()
+    });
+    const saved = await investor.save();
+    const obj = saved.toObject();
+    return {
+      ...obj,
+      id: obj.id || obj._id.toString()
     };
-    investors.push(newInvestor);
-    fs.writeFileSync(investorsFilePath, JSON.stringify(investors, null, 2), "utf8");
-    return newInvestor;
   } catch (error) {
-    console.error("Error saving investor:", error);
+    console.error("Error saving investor to MongoDB:", error);
     throw error;
   }
 }
