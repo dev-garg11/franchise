@@ -3,6 +3,13 @@ import path from "path";
 import mongoose from "mongoose";
 import Brand from "../../models/Brand";
 import Investor from "../../models/Investor";
+import {
+  sendBrandRegistrationEmail,
+  sendInvestorRegistrationEmail,
+  sendBrandApprovalEmail,
+  sendBrandDeclineEmail
+} from "./email";
+
 
 const MONGODB_URI = process.env.MONGODB_URI;
 
@@ -113,6 +120,12 @@ export async function saveBrand(brandData) {
     });
     const saved = await brand.save();
     const obj = saved.toObject();
+
+    // Trigger registration email
+    sendBrandRegistrationEmail(obj).catch(err =>
+      console.error("Failed to send brand registration email:", err)
+    );
+
     return {
       ...obj,
       id: obj.id || obj._id.toString()
@@ -138,10 +151,23 @@ export async function updateBrand(id, updatedFields) {
 
     if (!updated) return null;
 
-    return {
+    const obj = {
       ...updated,
       id: updated.id || updated._id.toString()
     };
+
+    // Trigger status change emails
+    if (updatedFields.status === "Approved") {
+      sendBrandApprovalEmail(obj).catch(err =>
+        console.error("Failed to send brand approval email:", err)
+      );
+    } else if (updatedFields.status === "Declined") {
+      sendBrandDeclineEmail(obj).catch(err =>
+        console.error("Failed to send brand decline email:", err)
+      );
+    }
+
+    return obj;
   } catch (error) {
     console.error("Error updating brand in MongoDB:", error);
     throw error;
@@ -188,6 +214,12 @@ export async function saveInvestor(investorData) {
     });
     const saved = await investor.save();
     const obj = saved.toObject();
+
+    // Trigger registration email
+    sendInvestorRegistrationEmail(obj).catch(err =>
+      console.error("Failed to send investor registration email:", err)
+    );
+
     return {
       ...obj,
       id: obj.id || obj._id.toString()
