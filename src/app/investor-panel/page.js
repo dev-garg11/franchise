@@ -268,9 +268,37 @@ export default function InvestorPanel() {
                   </div>
 
                   {investor.comments && (
-                    <div style={{ background: "#f8fafc", padding: "16px", borderRadius: "8px" }}>
+                    <div style={{ background: "#f8fafc", padding: "16px", borderRadius: "8px", marginBottom: "16px" }}>
                       <h4 style={{ fontSize: "14px", marginBottom: "6px" }}>Registered Notes</h4>
                       <p style={{ fontSize: "13px", color: "var(--text-muted)", fontStyle: "italic" }}>"{investor.comments}"</p>
+                    </div>
+                  )}
+
+                  {investor.assignedBrands && investor.assignedBrands.length > 0 && (
+                    <div style={{ background: "#eff6ff", border: "1px solid #bfdbfe", padding: "16px", borderRadius: "12px" }}>
+                      <h4 style={{ fontSize: "15px", color: "var(--primary)", marginBottom: "12px", fontWeight: "700" }}>
+                        Assigned Franchise Brands from Administrator
+                      </h4>
+                      <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+                        {investor.assignedBrands.map(brandId => {
+                          const brand = brands.find(b => b.id === brandId || b._id === brandId);
+                          return brand ? (
+                            <div key={brandId} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", background: "white", padding: "10px 14px", borderRadius: "8px", border: "1px solid #dbeafe" }}>
+                              <div>
+                                <h5 style={{ fontSize: "13px", fontWeight: "700", color: "#1e3a8a" }}>{brand.name}</h5>
+                                <p style={{ fontSize: "11px", color: "var(--text-muted)" }}>{brand.category} | {brand.hq}</p>
+                              </div>
+                              <button 
+                                className="btn btn-primary" 
+                                style={{ fontSize: "11px", padding: "4px 8px" }}
+                                onClick={() => setSelectedBrand(brand)}
+                              >
+                                View Details
+                              </button>
+                            </div>
+                          ) : null;
+                        })}
+                      </div>
                     </div>
                   )}
                 </div>

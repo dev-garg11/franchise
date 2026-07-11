@@ -235,3 +235,95 @@ export async function sendBrandDeclineEmail(brand) {
     html: baseTemplate(title, contentHeader, contentBody),
   });
 }
+
+// 5. Send Brand Assigned to Investors Email
+export async function sendBrandAssignedToInvestorsEmail(brand, investorsList) {
+  const title = "New Investor Leads Linked to your Brand - Franchise Apply";
+  const contentHeader = `
+    <h2>Hello ${brand.name} Team,</h2>
+    <p>Good news! Our administration team has linked your brand <strong>${brand.name}</strong> to new prospective investor leads that match your investment profile.</p>
+  `;
+  
+  let investorsRows = "";
+  investorsList.forEach((inv, index) => {
+    investorsRows += `
+      <tr style="border-bottom: 1px solid #e2e8f0;">
+        <td style="padding: 10px; font-size: 13px;"><strong>${index + 1}. ${inv.name}</strong></td>
+        <td style="padding: 10px; font-size: 13px;">${inv.preferredLocation || "Any"}</td>
+        <td style="padding: 10px; font-size: 13px; color: #059669; font-weight: 600;">${formatLakhs(inv.budgetMin)} - ${formatLakhs(inv.budgetMax)}</td>
+        <td style="padding: 10px; font-size: 13px;"><a href="mailto:${inv.email}">${inv.email}</a><br/>${inv.phone || ""}</td>
+      </tr>
+    `;
+  });
+
+  const contentBody = `
+    <h3 style="color: #1e1b4b; margin-top: 20px;">Linked Investor Profile Details:</h3>
+    <table style="width: 100%; border-collapse: collapse; background-color: #f8fafc; border-radius: 8px; overflow: hidden; margin-top: 10px;">
+      <thead>
+        <tr style="background-color: #1e1b4b; color: white;">
+          <th style="padding: 10px; text-align: left; font-size: 13px;">Investor</th>
+          <th style="padding: 10px; text-align: left; font-size: 13px;">Location</th>
+          <th style="padding: 10px; text-align: left; font-size: 13px;">Budget</th>
+          <th style="padding: 10px; text-align: left; font-size: 13px;">Contact</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${investorsRows}
+      </tbody>
+    </table>
+    <p style="margin-top: 20px;">You can log in to your Brand Owner Panel to manage these leads and coordinate agreements.</p>
+    <a href="http://localhost:3000/login" class="btn" style="color: white;">Go to Brand Panel</a>
+  `;
+
+  return await sendMail({
+    to: brand.email,
+    subject: title,
+    html: baseTemplate(title, contentHeader, contentBody),
+  });
+}
+
+// 6. Send Investor Assigned Brand Email
+export async function sendInvestorAssignedBrandEmail(investor, brand) {
+  const title = "New Hand-Picked Franchise Opportunity Matched to You - Franchise Apply";
+  const contentHeader = `
+    <h2>Hello ${investor.name},</h2>
+    <p>Our administrator has hand-picked and assigned a premium franchise opportunity that matches your investment preferences!</p>
+  `;
+  
+  const contentBody = `
+    <table class="details-table">
+      <tr>
+        <td class="label">Brand Name</td>
+        <td class="value" style="font-weight: 700; color: #4f46e5;">${brand.name}</td>
+      </tr>
+      <tr>
+        <td class="label">Company Name</td>
+        <td class="value">${brand.company || "N/A"}</td>
+      </tr>
+      <tr>
+        <td class="label">Category</td>
+        <td class="value">${brand.category}</td>
+      </tr>
+      <tr>
+        <td class="label">Min Investment</td>
+        <td class="value" style="font-weight: 600; color: #059669;">${formatLakhs(brand.minInvestment)}</td>
+      </tr>
+      <tr>
+        <td class="label">Max Investment</td>
+        <td class="value" style="font-weight: 600; color: #059669;">${formatLakhs(brand.maxInvestment)}</td>
+      </tr>
+      <tr>
+        <td class="label">Franchise HQ</td>
+        <td class="value">${brand.hq || "N/A"}</td>
+      </tr>
+    </table>
+    <p>Log in to your Investor Dashboard to see full details of this brand proposal and coordinate next steps.</p>
+    <a href="http://localhost:3000/login" class="btn" style="color: white;">Open My Dashboard</a>
+  `;
+
+  return await sendMail({
+    to: investor.email,
+    subject: title,
+    html: baseTemplate(title, contentHeader, contentBody),
+  });
+}

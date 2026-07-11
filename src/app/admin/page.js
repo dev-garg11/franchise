@@ -22,6 +22,44 @@ export default function AdminDashboard() {
   // Details Modal state
   const [selectedItem, setSelectedItem] = useState(null);
   const [modalType, setModalType] = useState(""); // brand, investor
+  const [selectedInvestorsForBrand, setSelectedInvestorsForBrand] = useState([]);
+  const [isSavingAssign, setIsSavingAssign] = useState(false);
+
+  useEffect(() => {
+    if (selectedItem && modalType === "brand") {
+      const brandId = selectedItem.id || selectedItem._id;
+      const attached = investors
+        .filter(inv => inv.assignedBrands && (inv.assignedBrands.includes(brandId) || inv.assignedBrands.includes(selectedItem._id)))
+        .map(inv => inv.id || inv._id);
+      setSelectedInvestorsForBrand(attached);
+    }
+  }, [selectedItem, modalType, investors]);
+
+  const handleSaveBrandAssignment = async () => {
+    const brandId = selectedItem.id || selectedItem._id;
+    setIsSavingAssign(true);
+    try {
+      const res = await fetch("/api/investors/assign-brand", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          brandId,
+          investorIds: selectedInvestorsForBrand
+        })
+      });
+      if (res.ok) {
+        alert("Brand assignment updated successfully!");
+        fetchData();
+      } else {
+        alert("Failed to save assignment.");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Error saving brand assignment.");
+    } finally {
+      setIsSavingAssign(false);
+    }
+  };
 
   // Auth Guard
   useEffect(() => {
@@ -367,51 +405,60 @@ export default function AdminDashboard() {
                       <th>Investment Min-Max</th>
                       <th>HQ</th>
                       <th>Status</th>
+                      <th>Attached Investors</th>
                       <th>Actions</th>
                     </tr>
                   </thead>
                   <tbody>
                     {filteredBrands.length === 0 ? (
                       <tr>
-                        <td colSpan="6" style={{ textAlign: "center", padding: "30px", color: "var(--text-muted)" }}>
+                        <td colSpan="7" style={{ textAlign: "center", padding: "30px", color: "var(--text-muted)" }}>
                           No brands match search queries.
                         </td>
                       </tr>
                     ) : (
-                      filteredBrands.map((b) => (
-                        <tr key={b.id}>
-                          <td>
-                            <div>
-                              <div style={{ fontWeight: "700" }}>{b.name}</div>
-                              <div style={{ fontSize: "12px", color: "var(--text-muted)" }}>{b.company}</div>
-                            </div>
-                          </td>
-                          <td>{b.category}</td>
-                          <td style={{ fontWeight: "600" }}>
-                            {formatLakhs(b.minInvestment)} - {formatLakhs(b.maxInvestment)}
-                          </td>
-                          <td>{b.hq}</td>
-                          <td>
-                            <span className={`status-badge ${b.status.toLowerCase()}`}>
-                              {b.status}
-                            </span>
-                          </td>
-                          <td>
-                            <button className="action-btn view" onClick={() => { setSelectedItem(b); setModalType("brand"); }}>
-                              Details
-                            </button>
-                            {b.status === "Pending" && (
-                              <>
-                                <button className="action-btn approve" onClick={() => handleApprove(b.id)}>Approve</button>
-                                <button className="action-btn reject" style={{ background: "none", color: "var(--error)", border: "1px solid var(--error)" }} onClick={() => handleDecline(b.id)}>Decline</button>
-                              </>
-                            )}
-                            <button className="action-btn reject" style={{ background: "none", color: "var(--error)", border: "1px solid var(--error)", marginLeft: "4px" }} onClick={() => handleDeleteBrand(b.id)}>
-                              <Trash2 size={14} />
-                            </button>
-                          </td>
-                        </tr>
-                      ))
+                      filteredBrands.map((b) => {
+                        const attachedCount = investors.filter(inv => inv.assignedBrands && (inv.assignedBrands.includes(b.id) || inv.assignedBrands.includes(b._id))).length;
+                        return (
+                          <tr key={b.id}>
+                            <td>
+                              <div>
+                                <div style={{ fontWeight: "700" }}>{b.name}</div>
+                                <div style={{ fontSize: "12px", color: "var(--text-muted)" }}>{b.company}</div>
+                              </div>
+                            </td>
+                            <td>{b.category}</td>
+                            <td style={{ fontWeight: "600" }}>
+                              {formatLakhs(b.minInvestment)} - {formatLakhs(b.maxInvestment)}
+                            </td>
+                            <td>{b.hq}</td>
+                            <td>
+                              <span className={`status-badge ${b.status.toLowerCase()}`}>
+                                {b.status}
+                              </span>
+                            </td>
+                            <td>
+                              <span style={{ fontWeight: "600", color: attachedCount > 0 ? "var(--primary)" : "var(--text-muted)" }}>
+                                {attachedCount} {attachedCount === 1 ? "Investor" : "Investors"}
+                              </span>
+                            </td>
+                            <td>
+                              <button className="action-btn view" onClick={() => { setSelectedItem(b); setModalType("brand"); }}>
+                                Details
+                              </button>
+                              {b.status === "Pending" && (
+                                <>
+                                  <button className="action-btn approve" onClick={() => handleApprove(b.id)}>Approve</button>
+                                  <button className="action-btn reject" style={{ background: "none", color: "var(--error)", border: "1px solid var(--error)" }} onClick={() => handleDecline(b.id)}>Decline</button>
+                                </>
+                              )}
+                              <button className="action-btn reject" style={{ background: "none", color: "var(--error)", border: "1px solid var(--error)", marginLeft: "4px" }} onClick={() => handleDeleteBrand(b.id)}>
+                                <Trash2 size={14} />
+                              </button>
+                            </td>
+                          </tr>
+                        );
+                      })
                     )}
                   </tbody>
                 </table>
@@ -443,12 +490,13 @@ export default function AdminDashboard() {
                       <th>Location Target</th>
                       <th>Sectors</th>
                       <th>Property Available</th>
+                      <th>Attached Brands</th>
                     </tr>
                   </thead>
                   <tbody>
                     {filteredInvestors.length === 0 ? (
                       <tr>
-                        <td colSpan="6" style={{ textAlign: "center", padding: "30px", color: "var(--text-muted)" }}>
+                        <td colSpan="7" style={{ textAlign: "center", padding: "30px", color: "var(--text-muted)" }}>
                           No investor profiles match queries.
                         </td>
                       </tr>
@@ -475,6 +523,22 @@ export default function AdminDashboard() {
                             <span style={{ fontWeight: "500", color: i.propertyAvailable === "Yes" ? "var(--success)" : "var(--text-muted)" }}>
                               {i.propertyAvailable} {i.propertyArea && `(${i.propertyArea})`}
                             </span>
+                          </td>
+                          <td>
+                            {i.assignedBrands && i.assignedBrands.length > 0 ? (
+                              <div style={{ display: "flex", gap: "4px", flexWrap: "wrap" }}>
+                                {i.assignedBrands.map(brandId => {
+                                  const brand = brands.find(b => b.id === brandId || b._id === brandId);
+                                  return brand ? (
+                                    <span key={brandId} className="status-badge approved" style={{ background: "rgba(37,99,235,0.08)", color: "var(--primary)", fontSize: "11px", whiteSpace: "nowrap" }}>
+                                      {brand.name}
+                                    </span>
+                                  ) : null;
+                                })}
+                              </div>
+                            ) : (
+                              <span style={{ color: "var(--text-muted)", fontSize: "12px" }}>None</span>
+                            )}
                           </td>
                         </tr>
                       ))
@@ -533,6 +597,52 @@ export default function AdminDashboard() {
                 <p style={{ fontSize: "13px", display: "flex", gap: "6px", alignItems: "center", marginTop: "4px" }}><Phone size={12} /> {selectedItem.phone}</p>
                 {selectedItem.website && <p style={{ fontSize: "13px", display: "flex", gap: "6px", alignItems: "center", marginTop: "4px" }}><Building size={12} /> {selectedItem.website}</p>}
               </div>
+
+              {/* Assign to Investors section */}
+              <div style={{ marginTop: "20px", background: "#f8fafc", padding: "16px", borderRadius: "8px", border: "1px solid var(--light-border)" }}>
+                <h4 style={{ fontSize: "14px", marginBottom: "12px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <span>Assign to Investors</span>
+                  {isSavingAssign && <span style={{ fontSize: "12px", color: "var(--primary)" }}>Saving...</span>}
+                </h4>
+                {investors.length === 0 ? (
+                  <p style={{ fontSize: "12px", color: "var(--text-muted)" }}>No investors registered yet.</p>
+                ) : (
+                  <>
+                    <div style={{ maxHeight: "150px", overflowY: "auto", border: "1px solid var(--light-border)", borderRadius: "6px", padding: "8px", background: "white", marginBottom: "12px" }}>
+                      {investors.map(inv => {
+                        const invId = inv.id || inv._id;
+                        const isChecked = selectedInvestorsForBrand.includes(invId);
+                        return (
+                          <label key={invId} style={{ display: "flex", alignItems: "center", gap: "8px", padding: "6px 0", cursor: "pointer", fontSize: "13px", borderBottom: "1px solid #f1f5f9" }}>
+                            <input
+                              type="checkbox"
+                              checked={isChecked}
+                              onChange={(e) => {
+                                if (e.target.checked) {
+                                  setSelectedInvestorsForBrand([...selectedInvestorsForBrand, invId]);
+                                } else {
+                                  setSelectedInvestorsForBrand(selectedInvestorsForBrand.filter(x => x !== invId));
+                                }
+                              }}
+                            />
+                            <div>
+                              <strong>{inv.name}</strong> <span style={{ color: "var(--text-muted)", fontSize: "11px" }}>({inv.email})</span>
+                            </div>
+                          </label>
+                        );
+                      })}
+                    </div>
+                    <button 
+                      className="btn btn-primary" 
+                      style={{ width: "100%", fontSize: "13px", padding: "8px" }}
+                      onClick={handleSaveBrandAssignment}
+                      disabled={isSavingAssign}
+                    >
+                      Save Assignment to Selected Investors
+                    </button>
+                  </>
+                )}
+              </div>
             </div>
             <div className="modal-footer">
               {selectedItem.status === "Pending" && (
@@ -572,6 +682,25 @@ export default function AdminDashboard() {
                   <div>Property Size: <strong>{selectedItem.propertyArea || "N/A"}</strong></div>
                   <div>Prior Experience: <strong>{selectedItem.experience}</strong></div>
                 </div>
+              </div>
+
+              {/* Attached Brands */}
+              <div style={{ background: "#f8fafc", padding: "16px", borderRadius: "8px", marginBottom: "20px" }}>
+                <h4 style={{ fontSize: "14px", marginBottom: "8px" }}>Attached Franchise Brands</h4>
+                {selectedItem.assignedBrands && selectedItem.assignedBrands.length > 0 ? (
+                  <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+                    {selectedItem.assignedBrands.map(brandId => {
+                      const brand = brands.find(b => b.id === brandId || b._id === brandId);
+                      return brand ? (
+                        <span key={brandId} className="status-badge approved" style={{ background: "rgba(16,185,129,0.08)", color: "var(--success)", border: "1px solid rgba(16,185,129,0.2)" }}>
+                          {brand.name}
+                        </span>
+                      ) : null;
+                    })}
+                  </div>
+                ) : (
+                  <p style={{ fontSize: "13px", color: "var(--text-muted)" }}>No brands attached yet.</p>
+                )}
               </div>
 
               {selectedItem.comments && (

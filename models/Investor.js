@@ -60,6 +60,10 @@ const InvestorSchema = new mongoose.Schema({
     trim: true,
     default: ''
   },
+  assignedBrands: {
+    type: [String],
+    default: []
+  },
   createdAt: {
     type: Date,
     default: Date.now

@@ -7,7 +7,9 @@ import {
   sendBrandRegistrationEmail,
   sendInvestorRegistrationEmail,
   sendBrandApprovalEmail,
-  sendBrandDeclineEmail
+  sendBrandDeclineEmail,
+  sendBrandAssignedToInvestorsEmail,
+  sendInvestorAssignedBrandEmail
 } from "./email";
 
 
@@ -226,6 +228,60 @@ export async function saveInvestor(investorData) {
     };
   } catch (error) {
     console.error("Error saving investor to MongoDB:", error);
+    throw error;
+  }
+}
+
+export async function assignBrandToInvestors(brandId, investorIds) {
+  await dbConnect();
+  try {
+    // 1. Fetch the brand details
+    const queryBrand = mongoose.Types.ObjectId.isValid(brandId)
+      ? { $or: [{ _id: brandId }, { id: brandId }] }
+      : { id: brandId };
+    const brand = await Brand.findOne(queryBrand).lean();
+
+    // 2. Fetch the investor details
+    const cleanInvestorIds = (investorIds || []).filter(Boolean);
+    const queryInvestors = {
+      $or: [
+        { _id: { $in: cleanInvestorIds.filter(id => mongoose.Types.ObjectId.isValid(id)) } },
+        { id: { $in: cleanInvestorIds } }
+      ]
+    };
+    const selectedInvestors = await Investor.find(queryInvestors).lean();
+
+    // 3. Remove brandId from all investors first
+    await Investor.updateMany(
+      { assignedBrands: { $in: [brandId, brand?._id?.toString(), brand?.id].filter(Boolean) } },
+      { $pull: { assignedBrands: { $in: [brandId, brand?._id?.toString(), brand?.id].filter(Boolean) } } }
+    );
+
+    // 4. Add brandId to selected investors
+    const storedBrandId = brand?.id || brand?._id?.toString() || brandId;
+    if (cleanInvestorIds.length > 0) {
+      await Investor.updateMany(
+        queryInvestors,
+        { $addToSet: { assignedBrands: storedBrandId } }
+      );
+    }
+
+    // 5. Send emails
+    if (brand && selectedInvestors.length > 0) {
+      sendBrandAssignedToInvestorsEmail(brand, selectedInvestors).catch(err =>
+        console.error("Failed to send brand assignment email to brand owner:", err)
+      );
+
+      selectedInvestors.forEach(inv => {
+        sendInvestorAssignedBrandEmail(inv, brand).catch(err =>
+          console.error(`Failed to send brand assignment email to investor ${inv.email}:`, err)
+        );
+      });
+    }
+
+    return { success: true };
+  } catch (error) {
+    console.error("Error assigning brand to investors:", error);
     throw error;
   }
 }
