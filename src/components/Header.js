@@ -340,9 +340,17 @@ export default function Header() {
           position: 'relative'
         }}>
           {/* Logo */}
-          <Link href="/" className="logo">
-            <span className="logo-icon">F</span>
-            Franchise<span style={{ color: 'var(--secondary)' }}>Apply</span>
+          <Link href="/" style={{ display: 'flex', alignItems: 'center', transition: 'var(--transition-normal)' }}>
+            <img 
+              src="/logo.jpg" 
+              alt="Franchise Roots" 
+              style={{
+                height: isScrolled ? '36px' : '44px',
+                width: 'auto',
+                transition: 'var(--transition-normal)',
+                objectFit: 'contain'
+              }} 
+            />
           </Link>
 
           {/* Mobile Hamburger Button */}

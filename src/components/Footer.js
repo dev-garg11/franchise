@@ -43,12 +43,15 @@ export default function Footer() {
       <div className="container">
         <div className="footer-grid">
           <div className="footer-about">
-            <Link href="/" className="logo" style={{ marginBottom: "20px", display: "inline-flex" }}>
-              <span className="logo-icon" style={{ background: 'linear-gradient(135deg, var(--primary), var(--secondary))' }}>F</span>
-              <span style={{ color: "white" }}>Franchise</span><span style={{ color: "var(--secondary)" }}>Apply</span>
+            <Link href="/" style={{ marginBottom: "20px", display: "inline-flex" }}>
+              <img 
+                src="/logo-footer.png" 
+                alt="Franchise Roots" 
+                style={{ height: '140px', width: 'auto', objectFit: 'contain' }} 
+              />
             </Link>
             <p style={{ fontSize: '14px', lineHeight: '1.7', color: '#94A3B8', maxWidth: '340px' }}>
-              Franchise Apply is the premier startup and business matching marketplace. We connect luxury brands with verified investors across the subcontinent.
+              Franchise Roots is the premier startup and business matching marketplace. We connect luxury brands with verified investors across the subcontinent.
             </p>
             
             {/* Social Share / Links */}
@@ -136,14 +139,14 @@ export default function Footer() {
                 <Phone size={15} style={{ color: 'var(--primary)' }} /> +91-9660025250
               </p>
               <p style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '13.5px' }}>
-                <Mail size={15} style={{ color: 'var(--primary)' }} /> info@franchiseapply.com
+                <Mail size={15} style={{ color: 'var(--primary)' }} /> info@franchiseroots.com
               </p>
               <p style={{ display: 'flex', gap: '10px', fontSize: '13.5px', alignItems: 'flex-start' }}>
                 <MapPin size={18} style={{ color: 'var(--primary)', flexShrink: 0, marginTop: '2px' }} /> 
                 <span>FBO India Expo Plaza, Phase 1, Sector 62, Noida, UP, India</span>
               </p>
               <p style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '13.5px' }}>
-                <Globe size={15} style={{ color: 'var(--primary)' }} /> www.franchiseapply.com
+                <Globe size={15} style={{ color: 'var(--primary)' }} /> www.franchiseroots.com
               </p>
             </div>
           </div>
@@ -159,7 +162,7 @@ export default function Footer() {
           gap: '16px',
           fontSize: '13px'
         }}>
-          <p>© 2009 - 2026 Franchise Apply. All Rights Reserved.</p>
+          <p>© 2009 - 2026 Franchise Roots. All Rights Reserved.</p>
           <div style={{ display: 'flex', gap: '24px' }}>
             <Link href="/terms" style={{ transition: 'var(--transition-normal)' }} className="footer-bottom-link">Terms & Conditions</Link>
             <Link href="/privacy" style={{ transition: 'var(--transition-normal)' }} className="footer-bottom-link">Privacy Policy</Link>

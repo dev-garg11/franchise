@@ -28,8 +28,8 @@ const STATES = [
 // FAQS mock data
 const FAQS = [
   {
-    question: "What is Franchise Apply?",
-    answer: "Franchise Apply is India's leading digital matching directory for luxury, premium, and low-investment franchise setups. We help top brands expand their network across local state boundaries and connect them with certified investors."
+    question: "What is Franchise Roots?",
+    answer: "Franchise Roots is India's leading digital matching directory for luxury, premium, and low-investment franchise setups. We help top brands expand their network across local state boundaries and connect them with certified investors."
   },
   {
     question: "How do I list my brand for expansion?",
@@ -732,7 +732,7 @@ export default function Home() {
           <div className="testimonials-grid">
             <div className="testimonial-card">
               <p className="testimonial-quote">
-                "Franchise Apply helped us scale our bathware brand across western and southern states. We received highly pre-qualified enquiries within weeks of listing our franchise requirements."
+                "Franchise Roots helped us scale our bathware brand across western and southern states. We received highly pre-qualified enquiries within weeks of listing our franchise requirements."
               </p>
               <div className="testimonial-author">
                 <div className="author-avatar flex-center">MG</div>
@@ -745,7 +745,7 @@ export default function Home() {
 
             <div className="testimonial-card">
               <p className="testimonial-quote">
-                "As an education startup, reaching quality partners was a major bottleneck. The team at Franchise Apply helped us package our STEM modules and introduced us to 20+ state franchises."
+                "As an education startup, reaching quality partners was a major bottleneck. The team at Franchise Roots helped us package our STEM modules and introduced us to 20+ state franchises."
               </p>
               <div className="testimonial-author">
                 <div className="author-avatar flex-center">DA</div>

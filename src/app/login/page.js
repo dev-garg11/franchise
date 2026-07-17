@@ -103,11 +103,14 @@ export default function Login() {
     <div className="login-page">
       <div className="login-card" style={{ maxWidth: "450px" }}>
         <div className="login-header">
-          <Link href="/" className="logo" style={{ marginBottom: "16px", display: "inline-flex" }}>
-            <span className="logo-icon">F</span>
-            Franchise<span>Apply</span>
+          <Link href="/" style={{ marginBottom: "16px", display: "inline-flex" }}>
+            <img 
+              src="/logo.jpg" 
+              alt="Franchise Roots" 
+              style={{ height: '48px', width: 'auto', objectFit: 'contain' }} 
+            />
           </Link>
-          <h2>Franchise Apply Login</h2>
+          <h2>Franchise Roots Login</h2>
           <p>Please enter credentials to gain entry to your account dashboard.</p>
         </div>
 

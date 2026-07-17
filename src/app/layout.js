@@ -2,14 +2,14 @@ import "./globals.css";
 import LayoutClientWrapper from "@/components/LayoutClientWrapper";
 
 export const metadata = {
-  title: "Franchise Apply - Business and Franchise Opportunities India",
-  description: "Franchise Apply offers every business and franchise opportunity in India at low cost. Buy top franchise and business ideas in India with low investment.",
-  keywords: "franchise, business opportunity, franchise india, low investment business, buy business, brand expansion, franchise apply",
+  title: "Franchise Roots - Business and Franchise Opportunities India",
+  description: "Franchise Roots offers premium and luxury business and franchise opportunities in India. Connect with corporate investors to grow your franchise network.",
+  keywords: "franchise, business opportunity, franchise india, low investment business, buy business, brand expansion, franchise roots",
   openGraph: {
-    title: "Franchise Apply - Business and Franchise Opportunities India",
-    description: "Buy top franchise and business ideas in India with low investment. Expand your brand franchise network.",
-    url: "https://www.franchiseapply.com",
-    siteName: "Franchise Apply",
+    title: "Franchise Roots - Business and Franchise Opportunities India",
+    description: "Buy top franchise and business ideas in India. Expand your brand franchise network with Franchise Roots.",
+    url: "https://www.franchiseroots.com",
+    siteName: "Franchise Roots",
     locale: "en_IN",
     type: "website",
   },
