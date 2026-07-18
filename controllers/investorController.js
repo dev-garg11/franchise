@@ -19,20 +19,31 @@ exports.getInvestors = async (req, res) => {
 // @access  Public
 exports.createInvestor = async (req, res) => {
   try {
-    const rawPassword = req.body.password || 'password123';
-    const hashedPassword = await bcrypt.hash(rawPassword, 10);
+    const emailLower = (req.body.email || '').toLowerCase();
+    let userObj = await User.findOne({ email: emailLower });
+    if (!userObj) {
+      const rawPassword = req.body.password || 'password123';
+      const hashedPassword = await bcrypt.hash(rawPassword, 10);
 
-    // Save to User collection
-    await User.create({
-      email: req.body.email,
-      password: hashedPassword,
-      role: 'investor',
-      name: req.body.name,
-      phone: req.body.phone
-    });
+      // Save to User collection
+      userObj = await User.create({
+        email: emailLower,
+        password: hashedPassword,
+        role: 'investor',
+        name: req.body.name,
+        phone: req.body.phone
+      });
+    }
 
-    req.body.password = hashedPassword;
-    const investor = await Investor.create(req.body);
+    const payload = {
+      pincode: req.body.pincode || "000000",
+      investment_range: req.body.investment_range || "Not Specified",
+      max_investment_limit: req.body.max_investment_limit || "Not Specified",
+      ...req.body,
+      user: userObj._id
+    };
+
+    const investor = await Investor.create(payload);
     res.status(201).json({ success: true, data: investor });
   } catch (error) {
     res.status(400).json({ success: false, error: error.message });

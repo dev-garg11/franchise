@@ -60,6 +60,7 @@ export default function Home() {
 
   // Modal State
   const [selectedBrand, setSelectedBrand] = useState(null);
+  const [isEnquiryOnlyMode, setIsEnquiryOnlyMode] = useState(false);
   const [enquirySubmitted, setEnquirySubmitted] = useState(false);
   const [enquiryForm, setEnquiryForm] = useState({ name: "", email: "", phone: "", message: "" });
   const [submittingEnquiry, setSubmittingEnquiry] = useState(false);
@@ -537,10 +538,10 @@ export default function Home() {
                       </div>
 
                       <div className="slider-actions">
-                        <button className="btn btn-outline" onClick={() => { setSelectedBrand(brand); setEnquirySubmitted(false); }} style={{ padding: '8px 12px', fontSize: '13px' }}>
+                        <button className="btn btn-outline" onClick={() => { setSelectedBrand(brand); setIsEnquiryOnlyMode(false); setEnquirySubmitted(false); }} style={{ padding: '8px 12px', fontSize: '13px' }}>
                           Learn More
                         </button>
-                        <button className="btn btn-primary" onClick={() => { setSelectedBrand(brand); setEnquirySubmitted(false); }} style={{ padding: '8px 12px', fontSize: '13px' }}>
+                        <button className="btn btn-primary" onClick={() => { setSelectedBrand(brand); setIsEnquiryOnlyMode(true); setEnquirySubmitted(false); }} style={{ padding: '8px 12px', fontSize: '13px' }}>
                           Apply Now
                         </button>
                       </div>
@@ -616,10 +617,10 @@ export default function Home() {
                     </div>
 
                     <div className="franchise-actions">
-                      <button className="btn btn-outline" onClick={() => { setSelectedBrand(brand); setEnquirySubmitted(false); }}>
+                      <button className="btn btn-outline" onClick={() => { setSelectedBrand(brand); setIsEnquiryOnlyMode(false); setEnquirySubmitted(false); }}>
                         Know More
                       </button>
-                      <button className="btn btn-primary" onClick={() => { setSelectedBrand(brand); setEnquirySubmitted(false); }}>
+                      <button className="btn btn-primary" onClick={() => { setSelectedBrand(brand); setIsEnquiryOnlyMode(true); setEnquirySubmitted(false); }}>
                         Apply Now
                       </button>
                     </div>
@@ -830,117 +831,216 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Detail Modal Overlay */}
+      {/* Detail/Enquiry Modal Overlay */}
       {selectedBrand && (
         <div className="modal-overlay" onClick={() => setSelectedBrand(null)}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+          <div className="modal-content" style={isEnquiryOnlyMode ? { maxWidth: "520px" } : {}} onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <h3 style={{ fontSize: "22px" }}>{selectedBrand.name}</h3>
+              <h3 style={{ fontSize: "22px" }}>
+                {isEnquiryOnlyMode ? `Enquiry: ${selectedBrand.name}` : selectedBrand.name}
+              </h3>
               <button className="close-btn" onClick={() => setSelectedBrand(null)}>×</button>
             </div>
             <div className="modal-body">
-              <div className="modal-profile-header">
-                <img 
-                  src={selectedBrand.image || "https://images.unsplash.com/photo-1524178232363-1fb2b075b655?auto=format&fit=crop&q=80&w=400"} 
-                  alt={selectedBrand.name}
-                  style={{ width: "120px", height: "120px", borderRadius: "12px", objectFit: "cover" }}
-                />
+              {isEnquiryOnlyMode ? (
+                /* Focused Enquiry Mode for Guest / Any User */
                 <div>
-                  <span className="status-badge approved" style={{ marginBottom: "8px" }}>Verified Concept</span>
-                  <p style={{ fontWeight: "700", fontSize: "16px" }}>{selectedBrand.company}</p>
-                  <p style={{ color: "var(--text-muted)", fontSize: "14px" }}>Category: <strong>{selectedBrand.category}</strong></p>
-                  <p style={{ color: "var(--text-muted)", fontSize: "14px" }}>Headquarters: <strong>{selectedBrand.hq}</strong></p>
-                </div>
-              </div>
-
-              <div style={{ marginBottom: "24px" }}>
-                <h4 style={{ fontSize: "16px", marginBottom: "8px", borderBottom: "1px solid #f1f5f9", paddingBottom: "6px" }}>Business Overview</h4>
-                <p style={{ fontSize: "14px", color: "var(--text-muted)" }}>{selectedBrand.description}</p>
-              </div>
-
-              <div className="form-grid" style={{ marginBottom: "30px", background: "#f8fafc", padding: "16px", borderRadius: "12px" }}>
-                <div>
-                  <p style={{ fontSize: "11px", textTransform: "uppercase", color: "var(--text-muted)", fontWeight: "600" }}>Investment Range</p>
-                  <p style={{ fontWeight: "700", color: "var(--primary)" }}>{formatLakhs(selectedBrand.minInvestment)} - {formatLakhs(selectedBrand.maxInvestment)}</p>
-                </div>
-                <div>
-                  <p style={{ fontSize: "11px", textTransform: "uppercase", color: "var(--text-muted)", fontWeight: "600" }}>Franchise Fee</p>
-                  <p style={{ fontWeight: "700" }}>{selectedBrand.franchiseFee ? formatLakhs(selectedBrand.franchiseFee) : "Available on Request"}</p>
-                </div>
-                <div>
-                  <p style={{ fontSize: "11px", textTransform: "uppercase", color: "var(--text-muted)", fontWeight: "600" }}>Royalty Commission</p>
-                  <p style={{ fontWeight: "700" }}>{selectedBrand.royaltyFee || "No Royalty (0%)"}</p>
-                </div>
-                <div>
-                  <p style={{ fontSize: "11px", textTransform: "uppercase", color: "var(--text-muted)", fontWeight: "600" }}>Space Requirement</p>
-                  <p style={{ fontWeight: "700" }}>{selectedBrand.areaRequired || "N/A"}</p>
-                </div>
-              </div>
-
-              {/* Enquiry Form */}
-              <div style={{ borderTop: "2px solid #f1f5f9", paddingTop: "20px" }}>
-                <h4 style={{ fontSize: "16px", marginBottom: "16px" }}>Send Quick Enquiry</h4>
-                {enquirySubmitted ? (
-                  <div className="alert flex-center" style={{ background: "rgba(16, 185, 129, 0.08)", color: "var(--success)", border: "1px solid rgba(16, 185, 129, 0.2)", gap: "8px", padding: "20px" }}>
-                    <CheckCircle size={24} />
+                  <div className="modal-profile-header" style={{ marginBottom: "20px", display: "flex", gap: "16px", alignItems: "center" }}>
+                    <img 
+                      src={selectedBrand.image || "https://images.unsplash.com/photo-1524178232363-1fb2b075b655?auto=format&fit=crop&q=80&w=400"} 
+                      alt={selectedBrand.name}
+                      style={{ width: "90px", height: "90px", borderRadius: "12px", objectFit: "cover" }}
+                    />
                     <div>
-                      <h4 style={{ color: "var(--success)" }}>Enquiry Submitted Successfully!</h4>
-                      <p style={{ fontSize: "13px", color: "var(--text-muted)", marginTop: "4px" }}>The brand representatives will contact you shortly on your provided contact details.</p>
+                      <span className="status-badge approved" style={{ marginBottom: "6px" }}>Verified Concept</span>
+                      <h4 style={{ fontWeight: "700", fontSize: "16px", color: "var(--text-dark)", margin: "4px 0" }}>{selectedBrand.company}</h4>
+                      <p style={{ color: "var(--text-muted)", fontSize: "13px" }}>Category: <strong>{selectedBrand.category}</strong></p>
                     </div>
                   </div>
-                ) : (
-                  <form onSubmit={handleEnquirySubmit} style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-                    <div className="form-grid">
-                      <div className="form-group">
-                        <label>Your Name <span>*</span></label>
-                        <input
-                          type="text"
-                          required
-                          className="form-input"
-                          placeholder="Full Name"
-                          value={enquiryForm.name}
-                          onChange={(e) => setEnquiryForm({ ...enquiryForm, name: e.target.value })}
-                        />
+
+                  <div className="form-grid" style={{ marginBottom: "24px", background: "#f8fafc", padding: "14px", borderRadius: "10px", display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+                    <div>
+                      <p style={{ fontSize: "10px", textTransform: "uppercase", color: "var(--text-muted)", fontWeight: "600", marginBottom: "2px" }}>Investment Limit</p>
+                      <p style={{ fontWeight: "700", color: "var(--primary)", fontSize: "14px" }}>{formatLakhs(selectedBrand.minInvestment)} - {formatLakhs(selectedBrand.maxInvestment)}</p>
+                    </div>
+                    <div>
+                      <p style={{ fontSize: "10px", textTransform: "uppercase", color: "var(--text-muted)", fontWeight: "600", marginBottom: "2px" }}>HQ Location</p>
+                      <p style={{ fontWeight: "700", fontSize: "14px" }}>{selectedBrand.hq}</p>
+                    </div>
+                  </div>
+
+                  {/* Enquiry Form */}
+                  <div style={{ borderTop: "1px solid #f1f5f9", paddingTop: "16px" }}>
+                    <h4 style={{ fontSize: "15px", fontWeight: "700", marginBottom: "12px", color: "var(--text-dark)" }}>Send Free Enquiry Now</h4>
+                    {enquirySubmitted ? (
+                      <div className="alert flex-center" style={{ background: "rgba(16, 185, 129, 0.08)", color: "var(--success)", border: "1px solid rgba(16, 185, 129, 0.2)", gap: "8px", padding: "20px" }}>
+                        <CheckCircle size={24} />
+                        <div>
+                          <h4 style={{ color: "var(--success)" }}>Enquiry Submitted Successfully!</h4>
+                          <p style={{ fontSize: "13px", color: "var(--text-muted)", marginTop: "4px" }}>The brand representatives will contact you shortly on your provided contact details.</p>
+                        </div>
                       </div>
-                      <div className="form-group">
-                        <label>Contact Number <span>*</span></label>
-                        <input
-                          type="tel"
-                          required
-                          className="form-input"
-                          placeholder="10-digit mobile"
-                          value={enquiryForm.phone}
-                          onChange={(e) => setEnquiryForm({ ...enquiryForm, phone: e.target.value })}
-                        />
+                    ) : (
+                      <form onSubmit={handleEnquirySubmit} style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                        <div className="form-grid">
+                          <div className="form-group">
+                            <label>Your Name <span>*</span></label>
+                            <input
+                              type="text"
+                              required
+                              className="form-input"
+                              placeholder="Full Name"
+                              value={enquiryForm.name}
+                              onChange={(e) => setEnquiryForm({ ...enquiryForm, name: e.target.value })}
+                            />
+                          </div>
+                          <div className="form-group">
+                            <label>Contact Number <span>*</span></label>
+                            <input
+                              type="tel"
+                              required
+                              className="form-input"
+                              placeholder="10-digit mobile"
+                              value={enquiryForm.phone}
+                              onChange={(e) => setEnquiryForm({ ...enquiryForm, phone: e.target.value })}
+                            />
+                          </div>
+                        </div>
+                        <div className="form-group">
+                          <label>Email Address <span>*</span></label>
+                          <input
+                            type="email"
+                            required
+                            className="form-input"
+                            placeholder="email@example.com"
+                            value={enquiryForm.email}
+                            onChange={(e) => setEnquiryForm({ ...enquiryForm, email: e.target.value })}
+                          />
+                        </div>
+                        <div className="form-group">
+                          <label>Message (Optional)</label>
+                          <textarea
+                            className="form-input"
+                            rows="3"
+                            placeholder={`I am interested in starting a franchise of ${selectedBrand.name}. Please share detailed specifications and catalogs.`}
+                            value={enquiryForm.message}
+                            onChange={(e) => setEnquiryForm({ ...enquiryForm, message: e.target.value })}
+                          ></textarea>
+                        </div>
+                        <button type="submit" className="btn btn-primary" style={{ marginTop: "8px" }} disabled={submittingEnquiry}>
+                          {submittingEnquiry ? "Submitting..." : "Send Free Enquiry Now"}
+                        </button>
+                      </form>
+                    )}
+                  </div>
+                </div>
+              ) : (
+                /* Full Detail Layout (Original) */
+                <div>
+                  <div className="modal-profile-header">
+                    <img 
+                      src={selectedBrand.image || "https://images.unsplash.com/photo-1524178232363-1fb2b075b655?auto=format&fit=crop&q=80&w=400"} 
+                      alt={selectedBrand.name}
+                      style={{ width: "120px", height: "120px", borderRadius: "12px", objectFit: "cover" }}
+                    />
+                    <div>
+                      <span className="status-badge approved" style={{ marginBottom: "8px" }}>Verified Concept</span>
+                      <p style={{ fontWeight: "700", fontSize: "16px" }}>{selectedBrand.company}</p>
+                      <p style={{ color: "var(--text-muted)", fontSize: "14px" }}>Category: <strong>{selectedBrand.category}</strong></p>
+                      <p style={{ color: "var(--text-muted)", fontSize: "14px" }}>Headquarters: <strong>{selectedBrand.hq}</strong></p>
+                    </div>
+                  </div>
+
+                  <div style={{ marginBottom: "24px" }}>
+                    <h4 style={{ fontSize: "16px", marginBottom: "8px", borderBottom: "1px solid #f1f5f9", paddingBottom: "6px" }}>Business Overview</h4>
+                    <p style={{ fontSize: "14px", color: "var(--text-muted)" }}>{selectedBrand.description}</p>
+                  </div>
+
+                  <div className="form-grid" style={{ marginBottom: "30px", background: "#f8fafc", padding: "16px", borderRadius: "12px" }}>
+                    <div>
+                      <p style={{ fontSize: "11px", textTransform: "uppercase", color: "var(--text-muted)", fontWeight: "600" }}>Investment Range</p>
+                      <p style={{ fontWeight: "700", color: "var(--primary)" }}>{formatLakhs(selectedBrand.minInvestment)} - {formatLakhs(selectedBrand.maxInvestment)}</p>
+                    </div>
+                    <div>
+                      <p style={{ fontSize: "11px", textTransform: "uppercase", color: "var(--text-muted)", fontWeight: "600" }}>Franchise Fee</p>
+                      <p style={{ fontWeight: "700" }}>{selectedBrand.franchiseFee ? formatLakhs(selectedBrand.franchiseFee) : "Available on Request"}</p>
+                    </div>
+                    <div>
+                      <p style={{ fontSize: "11px", textTransform: "uppercase", color: "var(--text-muted)", fontWeight: "600" }}>Royalty Commission</p>
+                      <p style={{ fontWeight: "700" }}>{selectedBrand.royaltyFee || "No Royalty (0%)"}</p>
+                    </div>
+                    <div>
+                      <p style={{ fontSize: "11px", textTransform: "uppercase", color: "var(--text-muted)", fontWeight: "600" }}>Space Requirement</p>
+                      <p style={{ fontWeight: "700" }}>{selectedBrand.areaRequired || "N/A"}</p>
+                    </div>
+                  </div>
+
+                  {/* Enquiry Form */}
+                  <div style={{ borderTop: "2px solid #f1f5f9", paddingTop: "20px" }}>
+                    <h4 style={{ fontSize: "16px", marginBottom: "16px" }}>Send Quick Enquiry</h4>
+                    {enquirySubmitted ? (
+                      <div className="alert flex-center" style={{ background: "rgba(16, 185, 129, 0.08)", color: "var(--success)", border: "1px solid rgba(16, 185, 129, 0.2)", gap: "8px", padding: "20px" }}>
+                        <CheckCircle size={24} />
+                        <div>
+                          <h4 style={{ color: "var(--success)" }}>Enquiry Submitted Successfully!</h4>
+                          <p style={{ fontSize: "13px", color: "var(--text-muted)", marginTop: "4px" }}>The brand representatives will contact you shortly on your provided contact details.</p>
+                        </div>
                       </div>
-                    </div>
-                    <div className="form-group">
-                      <label>Email Address <span>*</span></label>
-                      <input
-                        type="email"
-                        required
-                        className="form-input"
-                        placeholder="email@example.com"
-                        value={enquiryForm.email}
-                        onChange={(e) => setEnquiryForm({ ...enquiryForm, email: e.target.value })}
-                      />
-                    </div>
-                    <div className="form-group">
-                      <label>Message (Optional)</label>
-                      <textarea
-                        className="form-input"
-                        rows="3"
-                        placeholder="I'm interested in opening this franchise in my city. Please send franchise agreement drafts."
-                        value={enquiryForm.message}
-                        onChange={(e) => setEnquiryForm({ ...enquiryForm, message: e.target.value })}
-                      ></textarea>
-                    </div>
-                    <button type="submit" className="btn btn-primary" style={{ marginTop: "8px" }} disabled={submittingEnquiry}>
-                      {submittingEnquiry ? "Submitting..." : "Send Free Enquiry Now"}
-                    </button>
-                  </form>
-                )}
-              </div>
+                    ) : (
+                      <form onSubmit={handleEnquirySubmit} style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                        <div className="form-grid">
+                          <div className="form-group">
+                            <label>Your Name <span>*</span></label>
+                            <input
+                              type="text"
+                              required
+                              className="form-input"
+                              placeholder="Full Name"
+                              value={enquiryForm.name}
+                              onChange={(e) => setEnquiryForm({ ...enquiryForm, name: e.target.value })}
+                            />
+                          </div>
+                          <div className="form-group">
+                            <label>Contact Number <span>*</span></label>
+                            <input
+                              type="tel"
+                              required
+                              className="form-input"
+                              placeholder="10-digit mobile"
+                              value={enquiryForm.phone}
+                              onChange={(e) => setEnquiryForm({ ...enquiryForm, phone: e.target.value })}
+                            />
+                          </div>
+                        </div>
+                        <div className="form-group">
+                          <label>Email Address <span>*</span></label>
+                          <input
+                            type="email"
+                            required
+                            className="form-input"
+                            placeholder="email@example.com"
+                            value={enquiryForm.email}
+                            onChange={(e) => setEnquiryForm({ ...enquiryForm, email: e.target.value })}
+                          />
+                        </div>
+                        <div className="form-group">
+                          <label>Message (Optional)</label>
+                          <textarea
+                            className="form-input"
+                            rows="3"
+                            placeholder="I'm interested in opening this franchise in my city. Please send franchise agreement drafts."
+                            value={enquiryForm.message}
+                            onChange={(e) => setEnquiryForm({ ...enquiryForm, message: e.target.value })}
+                          ></textarea>
+                        </div>
+                        <button type="submit" className="btn btn-primary" style={{ marginTop: "8px" }} disabled={submittingEnquiry}>
+                          {submittingEnquiry ? "Submitting..." : "Send Free Enquiry Now"}
+                        </button>
+                      </form>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>

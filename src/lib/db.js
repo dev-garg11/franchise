@@ -49,7 +49,7 @@ async function dbConnect() {
 
   try {
     cached.conn = await cached.promise;
-    await seedDatabase();
+    //await seedDatabase();
   } catch (e) {
     cached.promise = null;
     throw e;
@@ -250,7 +250,7 @@ export async function saveBrand(brandData) {
 
     const brand = new Brand(brandPayload);
     const saved = await brand.save();
-    
+
     const obj = await Brand.findById(saved._id).populate('user').lean();
     const returnObj = {
       ...obj,
@@ -362,22 +362,33 @@ export async function getInvestors() {
 export async function saveInvestor(investorData) {
   await dbConnect();
   try {
-    const rawPassword = investorData.password || "password123";
-    const hashedPassword = await bcrypt.hash(rawPassword, 10);
+    const emailLower = investorData.email.toLowerCase();
+    let userObj = await User.findOne({ email: emailLower });
+    if (!userObj) {
+      const rawPassword = investorData.password || "password123";
+      const hashedPassword = await bcrypt.hash(rawPassword, 10);
 
-    // Save to User collection
-    const createdUser = await User.create({
-      email: investorData.email.toLowerCase(),
-      password: hashedPassword,
-      role: 'investor',
-      name: investorData.name,
-      phone: investorData.phone
-    });
+      // Save to User collection
+      userObj = await User.create({
+        email: emailLower,
+        password: hashedPassword,
+        role: 'investor',
+        name: investorData.name,
+        phone: investorData.phone
+      });
+    }
 
     const id = investorData.id || `investor-${Date.now()}`;
+    const pincode = investorData.pincode || "000000";
+    const investment_range = investorData.investment_range || "Not Specified";
+    const max_investment_limit = investorData.max_investment_limit || "Not Specified";
+
     const investorPayload = {
+      pincode,
+      investment_range,
+      max_investment_limit,
       ...investorData,
-      user: createdUser._id,
+      user: userObj._id,
       id,
       createdAt: investorData.createdAt || new Date()
     };
