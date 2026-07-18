@@ -18,9 +18,13 @@ app.use(express.json());
 // 3. Mount Routers
 const brandRoutes = require('./routes/brandRoutes');
 const investorRoutes = require('./routes/investorRoutes');
+const adminRoutes = require('./routes/adminRoutes');
+const authRoutes = require('./routes/authRoutes');
 
 app.use('/api/brands', brandRoutes);
 app.use('/api/investors', investorRoutes);
+app.use('/api/admins', adminRoutes);
+app.use('/api', authRoutes);
 
 // 4. Default API Root Route
 app.get('/', (req, res) => {

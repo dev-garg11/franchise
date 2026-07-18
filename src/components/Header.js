@@ -310,7 +310,7 @@ export default function Header() {
     if (isAdmin) router.push("/admin");
     else if (isInvestor) router.push("/investor-panel");
     else if (isBrand) router.push("/brand-panel");
-    else router.push("/login");
+    else window.dispatchEvent(new CustomEvent("open-auth-modal", { detail: { tab: "login" } }));
   };
 
   const unreadCount = notifications.filter(n => !n.read).length;
@@ -601,7 +601,7 @@ export default function Header() {
                       setLoadingLogin(true);
                       setTimeout(() => {
                         setLoadingLogin(false);
-                        router.push("/login");
+                        window.dispatchEvent(new CustomEvent("open-auth-modal", { detail: { tab: "login" } }));
                       }, 400);
                     }} 
                     className="btn btn-outline" 
@@ -811,7 +811,7 @@ export default function Header() {
               setUserDropdownOpen(prev => !prev);
               setNotificationDropdownOpen(false);
             } else {
-              router.push("/login");
+              window.dispatchEvent(new CustomEvent("open-auth-modal", { detail: { tab: "login" } }));
             }
           }}
         >

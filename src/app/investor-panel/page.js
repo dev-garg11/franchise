@@ -134,51 +134,74 @@ export default function InvestorPanel() {
   return (
     <div className="admin-layout">
       {/* Sidebar Navigation */}
-      <aside className="admin-sidebar" style={{ background: "linear-gradient(180deg, #1e293b 0%, #0f172a 100%)" }}>
-        <div className="admin-sidebar-top">
-          <Link href="/" className="logo" style={{ display: "inline-flex" }}>
-            <span className="logo-icon" style={{ background: "var(--secondary)" }}>I</span>
-            <span style={{ color: "white" }}>Investor</span><span style={{ color: "var(--secondary)" }}>Panel</span>
-          </Link>
+      <aside className="admin-sidebar" style={{ background: "linear-gradient(180deg, #1e293b 0%, #0f172a 100%)", padding: "0 0 40px 0" }}>
+        <div className="admin-sidebar-top" style={{ padding: 0 }}>
+          <div style={{ 
+            display: "flex", 
+            justifyContent: "center", 
+            alignItems: "center", 
+            width: "100%", 
+            padding: "10px 20px 18px 20px", 
+            borderBottom: "1px solid rgba(255, 255, 255, 0.08)",
+            marginBottom: "16px",
+            background: "transparent"
+          }}>
+            <Link href="/investor/dashboard" style={{ display: "block" }}>
+              <img 
+                src="/logo-footer.png" 
+                alt="Franchise Roots" 
+                style={{ 
+                  width: "180px", 
+                  height: "auto", 
+                  objectFit: "contain",
+                  display: "block",
+                  margin: "0 auto",
+                  background: "transparent"
+                }} 
+              />
+            </Link>
+          </div>
 
-          <ul className="admin-nav">
-            <li className="admin-nav-item">
-              <div 
-                className={`admin-nav-link ${activeTab === "dashboard" ? "active" : ""}`}
-                onClick={() => setActiveTab("dashboard")}
-              >
-                <LayoutDashboard size={18} />
-                My Profile Dashboard
-              </div>
-            </li>
-            <li className="admin-nav-item">
-              <div 
-                className={`admin-nav-link ${activeTab === "recommendations" ? "active" : ""}`}
-                onClick={() => setActiveTab("recommendations")}
-              >
-                <Briefcase size={18} />
-                Matched Opportunities ({recommendations.length})
-              </div>
-            </li>
-            <li className="admin-nav-item">
-              <div 
-                className={`admin-nav-link ${activeTab === "enquiries" ? "active" : ""}`}
-                onClick={() => setActiveTab("enquiries")}
-              >
-                <FileText size={18} />
-                My Active Applications ({enquiries.length})
-              </div>
-            </li>
-            <li className="admin-nav-item">
-              <div 
-                className={`admin-nav-link ${activeTab === "consultancy" ? "active" : ""}`}
-                onClick={() => setActiveTab("consultancy")}
-              >
-                <MessageSquare size={18} />
-                Consultancy Desk
-              </div>
-            </li>
-          </ul>
+          <div style={{ padding: "0 28px" }}>
+            <ul className="admin-nav" style={{ marginTop: 0 }}>
+              <li className="admin-nav-item">
+                <div 
+                  className={`admin-nav-link ${activeTab === "dashboard" ? "active" : ""}`}
+                  onClick={() => setActiveTab("dashboard")}
+                >
+                  <LayoutDashboard size={18} />
+                  My Profile Dashboard
+                </div>
+              </li>
+              <li className="admin-nav-item">
+                <div 
+                  className={`admin-nav-link ${activeTab === "recommendations" ? "active" : ""}`}
+                  onClick={() => setActiveTab("recommendations")}
+                >
+                  <Briefcase size={18} />
+                  Matched Opportunities ({recommendations.length})
+                </div>
+              </li>
+              <li className="admin-nav-item">
+                <div 
+                  className={`admin-nav-link ${activeTab === "enquiries" ? "active" : ""}`}
+                  onClick={() => setActiveTab("enquiries")}
+                >
+                  <FileText size={18} />
+                  My Active Applications ({enquiries.length})
+                </div>
+              </li>
+              <li className="admin-nav-item">
+                <div 
+                  className={`admin-nav-link ${activeTab === "consultancy" ? "active" : ""}`}
+                  onClick={() => setActiveTab("consultancy")}
+                >
+                  <MessageSquare size={18} />
+                  Consultancy Desk
+                </div>
+              </li>
+            </ul>
+          </div>
         </div>
 
         <div style={{ padding: "0 24px" }}>
@@ -236,12 +259,12 @@ export default function InvestorPanel() {
                   <div className="form-grid" style={{ marginBottom: "24px" }}>
                     <div>
                       <label style={{ fontSize: "12px", color: "var(--text-muted)" }}>Target Location</label>
-                      <p style={{ fontWeight: "700", marginTop: "2px" }}>{investor.preferredLocation}</p>
+                      <p style={{ fontWeight: "700", marginTop: "2px" }}>{investor.preferredLocation} {investor.pincode && `(${investor.pincode})`}</p>
                     </div>
                     <div>
                       <label style={{ fontSize: "12px", color: "var(--text-muted)" }}>Budget Limit</label>
                       <p style={{ fontWeight: "700", color: "var(--success)", marginTop: "2px" }}>
-                        {formatLakhs(investor.budgetMin)} - {formatLakhs(investor.budgetMax)}
+                        {investor.investment_range || formatLakhs(investor.budgetMin)} - {investor.max_investment_limit || formatLakhs(investor.budgetMax)}
                       </p>
                     </div>
                     <div>

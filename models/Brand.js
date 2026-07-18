@@ -21,11 +21,26 @@ const BrandSchema = new mongoose.Schema({
   },
   minInvestment: {
     type: Number,
-    required: [true, 'Minimum investment is required']
+    default: 0
   },
   maxInvestment: {
     type: Number,
-    required: [true, 'Maximum investment is required']
+    default: 0
+  },
+  pincode: {
+    type: String,
+    required: [true, 'Pincode is required'],
+    trim: true
+  },
+  investment_range: {
+    type: String,
+    required: [true, 'Investment range is required'],
+    trim: true
+  },
+  max_investment_limit: {
+    type: String,
+    required: [true, 'Max investment limit is required'],
+    trim: true
   },
   franchiseFee: {
     type: Number
@@ -50,16 +65,18 @@ const BrandSchema = new mongoose.Schema({
     type: String,
     default: ''
   },
+  user: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    required: [true, 'User reference is required']
+  },
   email: {
     type: String,
-    required: [true, 'Email is required'],
-    unique: true,
     lowercase: true,
     trim: true
   },
   password: {
-    type: String,
-    required: [true, 'Password is required']
+    type: String
   },
   phone: {
     type: String,

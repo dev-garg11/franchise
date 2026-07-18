@@ -3,13 +3,18 @@ import path from "path";
 import mongoose from "mongoose";
 import Brand from "../../models/Brand";
 import Investor from "../../models/Investor";
+import Admin from "../../models/Admin";
+import User from "../../models/User";
+import bcrypt from "bcryptjs";
 import {
   sendBrandRegistrationEmail,
   sendInvestorRegistrationEmail,
   sendBrandApprovalEmail,
   sendBrandDeclineEmail,
   sendBrandAssignedToInvestorsEmail,
-  sendInvestorAssignedBrandEmail
+  sendInvestorAssignedBrandEmail,
+  sendAdminNewBrandNotification,
+  sendAdminNewInvestorNotification
 } from "./email";
 
 
@@ -27,6 +32,7 @@ if (!cached) {
 
 async function dbConnect() {
   if (cached.conn) {
+    seedDatabase().catch(err => console.error("Error seeding DB async:", err));
     return cached.conn;
   }
 
@@ -89,6 +95,111 @@ async function seedDatabase() {
         }
       }
     }
+
+    const adminCount = await Admin.countDocuments();
+    if (adminCount === 0) {
+      await Admin.create({
+        username: "admin",
+        password: "admin123"
+      });
+      console.log("Seeded default admin user to MongoDB.");
+    }
+
+    // Seed User Collection (For central login with role and encrypted passwords)
+    const userCount = await User.countDocuments();
+    if (userCount === 0) {
+      // Seed Admin User
+      const hashedAdminPassword = await bcrypt.hash("admin123", 10);
+      await User.create({
+        email: "admin@franchiseroots.com",
+        username: "admin",
+        password: hashedAdminPassword,
+        role: "admin",
+        name: "Administrator"
+      });
+
+      // Seed Brand Users and link them via foreign key
+      const brands = await Brand.find({});
+      for (const brand of brands) {
+        if (brand.email) {
+          const emailLower = brand.email.toLowerCase();
+          let existing = await User.findOne({ email: emailLower });
+          if (!existing) {
+            const hashedPassword = await bcrypt.hash(brand.password || "password123", 10);
+            existing = await User.create({
+              email: brand.email,
+              password: hashedPassword,
+              role: "brand",
+              name: brand.name,
+              phone: brand.phone
+            });
+          }
+          brand.user = existing._id;
+          await brand.save();
+        }
+      }
+
+      // Seed Investor Users and link them via foreign key
+      const investors = await Investor.find({});
+      for (const investor of investors) {
+        if (investor.email) {
+          const emailLower = investor.email.toLowerCase();
+          let existing = await User.findOne({ email: emailLower });
+          if (!existing) {
+            const hashedPassword = await bcrypt.hash(investor.password || "password123", 10);
+            existing = await User.create({
+              email: investor.email,
+              password: hashedPassword,
+              role: "investor",
+              name: investor.name,
+              phone: investor.phone
+            });
+          }
+          investor.user = existing._id;
+          await investor.save();
+        }
+      }
+      console.log("Seeded User collection and linked all profiles via foreign key.");
+    }
+
+    // Migration fallback: Ensure all existing brands and investors in MongoDB have their user reference set
+    const unlinkedBrands = await Brand.find({ user: { $exists: false } });
+    for (const b of unlinkedBrands) {
+      if (b.email) {
+        let existing = await User.findOne({ email: b.email.toLowerCase() });
+        if (!existing) {
+          const hashedPassword = await bcrypt.hash(b.password || "password123", 10);
+          existing = await User.create({
+            email: b.email.toLowerCase(),
+            password: hashedPassword,
+            role: "brand",
+            name: b.name,
+            phone: b.phone
+          });
+        }
+        b.user = existing._id;
+        await b.save();
+      }
+    }
+
+    const unlinkedInvestors = await Investor.find({ user: { $exists: false } });
+    for (const inv of unlinkedInvestors) {
+      if (inv.email) {
+        let existing = await User.findOne({ email: inv.email.toLowerCase() });
+        if (!existing) {
+          const hashedPassword = await bcrypt.hash(inv.password || "password123", 10);
+          existing = await User.create({
+            email: inv.email.toLowerCase(),
+            password: hashedPassword,
+            role: "investor",
+            name: inv.name,
+            phone: inv.phone
+          });
+        }
+        inv.user = existing._id;
+        await inv.save();
+      }
+    }
   } catch (error) {
     console.error("Error during Next.js DB seeding:", error);
   }
@@ -98,10 +209,11 @@ async function seedDatabase() {
 export async function getBrands() {
   await dbConnect();
   try {
-    const brands = await Brand.find({}).sort({ createdAt: -1 }).lean();
+    const brands = await Brand.find({}).populate('user').sort({ createdAt: -1 }).lean();
     return brands.map(b => ({
       ...b,
-      id: b.id || b._id.toString()
+      id: b.id || b._id.toString(),
+      email: b.user ? b.user.email : b.email
     }));
   } catch (error) {
     console.error("Error reading brands from MongoDB:", error);
@@ -112,26 +224,51 @@ export async function getBrands() {
 export async function saveBrand(brandData) {
   await dbConnect();
   try {
+    const rawPassword = brandData.password || "password123";
+    const hashedPassword = await bcrypt.hash(rawPassword, 10);
+
+    // Save to User collection
+    const createdUser = await User.create({
+      email: brandData.email.toLowerCase(),
+      password: hashedPassword,
+      role: 'brand',
+      name: brandData.name,
+      phone: brandData.phone
+    });
+
     const id = brandData.id || `brand-${Date.now()}`;
-    const brand = new Brand({
+    const brandPayload = {
       ...brandData,
+      user: createdUser._id,
       id,
       status: brandData.status || "Pending",
       featured: brandData.featured || false,
       createdAt: brandData.createdAt || new Date()
-    });
+    };
+    delete brandPayload.password;
+    delete brandPayload.email;
+
+    const brand = new Brand(brandPayload);
     const saved = await brand.save();
-    const obj = saved.toObject();
+    
+    const obj = await Brand.findById(saved._id).populate('user').lean();
+    const returnObj = {
+      ...obj,
+      id: obj.id || obj._id.toString(),
+      email: obj.user ? obj.user.email : brandData.email
+    };
 
     // Trigger registration email
-    sendBrandRegistrationEmail(obj).catch(err =>
+    sendBrandRegistrationEmail(returnObj).catch(err =>
       console.error("Failed to send brand registration email:", err)
     );
 
-    return {
-      ...obj,
-      id: obj.id || obj._id.toString()
-    };
+    // Trigger admin notification email
+    sendAdminNewBrandNotification(returnObj).catch(err =>
+      console.error("Failed to send admin brand notification email:", err)
+    );
+
+    return returnObj;
   } catch (error) {
     console.error("Error saving brand to MongoDB:", error);
     throw error;
@@ -145,17 +282,33 @@ export async function updateBrand(id, updatedFields) {
       ? { $or: [{ _id: id }, { id }] }
       : { id };
 
+    const existingBrand = await Brand.findOne(query);
+    if (existingBrand && existingBrand.user) {
+      const userUpdate = {};
+      if (updatedFields.name) userUpdate.name = updatedFields.name;
+      if (updatedFields.phone) userUpdate.phone = updatedFields.phone;
+      if (updatedFields.email) userUpdate.email = updatedFields.email.toLowerCase();
+      if (Object.keys(userUpdate).length > 0) {
+        await User.updateOne({ _id: existingBrand.user }, { $set: userUpdate });
+      }
+    }
+
+    const payload = { ...updatedFields };
+    delete payload.password;
+    delete payload.email;
+
     const updated = await Brand.findOneAndUpdate(
       query,
-      { $set: updatedFields },
+      { $set: payload },
       { new: true }
-    ).lean();
+    ).populate('user').lean();
 
     if (!updated) return null;
 
     const obj = {
       ...updated,
-      id: updated.id || updated._id.toString()
+      id: updated.id || updated._id.toString(),
+      email: updated.user ? updated.user.email : (updated.email || "")
     };
 
     // Trigger status change emails
@@ -194,10 +347,11 @@ export async function deleteBrand(id) {
 export async function getInvestors() {
   await dbConnect();
   try {
-    const investors = await Investor.find({}).sort({ createdAt: -1 }).lean();
+    const investors = await Investor.find({}).populate('user').sort({ createdAt: -1 }).lean();
     return investors.map(i => ({
       ...i,
-      id: i.id || i._id.toString()
+      id: i.id || i._id.toString(),
+      email: i.user ? i.user.email : i.email
     }));
   } catch (error) {
     console.error("Error reading investors from MongoDB:", error);
@@ -208,24 +362,49 @@ export async function getInvestors() {
 export async function saveInvestor(investorData) {
   await dbConnect();
   try {
+    const rawPassword = investorData.password || "password123";
+    const hashedPassword = await bcrypt.hash(rawPassword, 10);
+
+    // Save to User collection
+    const createdUser = await User.create({
+      email: investorData.email.toLowerCase(),
+      password: hashedPassword,
+      role: 'investor',
+      name: investorData.name,
+      phone: investorData.phone
+    });
+
     const id = investorData.id || `investor-${Date.now()}`;
-    const investor = new Investor({
+    const investorPayload = {
       ...investorData,
+      user: createdUser._id,
       id,
       createdAt: investorData.createdAt || new Date()
-    });
+    };
+    delete investorPayload.password;
+    delete investorPayload.email;
+
+    const investor = new Investor(investorPayload);
     const saved = await investor.save();
-    const obj = saved.toObject();
+
+    const obj = await Investor.findById(saved._id).populate('user').lean();
+    const returnObj = {
+      ...obj,
+      id: obj.id || obj._id.toString(),
+      email: obj.user ? obj.user.email : investorData.email
+    };
 
     // Trigger registration email
-    sendInvestorRegistrationEmail(obj).catch(err =>
+    sendInvestorRegistrationEmail(returnObj).catch(err =>
       console.error("Failed to send investor registration email:", err)
     );
 
-    return {
-      ...obj,
-      id: obj.id || obj._id.toString()
-    };
+    // Trigger admin notification email
+    sendAdminNewInvestorNotification(returnObj).catch(err =>
+      console.error("Failed to send admin investor notification email:", err)
+    );
+
+    return returnObj;
   } catch (error) {
     console.error("Error saving investor to MongoDB:", error);
     throw error;
@@ -239,7 +418,11 @@ export async function assignBrandToInvestors(brandId, investorIds) {
     const queryBrand = mongoose.Types.ObjectId.isValid(brandId)
       ? { $or: [{ _id: brandId }, { id: brandId }] }
       : { id: brandId };
-    const brand = await Brand.findOne(queryBrand).lean();
+    const rawBrand = await Brand.findOne(queryBrand).populate('user').lean();
+    const brand = rawBrand ? {
+      ...rawBrand,
+      email: rawBrand.user ? rawBrand.user.email : rawBrand.email
+    } : null;
 
     // 2. Fetch the investor details
     const cleanInvestorIds = (investorIds || []).filter(Boolean);
@@ -249,7 +432,11 @@ export async function assignBrandToInvestors(brandId, investorIds) {
         { id: { $in: cleanInvestorIds } }
       ]
     };
-    const selectedInvestors = await Investor.find(queryInvestors).lean();
+    const rawInvestors = await Investor.find(queryInvestors).populate('user').lean();
+    const selectedInvestors = rawInvestors.map(inv => ({
+      ...inv,
+      email: inv.user ? inv.user.email : inv.email
+    }));
 
     // 3. Remove brandId from all investors first
     await Investor.updateMany(
@@ -285,3 +472,72 @@ export async function assignBrandToInvestors(brandId, investorIds) {
     throw error;
   }
 }
+
+export async function getAdmins() {
+  await dbConnect();
+  try {
+    let admins = await Admin.find({}).lean();
+    if (admins.length === 0) {
+      await Admin.create({
+        username: "admin",
+        password: "admin123"
+      });
+      admins = await Admin.find({}).lean();
+      console.log("Seeded default admin user to MongoDB.");
+    }
+    return admins.map(a => ({
+      ...a,
+      id: a.id || a._id.toString()
+    }));
+  } catch (error) {
+    console.error("Error reading admins from MongoDB:", error);
+    return [];
+  }
+}
+
+export async function loginUser(identifier, password) {
+  await dbConnect();
+  try {
+    const query = {
+      $or: [
+        { email: identifier.toLowerCase() },
+        { username: identifier.toLowerCase() }
+      ]
+    };
+    const user = await User.findOne(query).lean();
+    if (!user) {
+      return { success: false, message: "Invalid email/username or password." };
+    }
+
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) {
+      return { success: false, message: "Invalid email/username or password." };
+    }
+
+    // Retrieve corresponding ID if brand or investor
+    let profileId = user._id.toString();
+    if (user.role === 'brand') {
+      const brand = await Brand.findOne({ $or: [{ user: user._id }, { email: user.email.toLowerCase() }] }).lean();
+      if (brand) profileId = brand.id || brand._id.toString();
+    } else if (user.role === 'investor') {
+      const investor = await Investor.findOne({ $or: [{ user: user._id }, { email: user.email.toLowerCase() }] }).lean();
+      if (investor) profileId = investor.id || investor._id.toString();
+    }
+
+    return {
+      success: true,
+      user: {
+        id: profileId,
+        email: user.email,
+        username: user.username,
+        role: user.role,
+        name: user.name,
+        phone: user.phone
+      }
+    };
+  } catch (error) {
+    console.error("Error during login:", error);
+    return { success: false, message: "Server error during login." };
+  }
+}
+

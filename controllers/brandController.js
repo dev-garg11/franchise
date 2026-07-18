@@ -1,4 +1,6 @@
 const Brand = require('../models/Brand');
+const User = require('../models/User');
+const bcrypt = require('bcryptjs');
 
 // @desc    Get all brands
 // @route   GET /api/brands
@@ -39,6 +41,19 @@ exports.getBrandById = async (req, res) => {
 // @access  Public
 exports.createBrand = async (req, res) => {
   try {
+    const rawPassword = req.body.password || 'password123';
+    const hashedPassword = await bcrypt.hash(rawPassword, 10);
+
+    // Save to User collection
+    await User.create({
+      email: req.body.email,
+      password: hashedPassword,
+      role: 'brand',
+      name: req.body.name,
+      phone: req.body.phone
+    });
+
+    req.body.password = hashedPassword;
     const brand = await Brand.create(req.body);
     res.status(201).json({ success: true, data: brand });
   } catch (error) {

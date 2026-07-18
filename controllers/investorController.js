@@ -1,4 +1,6 @@
 const Investor = require('../models/Investor');
+const User = require('../models/User');
+const bcrypt = require('bcryptjs');
 
 // @desc    Get all investors
 // @route   GET /api/investors
@@ -17,6 +19,19 @@ exports.getInvestors = async (req, res) => {
 // @access  Public
 exports.createInvestor = async (req, res) => {
   try {
+    const rawPassword = req.body.password || 'password123';
+    const hashedPassword = await bcrypt.hash(rawPassword, 10);
+
+    // Save to User collection
+    await User.create({
+      email: req.body.email,
+      password: hashedPassword,
+      role: 'investor',
+      name: req.body.name,
+      phone: req.body.phone
+    });
+
+    req.body.password = hashedPassword;
     const investor = await Investor.create(req.body);
     res.status(201).json({ success: true, data: investor });
   } catch (error) {

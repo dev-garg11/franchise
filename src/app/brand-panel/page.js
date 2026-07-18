@@ -9,6 +9,44 @@ import {
   IndianRupee, PlusCircle, Globe, Award, Sparkles, CheckSquare
 } from "lucide-react";
 
+const INVESTMENT_OPTIONS = [
+  "Rs. 10,000 - 50,000",
+  "Rs. 50,000 - 2 Lakh",
+  "Rs. 2 Lakh - 5 Lakh",
+  "Rs. 5 Lakh - 10 Lakh",
+  "Rs. 10 Lakh - 20 Lakh",
+  "Rs. 20 Lakh - 30 Lakh",
+  "Rs. 30 Lakh - 50 Lakh",
+  "Rs. 50 Lakh - 1 Crore",
+  "Rs. 1 Crore - 2 Crore",
+  "Rs. 2 Crore - 5 Crore",
+  "Above Rs. 5 Crore"
+];
+
+const mapRangeToNumeric = (rangeStr, isMax = false) => {
+  if (!rangeStr) return 0;
+  if (rangeStr === "Rs. 10,000 - 50,000") return isMax ? 50000 : 10000;
+  if (rangeStr === "Rs. 50,000 - 2 Lakh") return isMax ? 200000 : 50000;
+  if (rangeStr === "Rs. 2 Lakh - 5 Lakh") return isMax ? 500000 : 200000;
+  if (rangeStr === "Rs. 5 Lakh - 10 Lakh") return isMax ? 1000000 : 500000;
+  if (rangeStr === "Rs. 10 Lakh - 20 Lakh") return isMax ? 2000000 : 1000000;
+  if (rangeStr === "Rs. 20 Lakh - 30 Lakh") return isMax ? 3000000 : 2000000;
+  if (rangeStr === "Rs. 30 Lakh - 50 Lakh") return isMax ? 5000000 : 3000000;
+  if (rangeStr === "Rs. 50 Lakh - 1 Crore") return isMax ? 10000000 : 5000000;
+  if (rangeStr === "Rs. 1 Crore - 2 Crore") return isMax ? 20000000 : 10000000;
+  if (rangeStr === "Rs. 2 Crore - 5 Crore") return isMax ? 50000000 : 20000000;
+  if (rangeStr === "Above Rs. 5 Crore") return isMax ? 999999999 : 50000000;
+  return 0;
+};
+
+const isNew = (dateString) => {
+  if (!dateString) return false;
+  const createdDate = new Date(dateString);
+  const diffTime = Math.abs(new Date() - createdDate);
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  return diffDays <= 3; // within last 3 days
+};
+
 export default function BrandPanel() {
   const router = useRouter();
   const [authorized, setAuthorized] = useState(false);
@@ -23,6 +61,9 @@ export default function BrandPanel() {
     company: "",
     category: "Food and Beverage",
     hq: "New Delhi",
+    pincode: "",
+    investment_range: "",
+    max_investment_limit: "",
     minInvestment: "",
     maxInvestment: "",
     franchiseFee: "",
@@ -76,6 +117,9 @@ export default function BrandPanel() {
             company: userBrand.company || "",
             category: userBrand.category || "Food and Beverage",
             hq: userBrand.hq || "New Delhi",
+            pincode: userBrand.pincode || "",
+            investment_range: userBrand.investment_range || "",
+            max_investment_limit: userBrand.max_investment_limit || "",
             minInvestment: userBrand.minInvestment || "",
             maxInvestment: userBrand.maxInvestment || "",
             franchiseFee: userBrand.franchiseFee || "",
@@ -122,10 +166,40 @@ export default function BrandPanel() {
 
     try {
       const email = localStorage.getItem("brandEmail");
+      
+      if (
+        !formFields.name ||
+        !formFields.company ||
+        !formFields.pincode ||
+        !formFields.investment_range ||
+        !formFields.max_investment_limit
+      ) {
+        setUpdateError("Please fill in all mandatory fields.");
+        setUpdateLoading(false);
+        return;
+      }
+
+      if (formFields.pincode.length !== 6 || !/^\d{6}$/.test(formFields.pincode)) {
+        setUpdateError("Pincode must be exactly 6 digits.");
+        setUpdateLoading(false);
+        return;
+      }
+
+      const rangeIndex = INVESTMENT_OPTIONS.indexOf(formFields.investment_range);
+      const maxIndex = INVESTMENT_OPTIONS.indexOf(formFields.max_investment_limit);
+      if (maxIndex < rangeIndex) {
+        setUpdateError("Max Investment Limit cannot be lower than the selected Investment Range.");
+        setUpdateLoading(false);
+        return;
+      }
+
+      const rangeMinVal = mapRangeToNumeric(formFields.investment_range, false);
+      const rangeMaxVal = mapRangeToNumeric(formFields.max_investment_limit, true);
+
       const payload = {
         ...formFields,
-        minInvestment: Number(formFields.minInvestment) || 100000,
-        maxInvestment: Number(formFields.maxInvestment) || 500000,
+        minInvestment: rangeMinVal,
+        maxInvestment: rangeMaxVal,
         franchiseFee: Number(formFields.franchiseFee) || 50000,
         status: "Pending", // Trigger Pending status for admin approval!
       };
@@ -180,42 +254,65 @@ export default function BrandPanel() {
   return (
     <div className="admin-layout">
       {/* Sidebar Navigation */}
-      <aside className="admin-sidebar" style={{ background: "linear-gradient(180deg, #1e3a8a 0%, #0f172a 100%)" }}>
-        <div className="admin-sidebar-top">
-          <Link href="/" className="logo" style={{ display: "inline-flex" }}>
-            <span className="logo-icon" style={{ background: "var(--secondary)" }}>B</span>
-            <span style={{ color: "white" }}>Brand</span><span style={{ color: "var(--secondary)" }}>Panel</span>
-          </Link>
+      <aside className="admin-sidebar" style={{ background: "linear-gradient(180deg, #1e3a8a 0%, #0f172a 100%)", padding: "0 0 40px 0" }}>
+        <div className="admin-sidebar-top" style={{ padding: 0 }}>
+          <div style={{ 
+            display: "flex", 
+            justifyContent: "center", 
+            alignItems: "center", 
+            width: "100%", 
+            padding: "10px 20px 18px 20px", 
+            borderBottom: "1px solid rgba(255, 255, 255, 0.08)",
+            marginBottom: "16px",
+            background: "transparent"
+          }}>
+            <Link href="/brand-owner/dashboard" style={{ display: "block" }}>
+              <img 
+                src="/logo-footer.png" 
+                alt="Franchise Roots" 
+                style={{ 
+                  width: "180px", 
+                  height: "auto", 
+                  objectFit: "contain",
+                  display: "block",
+                  margin: "0 auto",
+                  background: "transparent"
+                }} 
+              />
+            </Link>
+          </div>
 
-          <ul className="admin-nav">
-            <li className="admin-nav-item">
-              <div 
-                className={`admin-nav-link ${activeTab === "dashboard" ? "active" : ""}`}
-                onClick={() => setActiveTab("dashboard")}
-              >
-                <LayoutDashboard size={18} />
-                Overview Dashboard
-              </div>
-            </li>
-            <li className="admin-nav-item">
-              <div 
-                className={`admin-nav-link ${activeTab === "edit-brand" ? "active" : ""}`}
-                onClick={() => setActiveTab("edit-brand")}
-              >
-                <PlusCircle size={18} />
-                {brand ? "Edit Brand Listing" : "Add Brand Listing"}
-              </div>
-            </li>
-            <li className="admin-nav-item">
-              <div 
-                className={`admin-nav-link ${activeTab === "leads" ? "active" : ""}`}
-                onClick={() => setActiveTab("leads")}
-              >
-                <Users size={18} />
-                Investor Leads ({leads.length})
-              </div>
-            </li>
-          </ul>
+          <div style={{ padding: "0 28px" }}>
+            <ul className="admin-nav" style={{ marginTop: 0 }}>
+              <li className="admin-nav-item">
+                <div 
+                  className={`admin-nav-link ${activeTab === "dashboard" ? "active" : ""}`}
+                  onClick={() => setActiveTab("dashboard")}
+                >
+                  <LayoutDashboard size={18} />
+                  Overview Dashboard
+                </div>
+              </li>
+              <li className="admin-nav-item">
+                <div 
+                  className={`admin-nav-link ${activeTab === "edit-brand" ? "active" : ""}`}
+                  onClick={() => setActiveTab("edit-brand")}
+                >
+                  <PlusCircle size={18} />
+                  {brand ? "Edit Brand Listing" : "Add Brand Listing"}
+                </div>
+              </li>
+              <li className="admin-nav-item">
+                <div 
+                  className={`admin-nav-link ${activeTab === "leads" ? "active" : ""}`}
+                  onClick={() => setActiveTab("leads")}
+                >
+                  <Users size={18} />
+                  Investor Leads ({leads.length})
+                </div>
+              </li>
+            </ul>
+          </div>
         </div>
 
         <div style={{ padding: "0 24px" }}>
@@ -286,11 +383,11 @@ export default function BrandPanel() {
                         <h4 style={{ fontSize: "14px", marginBottom: "8px" }}>Directory Configuration</h4>
                         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", fontSize: "13px" }}>
                           <div>Category: <strong>{brand.category}</strong></div>
-                          <div>Investment: <strong>{formatLakhs(brand.minInvestment)} - {formatLakhs(brand.maxInvestment)}</strong></div>
+                          <div>Investment: <strong>{brand.investment_range || formatLakhs(brand.minInvestment)} - {brand.max_investment_limit || formatLakhs(brand.maxInvestment)}</strong></div>
                           <div>Franchise Fee: <strong>{formatLakhs(brand.franchiseFee)}</strong></div>
                           <div>Royalty Fee: <strong>{brand.royaltyFee || "0%"}</strong></div>
                           <div>Space Required: <strong>{brand.areaRequired || "N/A"}</strong></div>
-                          <div>HQ State: <strong>{brand.hq}</strong></div>
+                          <div>HQ State: <strong>{brand.hq} {brand.pincode && `(${brand.pincode})`}</strong></div>
                         </div>
                       </div>
 
@@ -423,29 +520,53 @@ export default function BrandPanel() {
                     </div>
 
                     <div className="form-group">
-                      <label>Min Investment Required (INR)</label>
+                      <label>Pincode <span>*</span></label>
                       <input
-                        type="number"
+                        type="text"
                         required
                         className="form-input"
-                        placeholder="e.g. 200000"
-                        value={formFields.minInvestment}
-                        onChange={(e) => setFormFields({ ...formFields, minInvestment: e.target.value })}
+                        placeholder="Enter Pincode"
+                        value={formFields.pincode}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          if (val === "" || (/^\d+$/.test(val) && val.length <= 6)) {
+                            setFormFields({ ...formFields, pincode: val });
+                          }
+                        }}
                         style={{ background: "#f8fafc" }}
                       />
                     </div>
 
                     <div className="form-group">
-                      <label>Max Investment Limit (INR)</label>
-                      <input
-                        type="number"
-                        required
+                      <label>Investment Range <span>*</span></label>
+                      <select
                         className="form-input"
-                        placeholder="e.g. 500000"
-                        value={formFields.maxInvestment}
-                        onChange={(e) => setFormFields({ ...formFields, maxInvestment: e.target.value })}
+                        required
+                        value={formFields.investment_range}
+                        onChange={(e) => setFormFields({ ...formFields, investment_range: e.target.value })}
                         style={{ background: "#f8fafc" }}
-                      />
+                      >
+                        <option value="" disabled>Select Investment Range</option>
+                        {INVESTMENT_OPTIONS.map((opt) => (
+                          <option key={opt} value={opt}>{opt}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div className="form-group">
+                      <label>Max Investment Limit <span>*</span></label>
+                      <select
+                        className="form-input"
+                        required
+                        value={formFields.max_investment_limit}
+                        onChange={(e) => setFormFields({ ...formFields, max_investment_limit: e.target.value })}
+                        style={{ background: "#f8fafc" }}
+                      >
+                        <option value="" disabled>Select Max Investment Limit</option>
+                        {INVESTMENT_OPTIONS.map((opt) => (
+                          <option key={opt} value={opt}>{opt}</option>
+                        ))}
+                      </select>
                     </div>
 
                     <div className="form-group">
@@ -565,17 +686,37 @@ export default function BrandPanel() {
                         <th>Phone Number</th>
                         <th>Property Available</th>
                         <th>Preferred Location</th>
+                        <th>Date Received</th>
                         <th>Message Details</th>
                       </tr>
                     </thead>
                     <tbody>
                       {leads.map((l) => (
                         <tr key={l.id}>
-                          <td style={{ fontWeight: "700" }}>{l.name}</td>
+                          <td style={{ fontWeight: "700" }}>
+                            <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                              <span>{l.name}</span>
+                              {isNew(l.createdAt) && (
+                                <span style={{
+                                  background: "var(--primary)",
+                                  color: "white",
+                                  fontSize: "10px",
+                                  fontWeight: "800",
+                                  padding: "2px 6px",
+                                  borderRadius: "4px",
+                                  textTransform: "uppercase",
+                                  letterSpacing: "0.05em"
+                                }}>NEW</span>
+                              )}
+                            </div>
+                          </td>
                           <td>{l.email}</td>
                           <td>{l.phone}</td>
                           <td>{l.propertyAvailable} {l.propertyArea && `(${l.propertyArea})`}</td>
                           <td>{l.preferredLocation}</td>
+                          <td style={{ fontSize: "13px", color: "var(--text-muted)" }}>
+                            {l.createdAt ? new Date(l.createdAt).toLocaleDateString("en-IN", { day: 'numeric', month: 'short', year: 'numeric' }) : "N/A"}
+                          </td>
                           <td style={{ fontSize: "12px", color: "var(--text-muted)", maxWidth: "250px" }}>{l.comments}</td>
                         </tr>
                       ))}

@@ -10,9 +10,13 @@ const InvestorSchema = new mongoose.Schema({
     required: [true, 'Investor name is required'],
     trim: true
   },
+  user: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    required: [true, 'User reference is required']
+  },
   email: {
     type: String,
-    required: [true, 'Email is required'],
     lowercase: true,
     trim: true
   },
@@ -26,11 +30,26 @@ const InvestorSchema = new mongoose.Schema({
   },
   budgetMin: {
     type: Number,
-    required: [true, 'Minimum budget is required']
+    default: 0
   },
   budgetMax: {
     type: Number,
-    required: [true, 'Maximum budget is required']
+    default: 0
+  },
+  pincode: {
+    type: String,
+    required: [true, 'Pincode is required'],
+    trim: true
+  },
+  investment_range: {
+    type: String,
+    required: [true, 'Investment range is required'],
+    trim: true
+  },
+  max_investment_limit: {
+    type: String,
+    required: [true, 'Max investment limit is required'],
+    trim: true
   },
   preferredLocation: {
     type: String,

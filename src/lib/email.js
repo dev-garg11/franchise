@@ -327,3 +327,100 @@ export async function sendInvestorAssignedBrandEmail(investor, brand) {
     html: baseTemplate(title, contentHeader, contentBody),
   });
 }
+
+// 7. Send Admin Notification for New Brand
+export async function sendAdminNewBrandNotification(brand) {
+  const adminEmail = process.env.ADMIN_EMAIL || SMTP_USER || "admin@franchiseapply.com";
+  const title = "New Brand Registration Pending Review - Admin Alert";
+  const contentHeader = `
+    <span class="badge badge-pending">Action Required</span>
+    <h2>Hello Admin,</h2>
+    <p>A new brand has registered on Franchise Apply and is pending review and approval.</p>
+  `;
+  const contentBody = `
+    <table class="details-table">
+      <tr>
+        <td class="label">Brand Name</td>
+        <td class="value"><strong>${brand.name}</strong></td>
+      </tr>
+      <tr>
+        <td class="label">Company Name</td>
+        <td class="value">${brand.company || "N/A"}</td>
+      </tr>
+      <tr>
+        <td class="label">Category</td>
+        <td class="value">${brand.category}</td>
+      </tr>
+      <tr>
+        <td class="label">Investment Range</td>
+        <td class="value">${brand.investment_range || formatLakhs(brand.minInvestment)} - ${brand.max_investment_limit || formatLakhs(brand.maxInvestment)}</td>
+      </tr>
+      <tr>
+        <td class="label">HQ Location</td>
+        <td class="value">${brand.hq} ${brand.pincode ? `(${brand.pincode})` : ""}</td>
+      </tr>
+      <tr>
+        <td class="label">Email Address</td>
+        <td class="value">${brand.email}</td>
+      </tr>
+      <tr>
+        <td class="label">Phone Number</td>
+        <td class="value">${brand.phone || "N/A"}</td>
+      </tr>
+    </table>
+    <p>Please log in to the Admin Dashboard to approve or reject this brand listing.</p>
+    <a href="http://localhost:3000/admin" class="btn" style="color: white;">Go to Admin Panel</a>
+  `;
+
+  return await sendMail({
+    to: adminEmail,
+    subject: title,
+    html: baseTemplate(title, contentHeader, contentBody),
+  });
+}
+
+// 8. Send Admin Notification for New Investor
+export async function sendAdminNewInvestorNotification(investor) {
+  const adminEmail = process.env.ADMIN_EMAIL || SMTP_USER || "admin@franchiseapply.com";
+  const title = "New Investor Registered - Admin Alert";
+  const contentHeader = `
+    <h2>Hello Admin,</h2>
+    <p>A new investor has registered on Franchise Apply and submitted their matching preferences.</p>
+  `;
+  const contentBody = `
+    <table class="details-table">
+      <tr>
+        <td class="label">Investor Name</td>
+        <td class="value"><strong>${investor.name}</strong></td>
+      </tr>
+      <tr>
+        <td class="label">Investment Range</td>
+        <td class="value">${investor.investment_range || formatLakhs(investor.budgetMin)} - ${investor.max_investment_limit || formatLakhs(investor.budgetMax)}</td>
+      </tr>
+      <tr>
+        <td class="label">Pincode</td>
+        <td class="value">${investor.pincode}</td>
+      </tr>
+      <tr>
+        <td class="label">Preferred Location</td>
+        <td class="value">${investor.preferredLocation || "Any Location"}</td>
+      </tr>
+      <tr>
+        <td class="label">Email Address</td>
+        <td class="value">${investor.email}</td>
+      </tr>
+      <tr>
+        <td class="label">Phone Number</td>
+        <td class="value">${investor.phone}</td>
+      </tr>
+    </table>
+    <p>Please log in to the Admin Dashboard to manage and assign suitable franchise opportunities to this investor.</p>
+    <a href="http://localhost:3000/admin" class="btn" style="color: white;">Go to Admin Panel</a>
+  `;
+
+  return await sendMail({
+    to: adminEmail,
+    subject: title,
+    html: baseTemplate(title, contentHeader, contentBody),
+  });
+}

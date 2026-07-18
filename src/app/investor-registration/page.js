@@ -4,14 +4,45 @@ import { useState } from "react";
 import Link from "next/link";
 import { CheckCircle2, ShieldCheck, Mail, MapPin, IndianRupee, Lock } from "lucide-react";
 
+const INVESTMENT_OPTIONS = [
+  "Rs. 10,000 - 50,000",
+  "Rs. 50,000 - 2 Lakh",
+  "Rs. 2 Lakh - 5 Lakh",
+  "Rs. 5 Lakh - 10 Lakh",
+  "Rs. 10 Lakh - 20 Lakh",
+  "Rs. 20 Lakh - 30 Lakh",
+  "Rs. 30 Lakh - 50 Lakh",
+  "Rs. 50 Lakh - 1 Crore",
+  "Rs. 1 Crore - 2 Crore",
+  "Rs. 2 Crore - 5 Crore",
+  "Above Rs. 5 Crore"
+];
+
+const mapRangeToNumeric = (rangeStr, isMax = false) => {
+  if (!rangeStr) return 0;
+  if (rangeStr === "Rs. 10,000 - 50,000") return isMax ? 50000 : 10000;
+  if (rangeStr === "Rs. 50,000 - 2 Lakh") return isMax ? 200000 : 50000;
+  if (rangeStr === "Rs. 2 Lakh - 5 Lakh") return isMax ? 500000 : 200000;
+  if (rangeStr === "Rs. 5 Lakh - 10 Lakh") return isMax ? 1000000 : 500000;
+  if (rangeStr === "Rs. 10 Lakh - 20 Lakh") return isMax ? 2000000 : 1000000;
+  if (rangeStr === "Rs. 20 Lakh - 30 Lakh") return isMax ? 3000000 : 2000000;
+  if (rangeStr === "Rs. 30 Lakh - 50 Lakh") return isMax ? 5000000 : 3000000;
+  if (rangeStr === "Rs. 50 Lakh - 1 Crore") return isMax ? 10000000 : 5000000;
+  if (rangeStr === "Rs. 1 Crore - 2 Crore") return isMax ? 20000000 : 10000000;
+  if (rangeStr === "Rs. 2 Crore - 5 Crore") return isMax ? 50000000 : 20000000;
+  if (rangeStr === "Above Rs. 5 Crore") return isMax ? 999999999 : 50000000;
+  return 0;
+};
+
 export default function InvestorRegistration() {
   const [formData, setFormData] = useState({
     name: "",
     email: "",
     phone: "",
     password: "",
-    budgetMin: "",
-    budgetMax: "",
+    pincode: "",
+    investment_range: "",
+    max_investment_limit: "",
     preferredLocation: "New Delhi",
     industries: [],
     propertyAvailable: "No",
@@ -48,17 +79,42 @@ export default function InvestorRegistration() {
     setLoading(true);
     setError("");
 
-    if (!formData.name || !formData.email || !formData.phone || !formData.password) {
-      setError("Please fill in all mandatory fields including password.");
+    if (
+      !formData.name ||
+      !formData.email ||
+      !formData.phone ||
+      !formData.password ||
+      !formData.pincode ||
+      !formData.investment_range ||
+      !formData.max_investment_limit
+    ) {
+      setError("Please fill in all mandatory fields.");
+      setLoading(false);
+      return;
+    }
+
+    if (formData.pincode.length !== 6 || !/^\d{6}$/.test(formData.pincode)) {
+      setError("Pincode must be exactly 6 digits.");
+      setLoading(false);
+      return;
+    }
+
+    const rangeIndex = INVESTMENT_OPTIONS.indexOf(formData.investment_range);
+    const maxIndex = INVESTMENT_OPTIONS.indexOf(formData.max_investment_limit);
+    if (maxIndex < rangeIndex) {
+      setError("Max Investment Limit should not be lower than the selected Investment Range.");
       setLoading(false);
       return;
     }
 
     try {
+      const rangeMinVal = mapRangeToNumeric(formData.investment_range, false);
+      const rangeMaxVal = mapRangeToNumeric(formData.max_investment_limit, true);
+
       const payload = {
         ...formData,
-        budgetMin: Number(formData.budgetMin) || 0,
-        budgetMax: Number(formData.budgetMax) || 0,
+        budgetMin: rangeMinVal,
+        budgetMax: rangeMaxVal,
       };
 
       const res = await fetch("/api/investors", {
@@ -180,32 +236,58 @@ export default function InvestorRegistration() {
                   className="form-input"
                 />
               </div>
+
+              <div className="form-group">
+                <label>Pincode <span>*</span></label>
+                <input
+                  type="text"
+                  name="pincode"
+                  required
+                  placeholder="Enter Pincode"
+                  value={formData.pincode}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    if (val === "" || (/^\d+$/.test(val) && val.length <= 6)) {
+                      handleChange(e);
+                    }
+                  }}
+                  className="form-input"
+                />
+              </div>
             </div>
 
             <h3 className="form-section-title">2. Investment Capacity</h3>
             <div className="form-grid">
               <div className="form-group">
-                <label>Minimum Budget (INR)</label>
-                <input
-                  type="number"
-                  name="budgetMin"
-                  placeholder="e.g. 200000"
-                  value={formData.budgetMin}
+                <label>Investment Range <span>*</span></label>
+                <select
+                  name="investment_range"
+                  required
+                  value={formData.investment_range}
                   onChange={handleChange}
                   className="form-input"
-                />
+                >
+                  <option value="" disabled>Select Investment Range</option>
+                  {INVESTMENT_OPTIONS.map((opt) => (
+                    <option key={opt} value={opt}>{opt}</option>
+                  ))}
+                </select>
               </div>
 
               <div className="form-group">
-                <label>Maximum Budget (INR)</label>
-                <input
-                  type="number"
-                  name="budgetMax"
-                  placeholder="e.g. 1000000"
-                  value={formData.budgetMax}
+                <label>Max Investment Limit <span>*</span></label>
+                <select
+                  name="max_investment_limit"
+                  required
+                  value={formData.max_investment_limit}
                   onChange={handleChange}
                   className="form-input"
-                />
+                >
+                  <option value="" disabled>Select Max Investment Limit</option>
+                  {INVESTMENT_OPTIONS.map((opt) => (
+                    <option key={opt} value={opt}>{opt}</option>
+                  ))}
+                </select>
               </div>
 
               <div className="form-group">

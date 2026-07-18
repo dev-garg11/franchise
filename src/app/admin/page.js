@@ -8,6 +8,14 @@ import {
   Home, Search, LayoutDashboard, ShieldCheck, Mail, Phone, MapPin 
 } from "lucide-react";
 
+const isNew = (dateString) => {
+  if (!dateString) return false;
+  const createdDate = new Date(dateString);
+  const diffTime = Math.abs(new Date() - createdDate);
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  return diffDays <= 3; // within last 3 days
+};
+
 export default function AdminDashboard() {
   const router = useRouter();
   const [authorized, setAuthorized] = useState(false);
@@ -187,47 +195,70 @@ export default function AdminDashboard() {
   return (
     <div className="admin-layout">
       {/* Sidebar Navigation */}
-      <aside className="admin-sidebar">
-        <div className="admin-sidebar-top">
-          <Link href="/" className="logo" style={{ display: "inline-flex" }}>
-            <span className="logo-icon">F</span>
-            <span style={{ color: "white" }}>Franchise</span><span style={{ color: "var(--secondary)" }}>Apply</span>
-          </Link>
+      <aside className="admin-sidebar" style={{ padding: "0 0 40px 0" }}>
+        <div className="admin-sidebar-top" style={{ padding: 0 }}>
+          <div style={{ 
+            display: "flex", 
+            justifyContent: "center", 
+            alignItems: "center", 
+            width: "100%", 
+            padding: "10px 20px 18px 20px", 
+            borderBottom: "1px solid rgba(255, 255, 255, 0.08)",
+            marginBottom: "16px",
+            background: "transparent"
+          }}>
+            <Link href="/admin/dashboard" style={{ display: "block" }}>
+              <img 
+                src="/logo-footer.png" 
+                alt="Franchise Roots" 
+                style={{ 
+                  width: "180px", 
+                  height: "auto", 
+                  objectFit: "contain",
+                  display: "block",
+                  margin: "0 auto",
+                  background: "transparent"
+                }} 
+              />
+            </Link>
+          </div>
 
-          <ul className="admin-nav">
-            <li className="admin-nav-item">
-              <div 
-                className={`admin-nav-link ${activeTab === "dashboard" ? "active" : ""}`}
-                onClick={() => { setActiveTab("dashboard"); setSearchTerm(""); }}
-              >
-                <LayoutDashboard size={18} />
-                Dashboard Overview
-              </div>
-            </li>
-            <li className="admin-nav-item">
-              <div 
-                className={`admin-nav-link ${activeTab === "brands" ? "active" : ""}`}
-                onClick={() => { setActiveTab("brands"); setSearchTerm(""); }}
-              >
-                <Building size={18} />
-                Manage Brands ({brands.length})
-                {pendingBrandsCount > 0 && (
-                  <span style={{ background: "var(--secondary)", color: "white", padding: "2px 6px", borderRadius: "50%", fontSize: "10px", marginLeft: "auto" }}>
-                    {pendingBrandsCount}
-                  </span>
-                )}
-              </div>
-            </li>
-            <li className="admin-nav-item">
-              <div 
-                className={`admin-nav-link ${activeTab === "investors" ? "active" : ""}`}
-                onClick={() => { setActiveTab("investors"); setSearchTerm(""); }}
-              >
-                <Users size={18} />
-                Investor Leads ({investors.length})
-              </div>
-            </li>
-          </ul>
+          <div style={{ padding: "0 28px" }}>
+            <ul className="admin-nav" style={{ marginTop: 0 }}>
+              <li className="admin-nav-item">
+                <div 
+                  className={`admin-nav-link ${activeTab === "dashboard" ? "active" : ""}`}
+                  onClick={() => { setActiveTab("dashboard"); setSearchTerm(""); }}
+                >
+                  <LayoutDashboard size={18} />
+                  Dashboard Overview
+                </div>
+              </li>
+              <li className="admin-nav-item">
+                <div 
+                  className={`admin-nav-link ${activeTab === "brands" ? "active" : ""}`}
+                  onClick={() => { setActiveTab("brands"); setSearchTerm(""); }}
+                >
+                  <Building size={18} />
+                  Manage Brands ({brands.length})
+                  {pendingBrandsCount > 0 && (
+                    <span style={{ background: "var(--secondary)", color: "white", padding: "2px 6px", borderRadius: "50%", fontSize: "10px", marginLeft: "auto" }}>
+                      {pendingBrandsCount}
+                    </span>
+                  )}
+                </div>
+              </li>
+              <li className="admin-nav-item">
+                <div 
+                  className={`admin-nav-link ${activeTab === "investors" ? "active" : ""}`}
+                  onClick={() => { setActiveTab("investors"); setSearchTerm(""); }}
+                >
+                  <Users size={18} />
+                  Investor Leads ({investors.length})
+                </div>
+              </li>
+            </ul>
+          </div>
         </div>
 
         <div style={{ padding: "0 24px" }}>
@@ -404,6 +435,7 @@ export default function AdminDashboard() {
                       <th>Category</th>
                       <th>Investment Min-Max</th>
                       <th>HQ</th>
+                      <th>Date Registered</th>
                       <th>Status</th>
                       <th>Attached Investors</th>
                       <th>Actions</th>
@@ -412,7 +444,7 @@ export default function AdminDashboard() {
                   <tbody>
                     {filteredBrands.length === 0 ? (
                       <tr>
-                        <td colSpan="7" style={{ textAlign: "center", padding: "30px", color: "var(--text-muted)" }}>
+                        <td colSpan="8" style={{ textAlign: "center", padding: "30px", color: "var(--text-muted)" }}>
                           No brands match search queries.
                         </td>
                       </tr>
@@ -423,15 +455,32 @@ export default function AdminDashboard() {
                           <tr key={b.id}>
                             <td>
                               <div>
-                                <div style={{ fontWeight: "700" }}>{b.name}</div>
+                                <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                                  <span style={{ fontWeight: "700" }}>{b.name}</span>
+                                  {isNew(b.createdAt) && (
+                                    <span style={{
+                                      background: "var(--primary)",
+                                      color: "white",
+                                      fontSize: "10px",
+                                      fontWeight: "800",
+                                      padding: "2px 6px",
+                                      borderRadius: "4px",
+                                      textTransform: "uppercase",
+                                      letterSpacing: "0.05em"
+                                    }}>NEW</span>
+                                  )}
+                                </div>
                                 <div style={{ fontSize: "12px", color: "var(--text-muted)" }}>{b.company}</div>
                               </div>
                             </td>
                             <td>{b.category}</td>
                             <td style={{ fontWeight: "600" }}>
-                              {formatLakhs(b.minInvestment)} - {formatLakhs(b.maxInvestment)}
+                              {b.investment_range || formatLakhs(b.minInvestment)} - {b.max_investment_limit || formatLakhs(b.maxInvestment)}
                             </td>
-                            <td>{b.hq}</td>
+                            <td>{b.hq} {b.pincode && `(${b.pincode})`}</td>
+                            <td style={{ fontSize: "13px", color: "var(--text-muted)" }}>
+                              {b.createdAt ? new Date(b.createdAt).toLocaleDateString("en-IN", { day: 'numeric', month: 'short', year: 'numeric' }) : "N/A"}
+                            </td>
                             <td>
                               <span className={`status-badge ${b.status.toLowerCase()}`}>
                                 {b.status}
@@ -490,20 +539,37 @@ export default function AdminDashboard() {
                       <th>Location Target</th>
                       <th>Sectors</th>
                       <th>Property Available</th>
+                      <th>Date Registered</th>
                       <th>Attached Brands</th>
                     </tr>
                   </thead>
                   <tbody>
                     {filteredInvestors.length === 0 ? (
                       <tr>
-                        <td colSpan="7" style={{ textAlign: "center", padding: "30px", color: "var(--text-muted)" }}>
+                        <td colSpan="8" style={{ textAlign: "center", padding: "30px", color: "var(--text-muted)" }}>
                           No investor profiles match queries.
                         </td>
                       </tr>
                     ) : (
                       filteredInvestors.map((i) => (
                         <tr key={i.id} style={{ cursor: "pointer" }} onClick={() => { setSelectedItem(i); setModalType("investor"); }}>
-                          <td style={{ fontWeight: "700" }}>{i.name}</td>
+                          <td style={{ fontWeight: "700" }}>
+                            <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                              <span>{i.name}</span>
+                              {isNew(i.createdAt) && (
+                                <span style={{
+                                  background: "var(--primary)",
+                                  color: "white",
+                                  fontSize: "10px",
+                                  fontWeight: "800",
+                                  padding: "2px 6px",
+                                  borderRadius: "4px",
+                                  textTransform: "uppercase",
+                                  letterSpacing: "0.05em"
+                                }}>NEW</span>
+                              )}
+                            </div>
+                          </td>
                           <td>
                             <div>
                               <div>{i.email}</div>
@@ -523,6 +589,9 @@ export default function AdminDashboard() {
                             <span style={{ fontWeight: "500", color: i.propertyAvailable === "Yes" ? "var(--success)" : "var(--text-muted)" }}>
                               {i.propertyAvailable} {i.propertyArea && `(${i.propertyArea})`}
                             </span>
+                          </td>
+                          <td style={{ fontSize: "13px", color: "var(--text-muted)" }}>
+                            {i.createdAt ? new Date(i.createdAt).toLocaleDateString("en-IN", { day: 'numeric', month: 'short', year: 'numeric' }) : "N/A"}
                           </td>
                           <td>
                             {i.assignedBrands && i.assignedBrands.length > 0 ? (
@@ -568,7 +637,7 @@ export default function AdminDashboard() {
                 />
                 <div>
                   <h4 style={{ fontSize: "16px", fontWeight: "700" }}>{selectedItem.company}</h4>
-                  <p style={{ color: "var(--text-muted)", fontSize: "13px" }}>HQ State: <strong>{selectedItem.hq}</strong></p>
+                  <p style={{ color: "var(--text-muted)", fontSize: "13px" }}>HQ State: <strong>{selectedItem.hq} {selectedItem.pincode && `(${selectedItem.pincode})`}</strong></p>
                   <p style={{ color: "var(--text-muted)", fontSize: "13px" }}>Category: <strong>{selectedItem.category}</strong></p>
                   <span className={`status-badge ${selectedItem.status.toLowerCase()}`} style={{ marginTop: "4px" }}>
                     Status: {selectedItem.status}
@@ -579,7 +648,7 @@ export default function AdminDashboard() {
               <div style={{ background: "#f8fafc", padding: "16px", borderRadius: "8px", marginBottom: "20px" }}>
                 <h4 style={{ fontSize: "14px", marginBottom: "8px" }}>Investment Metrics</h4>
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", fontSize: "13px" }}>
-                  <div>Budget Required: <strong>{formatLakhs(selectedItem.minInvestment)} - {formatLakhs(selectedItem.maxInvestment)}</strong></div>
+                  <div>Budget Required: <strong>{selectedItem.investment_range || formatLakhs(selectedItem.minInvestment)} - {selectedItem.max_investment_limit || formatLakhs(selectedItem.maxInvestment)}</strong></div>
                   <div>Franchise Fee: <strong>{selectedItem.franchiseFee ? formatLakhs(selectedItem.franchiseFee) : "N/A"}</strong></div>
                   <div>Royalty: <strong>{selectedItem.royaltyFee || "0%"}</strong></div>
                   <div>Space Required: <strong>{selectedItem.areaRequired || "Any Area"}</strong></div>
@@ -670,13 +739,17 @@ export default function AdminDashboard() {
                 <h4 style={{ fontSize: "14px", marginBottom: "8px" }}>Contact Profiles</h4>
                 <p style={{ fontSize: "13px", display: "flex", gap: "6px", alignItems: "center" }}><Mail size={12} /> {selectedItem.email}</p>
                 <p style={{ fontSize: "13px", display: "flex", gap: "6px", alignItems: "center", marginTop: "4px" }}><Phone size={12} /> {selectedItem.phone}</p>
-                <p style={{ fontSize: "13px", display: "flex", gap: "6px", alignItems: "center", marginTop: "4px" }}><MapPin size={12} /> Target: {selectedItem.preferredLocation}</p>
+                <p style={{ fontSize: "13px", display: "flex", gap: "6px", alignItems: "center", marginTop: "4px" }}>
+                  <MapPin size={12} /> Target: {selectedItem.preferredLocation} {selectedItem.pincode && `(Pincode: ${selectedItem.pincode})`}
+                </p>
               </div>
 
               <div style={{ background: "#f8fafc", padding: "16px", borderRadius: "8px", marginBottom: "20px" }}>
                 <h4 style={{ fontSize: "14px", marginBottom: "8px" }}>Investment Capacity</h4>
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", fontSize: "13px" }}>
-                  <div>Budget Range: <strong>{formatLakhs(selectedItem.budgetMin)} - {formatLakhs(selectedItem.budgetMax)}</strong></div>
+                  <div style={{ gridColumn: "span 2" }}>
+                    Budget Range: <strong>{selectedItem.investment_range || formatLakhs(selectedItem.budgetMin)} - {selectedItem.max_investment_limit || formatLakhs(selectedItem.budgetMax)}</strong>
+                  </div>
                   <div>Sectors Interested: <strong>{selectedItem.industries && selectedItem.industries.length > 0 ? selectedItem.industries.join(", ") : "Any"}</strong></div>
                   <div>Property Available: <strong>{selectedItem.propertyAvailable}</strong></div>
                   <div>Property Size: <strong>{selectedItem.propertyArea || "N/A"}</strong></div>
