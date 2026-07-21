@@ -390,6 +390,12 @@ export async function saveInvestor(investorData) {
       ...investorData,
       user: userObj._id,
       id,
+      brandId: investorData.brandId || null,
+      brandName: investorData.brandName || null,
+      category: investorData.category || null,
+      investorId: investorData.investorId || null,
+      status: investorData.status || "Pending",
+      appliedAt: investorData.appliedAt || new Date(),
       createdAt: investorData.createdAt || new Date()
     };
     delete investorPayload.password;
@@ -549,6 +555,47 @@ export async function loginUser(identifier, password) {
   } catch (error) {
     console.error("Error during login:", error);
     return { success: false, message: "Server error during login." };
+  }
+}
+
+export async function updateInvestor(id, updatedFields) {
+  await dbConnect();
+  try {
+    const query = mongoose.Types.ObjectId.isValid(id)
+      ? { $or: [{ _id: id }, { id }] }
+      : { id };
+
+    const updated = await Investor.findOneAndUpdate(
+      query,
+      { $set: updatedFields },
+      { new: true }
+    ).populate('user').lean();
+
+    if (!updated) return null;
+
+    return {
+      ...updated,
+      id: updated.id || updated._id.toString(),
+      email: updated.user ? updated.user.email : (updated.email || "")
+    };
+  } catch (error) {
+    console.error("Error updating investor in MongoDB:", error);
+    throw error;
+  }
+}
+
+export async function deleteInvestor(id) {
+  await dbConnect();
+  try {
+    const query = mongoose.Types.ObjectId.isValid(id)
+      ? { $or: [{ _id: id }, { id }] }
+      : { id };
+
+    const result = await Investor.deleteOne(query);
+    return result.deletedCount > 0;
+  } catch (error) {
+    console.error("Error deleting investor from MongoDB:", error);
+    throw error;
   }
 }
 

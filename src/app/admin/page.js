@@ -3,9 +3,9 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { 
-  Building, Users, FileText, CheckCircle, XCircle, Trash2, LogOut, 
-  Home, Search, LayoutDashboard, ShieldCheck, Mail, Phone, MapPin 
+import {
+  Building, Users, FileText, CheckCircle, XCircle, Trash2, LogOut,
+  Home, Search, LayoutDashboard, ShieldCheck, Mail, Phone, MapPin
 } from "lucide-react";
 
 const isNew = (dateString) => {
@@ -26,6 +26,11 @@ export default function AdminDashboard() {
   const [investors, setInvestors] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
+
+  // Investor Leads Filters State
+  const [filterBrand, setFilterBrand] = useState("");
+  const [filterCategory, setFilterCategory] = useState("");
+  const [filterStatus, setFilterStatus] = useState("");
 
   // Details Modal state
   const [selectedItem, setSelectedItem] = useState(null);
@@ -157,6 +162,56 @@ export default function AdminDashboard() {
     }
   };
 
+  // Approve Investor Lead
+  const handleApproveInvestor = async (id) => {
+    try {
+      const res = await fetch(`/api/investors/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: "Approved" })
+      });
+      if (res.ok) {
+        fetchData();
+        setSelectedItem(null);
+      }
+    } catch (err) {
+      console.error("Failed to approve investor lead:", err);
+    }
+  };
+
+  // Decline Investor Lead
+  const handleDeclineInvestor = async (id) => {
+    try {
+      const res = await fetch(`/api/investors/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: "Rejected" })
+      });
+      if (res.ok) {
+        fetchData();
+        setSelectedItem(null);
+      }
+    } catch (err) {
+      console.error("Failed to decline investor lead:", err);
+    }
+  };
+
+  // Delete Investor Lead
+  const handleDeleteInvestor = async (id) => {
+    if (!confirm("Are you sure you want to permanently delete this investor lead?")) return;
+    try {
+      const res = await fetch(`/api/investors/${id}`, {
+        method: "DELETE"
+      });
+      if (res.ok) {
+        fetchData();
+        setSelectedItem(null);
+      }
+    } catch (err) {
+      console.error("Failed to delete investor lead:", err);
+    }
+  };
+
   // Formatting helpers
   const formatLakhs = (val) => {
     if (!val) return "N/A";
@@ -180,45 +235,71 @@ export default function AdminDashboard() {
   const totalInvestorsCount = investors.length;
 
   // Filtered Lists
-  const filteredBrands = brands.filter(b => 
+  const filteredBrands = brands.filter(b =>
     b.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     b.company.toLowerCase().includes(searchTerm.toLowerCase()) ||
     b.category.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const filteredInvestors = investors.filter(i => 
-    i.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    i.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    i.preferredLocation.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredInvestors = investors.filter(i => {
+    // 1. Search by name, email, phone or target location
+    const searchLower = searchTerm.toLowerCase();
+    const matchesSearch = !searchTerm ? true : (
+      (i.name && i.name.toLowerCase().includes(searchLower)) ||
+      (i.email && i.email.toLowerCase().includes(searchLower)) ||
+      (i.phone && i.phone.includes(searchTerm)) ||
+      (i.preferredLocation && i.preferredLocation.toLowerCase().includes(searchLower))
+    );
+
+    // 2. Filter by Brand (both assignedBrands array or applied brandId/brandName if saved as application)
+    const matchesBrand = !filterBrand ? true : (
+      (i.brandId && i.brandId === filterBrand) || 
+      (i.brandName && i.brandName.toLowerCase().includes(filterBrand.toLowerCase())) ||
+      (i.assignedBrands && i.assignedBrands.includes(filterBrand))
+    );
+
+    // 3. Filter by Category
+    const matchesCategory = !filterCategory ? true : (
+      (i.category && i.category.toLowerCase() === filterCategory.toLowerCase()) ||
+      (i.industries && i.industries.some(ind => ind.toLowerCase() === filterCategory.toLowerCase()))
+    );
+
+    // 4. Filter by Status
+    const displayStatus = i.status || "Pending";
+    const matchesStatus = !filterStatus ? true : (
+      displayStatus.toLowerCase() === filterStatus.toLowerCase()
+    );
+
+    return matchesSearch && matchesBrand && matchesCategory && matchesStatus;
+  });
 
   return (
     <div className="admin-layout">
       {/* Sidebar Navigation */}
       <aside className="admin-sidebar" style={{ padding: "0 0 40px 0" }}>
         <div className="admin-sidebar-top" style={{ padding: 0 }}>
-          <div style={{ 
-            display: "flex", 
-            justifyContent: "center", 
-            alignItems: "center", 
-            width: "100%", 
-            padding: "10px 20px 18px 20px", 
+          <div style={{
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            width: "100%",
+            padding: "10px 20px 18px 20px",
             borderBottom: "1px solid rgba(255, 255, 255, 0.08)",
             marginBottom: "16px",
             background: "transparent"
           }}>
             <Link href="/admin/dashboard" style={{ display: "block" }}>
-              <img 
-                src="/logo-footer.png" 
-                alt="Franchise Roots" 
-                style={{ 
-                  width: "180px", 
-                  height: "auto", 
+              <img
+                src="/logo-footer.png"
+                alt="Franchise Roots"
+                style={{
+                  height: "150px",
+                  width: "auto",
                   objectFit: "contain",
                   display: "block",
                   margin: "0 auto",
                   background: "transparent"
-                }} 
+                }}
               />
             </Link>
           </div>
@@ -226,7 +307,7 @@ export default function AdminDashboard() {
           <div style={{ padding: "0 28px" }}>
             <ul className="admin-nav" style={{ marginTop: 0 }}>
               <li className="admin-nav-item">
-                <div 
+                <div
                   className={`admin-nav-link ${activeTab === "dashboard" ? "active" : ""}`}
                   onClick={() => { setActiveTab("dashboard"); setSearchTerm(""); }}
                 >
@@ -235,7 +316,7 @@ export default function AdminDashboard() {
                 </div>
               </li>
               <li className="admin-nav-item">
-                <div 
+                <div
                   className={`admin-nav-link ${activeTab === "brands" ? "active" : ""}`}
                   onClick={() => { setActiveTab("brands"); setSearchTerm(""); }}
                 >
@@ -249,7 +330,7 @@ export default function AdminDashboard() {
                 </div>
               </li>
               <li className="admin-nav-item">
-                <div 
+                <div
                   className={`admin-nav-link ${activeTab === "investors" ? "active" : ""}`}
                   onClick={() => { setActiveTab("investors"); setSearchTerm(""); }}
                 >
@@ -333,7 +414,7 @@ export default function AdminDashboard() {
 
                 {/* Dashboard Panels */}
                 <div style={{ display: "grid", gridTemplateColumns: "1.3fr 1fr", gap: "24px" }}>
-                  
+
                   {/* Left: Pending Brands Queue */}
                   <div className="table-container">
                     <div className="table-header">
@@ -342,7 +423,7 @@ export default function AdminDashboard() {
                         View All Brands
                       </button>
                     </div>
-                    
+
                     {brands.filter(b => b.status === "Pending").length === 0 ? (
                       <div className="flex-center" style={{ padding: "40px", flexDirection: "column", color: "var(--text-muted)" }}>
                         <CheckCircle size={32} color="var(--success)" style={{ marginBottom: "12px" }} />
@@ -391,8 +472,8 @@ export default function AdminDashboard() {
                     ) : (
                       <div style={{ padding: "16px", display: "flex", flexDirection: "column", gap: "12px" }}>
                         {investors.slice(-4).reverse().map((lead) => (
-                          <div 
-                            key={lead.id} 
+                          <div
+                            key={lead.id}
                             style={{ background: "#f8fafc", border: "1px solid var(--light-border)", padding: "14px", borderRadius: "8px", cursor: "pointer" }}
                             onClick={() => { setSelectedItem(lead); setModalType("investor"); }}
                           >
@@ -530,87 +611,200 @@ export default function AdminDashboard() {
                   </div>
                 </div>
 
+                {/* Filter Bar */}
+                <div className="filter-bar" style={{
+                  display: "flex",
+                  gap: "16px",
+                  padding: "16px 24px",
+                  background: "#f8fafc",
+                  borderBottom: "1px solid var(--light-border)",
+                  alignItems: "center",
+                  flexWrap: "wrap"
+                }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "13px" }}>
+                    <span style={{ fontWeight: "600", color: "var(--text-muted)" }}>Brand:</span>
+                    <select
+                      value={filterBrand}
+                      onChange={(e) => setFilterBrand(e.target.value)}
+                      style={{ padding: "6px 12px", borderRadius: "6px", border: "1px solid var(--light-border)", fontSize: "13px", background: "white", minWidth: "150px" }}
+                    >
+                      <option value="">All Brands</option>
+                      {brands.map(b => (
+                        <option key={b.id || b._id} value={b.id || b._id}>{b.name}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "13px" }}>
+                    <span style={{ fontWeight: "600", color: "var(--text-muted)" }}>Category:</span>
+                    <select
+                      value={filterCategory}
+                      onChange={(e) => setFilterCategory(e.target.value)}
+                      style={{ padding: "6px 12px", borderRadius: "6px", border: "1px solid var(--light-border)", fontSize: "13px", background: "white", minWidth: "150px" }}
+                    >
+                      <option value="">All Categories</option>
+                      <option value="Food and Beverage">Food & Beverage</option>
+                      <option value="Retail">Retail</option>
+                      <option value="Education">Education</option>
+                      <option value="Automobiles">Automobiles</option>
+                      <option value="Health and Wellness">Health & Wellness</option>
+                      <option value="Business Services">Business Services</option>
+                    </select>
+                  </div>
+
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "13px" }}>
+                    <span style={{ fontWeight: "600", color: "var(--text-muted)" }}>Status:</span>
+                    <select
+                      value={filterStatus}
+                      onChange={(e) => setFilterStatus(e.target.value)}
+                      style={{ padding: "6px 12px", borderRadius: "6px", border: "1px solid var(--light-border)", fontSize: "13px", background: "white", minWidth: "120px" }}
+                    >
+                      <option value="">All Statuses</option>
+                      <option value="Pending">Pending</option>
+                      <option value="Approved">Approved</option>
+                      <option value="Rejected">Rejected</option>
+                    </select>
+                  </div>
+
+                  {(filterBrand || filterCategory || filterStatus) && (
+                    <button
+                      onClick={() => { setFilterBrand(""); setFilterCategory(""); setFilterStatus(""); }}
+                      style={{
+                        padding: "6px 14px",
+                        fontSize: "13px",
+                        fontWeight: "600",
+                        background: "none",
+                        border: "1px solid var(--primary)",
+                        color: "var(--primary)",
+                        borderRadius: "6px",
+                        cursor: "pointer"
+                      }}
+                    >
+                      Clear Filters
+                    </button>
+                  )}
+                </div>
+
                 <table className="admin-table">
                   <thead>
                     <tr>
                       <th>Investor Name</th>
                       <th>Contact Info</th>
+                      <th>Applied Brand</th>
+                      <th>Category</th>
                       <th>Budget Range</th>
                       <th>Location Target</th>
-                      <th>Sectors</th>
-                      <th>Property Available</th>
-                      <th>Date Registered</th>
-                      <th>Attached Brands</th>
+                      <th>Status</th>
+                      <th>Applied Date</th>
+                      <th>Actions</th>
                     </tr>
                   </thead>
                   <tbody>
                     {filteredInvestors.length === 0 ? (
                       <tr>
-                        <td colSpan="8" style={{ textAlign: "center", padding: "30px", color: "var(--text-muted)" }}>
+                        <td colSpan="9" style={{ textAlign: "center", padding: "30px", color: "var(--text-muted)" }}>
                           No investor profiles match queries.
                         </td>
                       </tr>
                     ) : (
-                      filteredInvestors.map((i) => (
-                        <tr key={i.id} style={{ cursor: "pointer" }} onClick={() => { setSelectedItem(i); setModalType("investor"); }}>
-                          <td style={{ fontWeight: "700" }}>
-                            <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                              <span>{i.name}</span>
-                              {isNew(i.createdAt) && (
-                                <span style={{
-                                  background: "var(--primary)",
-                                  color: "white",
-                                  fontSize: "10px",
-                                  fontWeight: "800",
-                                  padding: "2px 6px",
-                                  borderRadius: "4px",
-                                  textTransform: "uppercase",
-                                  letterSpacing: "0.05em"
-                                }}>NEW</span>
-                              )}
-                            </div>
-                          </td>
-                          <td>
-                            <div>
-                              <div>{i.email}</div>
-                              <div style={{ fontSize: "12px", color: "var(--text-muted)" }}>{i.phone}</div>
-                            </div>
-                          </td>
-                          <td style={{ fontWeight: "600", color: "var(--success)" }}>
-                            {formatLakhs(i.budgetMin)} - {formatLakhs(i.budgetMax)}
-                          </td>
-                          <td>{i.preferredLocation}</td>
-                          <td>
-                            {i.industries && i.industries.length > 0 
-                              ? i.industries.join(", ") 
-                              : "Any Industry"}
-                          </td>
-                          <td>
-                            <span style={{ fontWeight: "500", color: i.propertyAvailable === "Yes" ? "var(--success)" : "var(--text-muted)" }}>
-                              {i.propertyAvailable} {i.propertyArea && `(${i.propertyArea})`}
-                            </span>
-                          </td>
-                          <td style={{ fontSize: "13px", color: "var(--text-muted)" }}>
-                            {i.createdAt ? new Date(i.createdAt).toLocaleDateString("en-IN", { day: 'numeric', month: 'short', year: 'numeric' }) : "N/A"}
-                          </td>
-                          <td>
-                            {i.assignedBrands && i.assignedBrands.length > 0 ? (
-                              <div style={{ display: "flex", gap: "4px", flexWrap: "wrap" }}>
-                                {i.assignedBrands.map(brandId => {
-                                  const brand = brands.find(b => b.id === brandId || b._id === brandId);
-                                  return brand ? (
-                                    <span key={brandId} className="status-badge approved" style={{ background: "rgba(37,99,235,0.08)", color: "var(--primary)", fontSize: "11px", whiteSpace: "nowrap" }}>
-                                      {brand.name}
-                                    </span>
-                                  ) : null;
-                                })}
+                      filteredInvestors.map((i) => {
+                        // Resolve brand connection
+                        let displayBrandName = "General Lead";
+                        let targetBrand = null;
+                        if (i.brandId) {
+                          targetBrand = brands.find(b => b.id === i.brandId || b._id === i.brandId);
+                          displayBrandName = i.brandName || (targetBrand ? targetBrand.name : "Unknown Brand");
+                        } else if (i.assignedBrands && i.assignedBrands.length > 0) {
+                          const firstBrandId = i.assignedBrands[0];
+                          targetBrand = brands.find(b => b.id === firstBrandId || b._id === firstBrandId);
+                          displayBrandName = targetBrand ? targetBrand.name : "General Lead";
+                        }
+
+                        const displayCategory = i.category || (i.industries && i.industries.length > 0 ? i.industries[0] : "General");
+                        const displayStatus = i.status || "Pending";
+                        const statusClass = displayStatus.toLowerCase() === "rejected" ? "declined" : displayStatus.toLowerCase();
+                        const displayDate = i.appliedAt || i.createdAt;
+
+                        return (
+                          <tr key={i.id || i._id} style={{ cursor: "pointer" }} onClick={() => { setSelectedItem(i); setModalType("investor"); }}>
+                            <td style={{ fontWeight: "700" }}>
+                              <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                                <span>{i.name}</span>
+                                {isNew(displayDate) && (
+                                  <span style={{
+                                    background: "var(--primary)",
+                                    color: "white",
+                                    fontSize: "10px",
+                                    fontWeight: "800",
+                                    padding: "2px 6px",
+                                    borderRadius: "4px",
+                                    textTransform: "uppercase",
+                                    letterSpacing: "0.05em"
+                                  }}>NEW</span>
+                                )}
                               </div>
-                            ) : (
-                              <span style={{ color: "var(--text-muted)", fontSize: "12px" }}>None</span>
-                            )}
-                          </td>
-                        </tr>
-                      ))
+                            </td>
+                            <td>
+                              <div>
+                                <div>{i.email}</div>
+                                <div style={{ fontSize: "12px", color: "var(--text-muted)" }}>{i.phone}</div>
+                              </div>
+                            </td>
+                            <td>
+                              {targetBrand ? (
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setSelectedItem(targetBrand);
+                                    setModalType("brand");
+                                  }}
+                                  style={{
+                                    background: "none",
+                                    border: "none",
+                                    color: "var(--primary)",
+                                    textDecoration: "underline",
+                                    fontWeight: "600",
+                                    cursor: "pointer",
+                                    padding: 0,
+                                    textAlign: "left"
+                                  }}
+                                >
+                                  {displayBrandName}
+                                </button>
+                              ) : (
+                                <span style={{ color: "var(--text-muted)" }}>{displayBrandName}</span>
+                              )}
+                            </td>
+                            <td>{displayCategory}</td>
+                            <td style={{ fontWeight: "600", color: "var(--success)" }}>
+                              {formatLakhs(i.budgetMin)} - {formatLakhs(i.budgetMax)}
+                            </td>
+                            <td>{i.preferredLocation}</td>
+                            <td>
+                              <span className={`status-badge ${statusClass}`}>
+                                {displayStatus}
+                              </span>
+                            </td>
+                            <td style={{ fontSize: "13px", color: "var(--text-muted)" }}>
+                              {displayDate ? new Date(displayDate).toLocaleDateString("en-IN", { day: 'numeric', month: 'short', year: 'numeric' }) : "N/A"}
+                            </td>
+                            <td onClick={(e) => e.stopPropagation()}>
+                              <button className="action-btn view" onClick={() => { setSelectedItem(i); setModalType("investor"); }}>
+                                Details
+                              </button>
+                              {displayStatus === "Pending" && (
+                                <>
+                                  <button className="action-btn approve" onClick={() => handleApproveInvestor(i.id || i._id)}>Approve</button>
+                                  <button className="action-btn reject" style={{ background: "none", color: "var(--error)", border: "1px solid var(--error)" }} onClick={() => handleDeclineInvestor(i.id || i._id)}>Decline</button>
+                                </>
+                              )}
+                              <button className="action-btn reject" style={{ background: "none", color: "var(--error)", border: "1px solid var(--error)", marginLeft: "4px" }} onClick={() => handleDeleteInvestor(i.id || i._id)}>
+                                <Trash2 size={14} />
+                              </button>
+                            </td>
+                          </tr>
+                        );
+                      })
                     )}
                   </tbody>
                 </table>
@@ -630,8 +824,8 @@ export default function AdminDashboard() {
             </div>
             <div className="modal-body">
               <div style={{ display: 'flex', gap: '20px', marginBottom: '24px' }}>
-                <img 
-                  src={selectedItem.image || "https://images.unsplash.com/photo-1524178232363-1fb2b075b655?auto=format&fit=crop&q=80&w=400"} 
+                <img
+                  src={selectedItem.image || "https://images.unsplash.com/photo-1524178232363-1fb2b075b655?auto=format&fit=crop&q=80&w=400"}
                   alt={selectedItem.name}
                   style={{ width: "80px", height: "80px", borderRadius: "8px", objectFit: "cover" }}
                 />
@@ -701,8 +895,8 @@ export default function AdminDashboard() {
                         );
                       })}
                     </div>
-                    <button 
-                      className="btn btn-primary" 
+                    <button
+                      className="btn btn-primary"
                       style={{ width: "100%", fontSize: "13px", padding: "8px" }}
                       onClick={handleSaveBrandAssignment}
                       disabled={isSavingAssign}
@@ -757,24 +951,38 @@ export default function AdminDashboard() {
                 </div>
               </div>
 
-              {/* Attached Brands */}
-              <div style={{ background: "#f8fafc", padding: "16px", borderRadius: "8px", marginBottom: "20px" }}>
-                <h4 style={{ fontSize: "14px", marginBottom: "8px" }}>Attached Franchise Brands</h4>
-                {selectedItem.assignedBrands && selectedItem.assignedBrands.length > 0 ? (
-                  <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
-                    {selectedItem.assignedBrands.map(brandId => {
-                      const brand = brands.find(b => b.id === brandId || b._id === brandId);
-                      return brand ? (
-                        <span key={brandId} className="status-badge approved" style={{ background: "rgba(16,185,129,0.08)", color: "var(--success)", border: "1px solid rgba(16,185,129,0.2)" }}>
-                          {brand.name}
-                        </span>
-                      ) : null;
-                    })}
+               {/* Attached Brands / Applied Brand */}
+              {(selectedItem.brandId || selectedItem.brandName) ? (
+                <div style={{ background: "#f8fafc", padding: "16px", borderRadius: "8px", marginBottom: "20px" }}>
+                  <h4 style={{ fontSize: "14px", marginBottom: "8px" }}>Applied Franchise Brand</h4>
+                  <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+                    <span className="status-badge approved" style={{ background: "rgba(37,99,235,0.08)", color: "var(--primary)", border: "1px solid rgba(37,99,235,0.2)" }}>
+                      {selectedItem.brandName || "Applied Brand"}
+                    </span>
+                    <span style={{ fontSize: "13px", color: "var(--text-muted)" }}>
+                      Category: {selectedItem.category || "General"}
+                    </span>
                   </div>
-                ) : (
-                  <p style={{ fontSize: "13px", color: "var(--text-muted)" }}>No brands attached yet.</p>
-                )}
-              </div>
+                </div>
+              ) : (
+                <div style={{ background: "#f8fafc", padding: "16px", borderRadius: "8px", marginBottom: "20px" }}>
+                  <h4 style={{ fontSize: "14px", marginBottom: "8px" }}>Attached Franchise Brands</h4>
+                  {selectedItem.assignedBrands && selectedItem.assignedBrands.length > 0 ? (
+                    <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+                      {selectedItem.assignedBrands.map(brandId => {
+                        const brand = brands.find(b => b.id === brandId || b._id === brandId);
+                        return brand ? (
+                          <span key={brandId} className="status-badge approved" style={{ background: "rgba(16,185,129,0.08)", color: "var(--success)", border: "1px solid rgba(16,185,129,0.2)" }}>
+                            {brand.name}
+                          </span>
+                        ) : null;
+                      })}
+                    </div>
+                  ) : (
+                    <p style={{ fontSize: "13px", color: "var(--text-muted)" }}>No brands attached yet.</p>
+                  )}
+                </div>
+              )}
 
               {selectedItem.comments && (
                 <div>
@@ -786,6 +994,13 @@ export default function AdminDashboard() {
               )}
             </div>
             <div className="modal-footer">
+              {(selectedItem.status || "Pending") === "Pending" && (
+                <>
+                  <button className="btn btn-primary" onClick={() => handleApproveInvestor(selectedItem.id || selectedItem._id)}>Approve Lead</button>
+                  <button className="btn btn-outline" style={{ background: "var(--error)", color: "white", borderColor: "transparent" }} onClick={() => handleDeclineInvestor(selectedItem.id || selectedItem._id)}>Decline Lead</button>
+                </>
+              )}
+              <button className="btn btn-outline" style={{ background: "var(--error)", color: "white", borderColor: "transparent" }} onClick={() => handleDeleteInvestor(selectedItem.id || selectedItem._id)}>Delete Lead</button>
               <button className="btn btn-outline" onClick={() => setSelectedItem(null)}>Close Window</button>
             </div>
           </div>

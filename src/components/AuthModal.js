@@ -36,7 +36,7 @@ export default function AuthModal({ isOpen, onClose, initialTab = "login" }) {
       setActiveTab(initialTab);
       setError("");
       setSuccess("");
-      
+
       const remembered = localStorage.getItem("rememberedUser");
       if (remembered) {
         setLoginIdentifier(remembered);
@@ -106,6 +106,8 @@ export default function AuthModal({ isOpen, onClose, initialTab = "login" }) {
             localStorage.setItem("investorLoggedIn", "true");
             localStorage.setItem("investorEmail", user.email);
             localStorage.setItem("investorName", user.name);
+            localStorage.setItem("investorPhone", user.phone || "");
+            localStorage.setItem("investorId", user.id || "");
             window.location.href = "/investor/dashboard";
           } else {
             localStorage.setItem("brandLoggedIn", "true");
@@ -181,7 +183,7 @@ export default function AuthModal({ isOpen, onClose, initialTab = "login" }) {
 
       if (res.ok) {
         setSuccess("Account successfully registered! Logging you in...");
-        
+
         setTimeout(async () => {
           try {
             const loginRes = await fetch("/api/login", {
@@ -201,6 +203,8 @@ export default function AuthModal({ isOpen, onClose, initialTab = "login" }) {
                 localStorage.setItem("investorLoggedIn", "true");
                 localStorage.setItem("investorEmail", user.email);
                 localStorage.setItem("investorName", user.name);
+                localStorage.setItem("investorPhone", user.phone || "");
+                localStorage.setItem("investorId", user.id || "");
                 window.location.href = "/investor/dashboard";
               } else {
                 localStorage.setItem("brandLoggedIn", "true");
@@ -232,8 +236,8 @@ export default function AuthModal({ isOpen, onClose, initialTab = "login" }) {
   if (!isOpen) return null;
 
   return (
-    <div 
-      className="modal-overlay" 
+    <div
+      className="modal-overlay"
       style={{
         position: "fixed",
         top: 0,
@@ -251,9 +255,9 @@ export default function AuthModal({ isOpen, onClose, initialTab = "login" }) {
         fontFamily: "'Inter', sans-serif"
       }}
     >
-      <div 
+      <div
         ref={modalRef}
-        className="modal-card" 
+        className="modal-card"
         style={{
           width: "100%",
           maxWidth: "460px",
@@ -261,17 +265,17 @@ export default function AuthModal({ isOpen, onClose, initialTab = "login" }) {
           borderRadius: "12px",
           border: "1px solid #E5E7EB",
           boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.25)",
-          padding: "36px 32px",
+          padding: "24px 28px",
           position: "relative",
           display: "flex",
           flexDirection: "column",
-          gap: "24px",
+          gap: "16px",
           maxHeight: "calc(100vh - 40px)",
           overflowY: "auto"
         }}
       >
         {/* Close Button */}
-        <button 
+        <button
           onClick={onClose}
           style={{
             position: "absolute",
@@ -301,22 +305,32 @@ export default function AuthModal({ isOpen, onClose, initialTab = "login" }) {
         </button>
 
         {/* Logo Container */}
-        <div style={{ textAlign: "center", marginBottom: "8px" }}>
-          <img 
-            src="/logo.jpg" 
-            alt="Franchise Roots" 
-            style={{ 
-              height: "54px", 
-              width: "auto", 
-              objectFit: "contain" 
-            }} 
+        <div style={{ textAlign: "center", marginBottom: "0px", marginTop: "10px" }}>
+          <img
+            src="/WhatsApp_Image_2026-07-16_at_4.40.00_PM__2_-removebg-preview.png"
+            alt="Franchise Roots"
+            style={{
+              height: "190px",
+              width: "auto",
+              objectFit: "contain"
+            }}
           />
         </div>
 
+        {/* Top Header Text (Below Logo) */}
+        <div style={{ textAlign: "center", marginBottom: "0px" }}>
+          <h2 style={{ fontSize: "19px", fontWeight: "800", color: "#0F172A", margin: "0 0 4px 0", letterSpacing: "-0.02em" }}>
+            Begin Your Journey
+          </h2>
+          <p style={{ fontSize: "12.5px", color: "#64748B", margin: 0, fontWeight: "500" }}>
+            Connect with India's Premier Franchise Network
+          </p>
+        </div>
+
         {/* Tabs Headers */}
-        <div 
-          style={{ 
-            display: "flex", 
+        <div
+          style={{
+            display: "flex",
             borderBottom: "2px solid #E5E7EB",
             position: "relative",
             marginBottom: "4px"
@@ -341,15 +355,15 @@ export default function AuthModal({ isOpen, onClose, initialTab = "login" }) {
           >
             LOGIN
             {activeTab === "login" && (
-              <div 
-                style={{ 
-                  position: "absolute", 
-                  bottom: "-2px", 
-                  left: 0, 
-                  right: 0, 
-                  height: "2px", 
-                  backgroundColor: "#8B0000" 
-                }} 
+              <div
+                style={{
+                  position: "absolute",
+                  bottom: "-2px",
+                  left: 0,
+                  right: 0,
+                  height: "2px",
+                  backgroundColor: "#8B0000"
+                }}
               />
             )}
           </button>
@@ -372,15 +386,15 @@ export default function AuthModal({ isOpen, onClose, initialTab = "login" }) {
           >
             REGISTER
             {activeTab === "register" && (
-              <div 
-                style={{ 
-                  position: "absolute", 
-                  bottom: "-2px", 
-                  left: 0, 
-                  right: 0, 
-                  height: "2px", 
-                  backgroundColor: "#8B0000" 
-                }} 
+              <div
+                style={{
+                  position: "absolute",
+                  bottom: "-2px",
+                  left: 0,
+                  right: 0,
+                  height: "2px",
+                  backgroundColor: "#8B0000"
+                }}
               />
             )}
           </button>
@@ -388,7 +402,7 @@ export default function AuthModal({ isOpen, onClose, initialTab = "login" }) {
 
         {/* Alert Notifications */}
         {error && (
-          <div 
+          <div
             style={{
               backgroundColor: "#FEF2F2",
               border: "1px solid #FCA5A5",
@@ -405,7 +419,7 @@ export default function AuthModal({ isOpen, onClose, initialTab = "login" }) {
         )}
 
         {success && (
-          <div 
+          <div
             style={{
               backgroundColor: "#F0FDF4",
               border: "1px solid #86EFAC",
@@ -520,11 +534,11 @@ export default function AuthModal({ isOpen, onClose, initialTab = "login" }) {
                 />
                 Remember me
               </label>
-              <Link 
-                href="/forgot-password" 
-                style={{ 
-                  color: "#8B0000", 
-                  textDecoration: "none", 
+              <Link
+                href="/forgot-password"
+                style={{
+                  color: "#8B0000",
+                  textDecoration: "none",
                   fontWeight: "600"
                 }}
               >
@@ -710,11 +724,11 @@ export default function AuthModal({ isOpen, onClose, initialTab = "login" }) {
         )}
 
         <div style={{ textAlign: "center", marginTop: "12px" }}>
-          <button 
+          <button
             onClick={onClose}
-            style={{ 
-              fontSize: "14px", 
-              color: "#6B7280", 
+            style={{
+              fontSize: "14px",
+              color: "#6B7280",
               textDecoration: "underline",
               border: "none",
               background: "none",

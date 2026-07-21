@@ -3,10 +3,10 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { 
-  Building, Users, FileText, CheckCircle, HelpCircle, LogOut, 
-  Home, Search, LayoutDashboard, PlusCircle, User, Briefcase, 
-  MapPin, IndianRupee, MessageSquare, Send, CheckCircle2 
+import {
+  Building, Users, FileText, CheckCircle, HelpCircle, LogOut,
+  Home, Search, LayoutDashboard, PlusCircle, User, Briefcase,
+  MapPin, IndianRupee, MessageSquare, Send, CheckCircle2
 } from "lucide-react";
 
 export default function InvestorPanel() {
@@ -136,28 +136,28 @@ export default function InvestorPanel() {
       {/* Sidebar Navigation */}
       <aside className="admin-sidebar" style={{ background: "linear-gradient(180deg, #1e293b 0%, #0f172a 100%)", padding: "0 0 40px 0" }}>
         <div className="admin-sidebar-top" style={{ padding: 0 }}>
-          <div style={{ 
-            display: "flex", 
-            justifyContent: "center", 
-            alignItems: "center", 
-            width: "100%", 
-            padding: "10px 20px 18px 20px", 
+          <div style={{
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            width: "100%",
+            padding: "10px 20px 18px 20px",
             borderBottom: "1px solid rgba(255, 255, 255, 0.08)",
             marginBottom: "16px",
             background: "transparent"
           }}>
             <Link href="/investor/dashboard" style={{ display: "block" }}>
-              <img 
-                src="/logo-footer.png" 
-                alt="Franchise Roots" 
-                style={{ 
-                  width: "180px", 
-                  height: "auto", 
+              <img
+                src="/logo-footer.png"
+                alt="Franchise Roots"
+                style={{
+                  height: "150px",
+                  width: "auto",
                   objectFit: "contain",
                   display: "block",
                   margin: "0 auto",
                   background: "transparent"
-                }} 
+                }}
               />
             </Link>
           </div>
@@ -165,7 +165,7 @@ export default function InvestorPanel() {
           <div style={{ padding: "0 28px" }}>
             <ul className="admin-nav" style={{ marginTop: 0 }}>
               <li className="admin-nav-item">
-                <div 
+                <div
                   className={`admin-nav-link ${activeTab === "dashboard" ? "active" : ""}`}
                   onClick={() => setActiveTab("dashboard")}
                 >
@@ -174,7 +174,7 @@ export default function InvestorPanel() {
                 </div>
               </li>
               <li className="admin-nav-item">
-                <div 
+                <div
                   className={`admin-nav-link ${activeTab === "recommendations" ? "active" : ""}`}
                   onClick={() => setActiveTab("recommendations")}
                 >
@@ -183,7 +183,7 @@ export default function InvestorPanel() {
                 </div>
               </li>
               <li className="admin-nav-item">
-                <div 
+                <div
                   className={`admin-nav-link ${activeTab === "enquiries" ? "active" : ""}`}
                   onClick={() => setActiveTab("enquiries")}
                 >
@@ -192,7 +192,7 @@ export default function InvestorPanel() {
                 </div>
               </li>
               <li className="admin-nav-item">
-                <div 
+                <div
                   className={`admin-nav-link ${activeTab === "consultancy" ? "active" : ""}`}
                   onClick={() => setActiveTab("consultancy")}
                 >
@@ -242,7 +242,7 @@ export default function InvestorPanel() {
             {/* Dashboard Tab */}
             {activeTab === "dashboard" && (
               <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr", gap: "24px" }}>
-                
+
                 {/* Left Panel: Profile info */}
                 <div className="table-container" style={{ padding: "24px" }}>
                   <div style={{ display: "flex", alignItems: "center", gap: "16px", marginBottom: "24px" }}>
@@ -311,8 +311,8 @@ export default function InvestorPanel() {
                                 <h5 style={{ fontSize: "13px", fontWeight: "700", color: "#1e3a8a" }}>{brand.name}</h5>
                                 <p style={{ fontSize: "11px", color: "var(--text-muted)" }}>{brand.category} | {brand.hq}</p>
                               </div>
-                              <button 
-                                className="btn btn-primary" 
+                              <button
+                                className="btn btn-primary"
                                 style={{ fontSize: "11px", padding: "4px 8px" }}
                                 onClick={() => setSelectedBrand(brand)}
                               >
@@ -370,8 +370,8 @@ export default function InvestorPanel() {
                       <div key={brand.id} className="franchise-card" style={{ background: "white" }}>
                         <div className="franchise-card-image" style={{ height: "130px" }}>
                           <div className="franchise-badge">{brand.hq}</div>
-                          <img 
-                            src={brand.image || "https://images.unsplash.com/photo-1524178232363-1fb2b075b655?auto=format&fit=crop&q=80&w=400"} 
+                          <img
+                            src={brand.image || "https://images.unsplash.com/photo-1524178232363-1fb2b075b655?auto=format&fit=crop&q=80&w=400"}
                             alt={brand.name}
                             style={{ width: "100%", height: "100%", objectFit: "cover" }}
                           />
@@ -379,7 +379,7 @@ export default function InvestorPanel() {
                         <div className="franchise-card-content" style={{ padding: "16px" }}>
                           <span className="franchise-category">{brand.category}</span>
                           <h3 className="franchise-title" style={{ fontSize: "16px" }}>{brand.name}</h3>
-                          
+
                           <div className="franchise-meta" style={{ margin: "12px 0 16px 0" }}>
                             <div className="meta-item">
                               <span className="meta-label" style={{ fontSize: "10px" }}>Min Investment</span>
@@ -432,7 +432,7 @@ export default function InvestorPanel() {
                         // Extract brand name from comment "Enquiry submitted for Brand: [BrandName]"
                         const match = enq.comments?.match(/Enquiry submitted for Brand: (.*?)\./);
                         const brandName = match ? match[1] : "Franchise Concept";
-                        
+
                         return (
                           <tr key={enq.id}>
                             <td style={{ fontWeight: "700" }}>{brandName}</td>
@@ -456,7 +456,7 @@ export default function InvestorPanel() {
             {/* Consultancy Tab */}
             {activeTab === "consultancy" && (
               <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr", gap: "24px" }}>
-                
+
                 {/* Send Support ticket */}
                 <div className="table-container" style={{ padding: "24px" }}>
                   <h3 style={{ fontSize: "18px", marginBottom: "6px" }}>Connect with a Brand Consultant</h3>
@@ -505,7 +505,7 @@ export default function InvestorPanel() {
                 {/* FAQ panel */}
                 <div className="table-container" style={{ padding: "20px" }}>
                   <h3 style={{ fontSize: "16px", marginBottom: "16px" }}>Investor FAQ Support</h3>
-                  
+
                   <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
                     <div>
                       <h4 style={{ fontSize: "13px", color: "var(--text-dark)", fontWeight: "600" }}>How long does franchise approval take?</h4>
@@ -543,8 +543,8 @@ export default function InvestorPanel() {
             </div>
             <div className="modal-body">
               <div style={{ display: 'flex', gap: '20px', marginBottom: '24px' }}>
-                <img 
-                  src={selectedBrand.image || "https://images.unsplash.com/photo-1524178232363-1fb2b075b655?auto=format&fit=crop&q=80&w=400"} 
+                <img
+                  src={selectedBrand.image || "https://images.unsplash.com/photo-1524178232363-1fb2b075b655?auto=format&fit=crop&q=80&w=400"}
                   alt={selectedBrand.name}
                   style={{ width: "100px", height: "100px", borderRadius: "10px", objectFit: "cover" }}
                 />

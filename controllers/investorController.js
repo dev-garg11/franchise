@@ -85,3 +85,37 @@ exports.assignBrand = async (req, res) => {
     res.status(500).json({ success: false, error: error.message });
   }
 };
+
+// @desc    Update investor lead status
+// @route   PATCH /api/investors/:id
+// @access  Public
+exports.updateInvestor = async (req, res) => {
+  try {
+    const investor = await Investor.findByIdAndUpdate(
+      req.params.id,
+      { $set: req.body },
+      { new: true, runValidators: true }
+    );
+    if (!investor) {
+      return res.status(404).json({ success: false, error: 'Investor lead not found' });
+    }
+    res.status(200).json({ success: true, data: investor });
+  } catch (error) {
+    res.status(400).json({ success: false, error: error.message });
+  }
+};
+
+// @desc    Delete investor lead
+// @route   DELETE /api/investors/:id
+// @access  Public
+exports.deleteInvestor = async (req, res) => {
+  try {
+    const investor = await Investor.findByIdAndDelete(req.params.id);
+    if (!investor) {
+      return res.status(404).json({ success: false, error: 'Investor lead not found' });
+    }
+    res.status(200).json({ success: true, data: {} });
+  } catch (error) {
+    res.status(400).json({ success: false, error: error.message });
+  }
+};

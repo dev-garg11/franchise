@@ -83,6 +83,31 @@ const InvestorSchema = new mongoose.Schema({
     type: [String],
     default: []
   },
+  investorId: {
+    type: String,
+    default: null
+  },
+  brandId: {
+    type: String,
+    default: null
+  },
+  brandName: {
+    type: String,
+    default: null
+  },
+  category: {
+    type: String,
+    default: null
+  },
+  status: {
+    type: String,
+    enum: ['Pending', 'Approved', 'Rejected'],
+    default: 'Pending'
+  },
+  appliedAt: {
+    type: Date,
+    default: Date.now
+  },
   createdAt: {
     type: Date,
     default: Date.now

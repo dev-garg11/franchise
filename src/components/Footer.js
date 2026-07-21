@@ -47,7 +47,7 @@ export default function Footer() {
               <img
                 src="/logo-footer.png"
                 alt="Franchise Roots"
-                style={{ height: '195px', width: 'auto', objectFit: 'contain' }}
+                style={{ height: '185px', width: 'auto', objectFit: 'contain' }}
               />
             </Link>
             <p style={{ fontSize: '14px', lineHeight: '1.7', color: '#94A3B8', maxWidth: '340px', marginTop: '0px' }}>

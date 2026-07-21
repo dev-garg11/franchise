@@ -3,9 +3,9 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { 
-  Building, Users, FileText, CheckCircle2, XCircle, LogOut, 
-  Home, Edit3, Eye, LayoutDashboard, Mail, Phone, MapPin, 
+import {
+  Building, Users, FileText, CheckCircle2, XCircle, LogOut,
+  Home, Edit3, Eye, LayoutDashboard, Mail, Phone, MapPin,
   IndianRupee, PlusCircle, Globe, Award, Sparkles, CheckSquare
 } from "lucide-react";
 
@@ -135,7 +135,7 @@ export default function BrandPanel() {
           });
 
           // Fetch leads (investor submissions referencing this brand name in the comments)
-          const matchedLeads = investorsList.filter((inv) => 
+          const matchedLeads = investorsList.filter((inv) =>
             inv.comments?.toLowerCase().includes(`brand: ${userBrand.name.toLowerCase()}`) ||
             inv.comments?.toLowerCase().includes(`brand: ${userBrand.company.toLowerCase()}`)
           );
@@ -166,7 +166,7 @@ export default function BrandPanel() {
 
     try {
       const email = localStorage.getItem("brandEmail");
-      
+
       if (
         !formFields.name ||
         !formFields.company ||
@@ -256,28 +256,28 @@ export default function BrandPanel() {
       {/* Sidebar Navigation */}
       <aside className="admin-sidebar" style={{ background: "linear-gradient(180deg, #1e3a8a 0%, #0f172a 100%)", padding: "0 0 40px 0" }}>
         <div className="admin-sidebar-top" style={{ padding: 0 }}>
-          <div style={{ 
-            display: "flex", 
-            justifyContent: "center", 
-            alignItems: "center", 
-            width: "100%", 
-            padding: "10px 20px 18px 20px", 
+          <div style={{
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            width: "100%",
+            padding: "10px 20px 18px 20px",
             borderBottom: "1px solid rgba(255, 255, 255, 0.08)",
             marginBottom: "16px",
             background: "transparent"
           }}>
             <Link href="/brand-owner/dashboard" style={{ display: "block" }}>
-              <img 
-                src="/logo-footer.png" 
-                alt="Franchise Roots" 
-                style={{ 
-                  width: "180px", 
-                  height: "auto", 
+              <img
+                src="/logo-footer.png"
+                alt="Franchise Roots"
+                style={{
+                  height: "150px",
+                  width: "auto",
                   objectFit: "contain",
                   display: "block",
                   margin: "0 auto",
                   background: "transparent"
-                }} 
+                }}
               />
             </Link>
           </div>
@@ -285,7 +285,7 @@ export default function BrandPanel() {
           <div style={{ padding: "0 28px" }}>
             <ul className="admin-nav" style={{ marginTop: 0 }}>
               <li className="admin-nav-item">
-                <div 
+                <div
                   className={`admin-nav-link ${activeTab === "dashboard" ? "active" : ""}`}
                   onClick={() => setActiveTab("dashboard")}
                 >
@@ -294,7 +294,7 @@ export default function BrandPanel() {
                 </div>
               </li>
               <li className="admin-nav-item">
-                <div 
+                <div
                   className={`admin-nav-link ${activeTab === "edit-brand" ? "active" : ""}`}
                   onClick={() => setActiveTab("edit-brand")}
                 >
@@ -303,7 +303,7 @@ export default function BrandPanel() {
                 </div>
               </li>
               <li className="admin-nav-item">
-                <div 
+                <div
                   className={`admin-nav-link ${activeTab === "leads" ? "active" : ""}`}
                   onClick={() => setActiveTab("leads")}
                 >
@@ -352,14 +352,14 @@ export default function BrandPanel() {
             {/* Overview Dashboard Tab */}
             {activeTab === "dashboard" && (
               <div style={{ display: "grid", gridTemplateColumns: "1.3fr 1fr", gap: "24px" }}>
-                
+
                 {/* Left: Brand specs overview */}
                 <div className="table-container" style={{ padding: "24px" }}>
                   {brand ? (
                     <>
                       <div style={{ display: "flex", gap: "20px", marginBottom: "24px", alignItems: "center" }}>
-                        <img 
-                          src={brand.image || "https://images.unsplash.com/photo-1524178232363-1fb2b075b655?auto=format&fit=crop&q=80&w=400"} 
+                        <img
+                          src={brand.image || "https://images.unsplash.com/photo-1524178232363-1fb2b075b655?auto=format&fit=crop&q=80&w=400"}
                           alt={brand.name}
                           style={{ width: "80px", height: "80px", borderRadius: "10px", objectFit: "cover" }}
                         />

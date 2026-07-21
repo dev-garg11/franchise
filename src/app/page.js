@@ -92,6 +92,21 @@ export default function Home() {
     fetchBrands();
   }, []);
 
+  // Pre-fill enquiry form if investor is logged in
+  useEffect(() => {
+    if (selectedBrand && typeof window !== "undefined") {
+      const isLoggedIn = localStorage.getItem("investorLoggedIn") === "true";
+      if (isLoggedIn) {
+        setEnquiryForm({
+          name: localStorage.getItem("investorName") || "",
+          email: localStorage.getItem("investorEmail") || "",
+          phone: localStorage.getItem("investorPhone") || "",
+          message: ""
+        });
+      }
+    }
+  }, [selectedBrand]);
+
   // Sync URL search parameters with search states
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -204,6 +219,10 @@ export default function Home() {
           budgetMax: selectedBrand.maxInvestment,
           industries: [selectedBrand.category],
           preferredLocation: selectedBrand.hq,
+          brandId: selectedBrand.id || selectedBrand._id,
+          brandName: selectedBrand.name,
+          category: selectedBrand.category,
+          investorId: typeof window !== "undefined" ? localStorage.getItem("investorId") : null,
           comments: `Enquiry submitted for Brand: ${selectedBrand.name}. Message: ${enquiryForm.message || "None"}`
         })
       });
@@ -516,7 +535,7 @@ export default function Home() {
                         className="slider-image"
                       />
                       <div className="slider-brand-logo">
-                        <span style={{ fontSize: '16px', fontWeight: '800', color: 'var(--primary)' }}>{brand.name.substring(0,2).toUpperCase()}</span>
+                        <span style={{ fontSize: '22px', fontWeight: '800', color: 'var(--primary)' }}>{brand.name.substring(0,2).toUpperCase()}</span>
                       </div>
                     </div>
                     <div className="slider-card-content">

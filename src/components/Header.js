@@ -3,8 +3,8 @@
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { 
-  LogIn, PlusCircle, Shield, User, LogOut, Building, Menu, X, 
+import {
+  LogIn, PlusCircle, Shield, User, LogOut, Building, Menu, X,
   Bell, Search, ChevronDown, Sparkles, HelpCircle, Layers, Star,
   Trash2, CheckCircle, ArrowRight, Clock, ArrowUp
 } from "lucide-react";
@@ -47,19 +47,19 @@ const DEFAULT_NOTIFICATIONS = [
 export default function Header() {
   const pathname = usePathname();
   const router = useRouter();
-  
+
   // Auth state
   const [isAdmin, setIsAdmin] = useState(false);
   const [isInvestor, setIsInvestor] = useState(false);
   const [isBrand, setIsBrand] = useState(false);
   const [investorName, setInvestorName] = useState("");
   const [brandName, setBrandName] = useState("");
-  
+
   // Layout States
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const [activeDropdown, setActiveDropdown] = useState(false);
-  
+
   // Search States
   const [searchModalOpen, setSearchModalOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -67,22 +67,22 @@ export default function Header() {
   const [filteredBrands, setFilteredBrands] = useState([]);
   const [searchHistory, setSearchHistory] = useState([]);
   const [loadingSearch, setLoadingSearch] = useState(false);
-  
+
   // Notification States
   const [notificationDropdownOpen, setNotificationDropdownOpen] = useState(false);
   const [notifications, setNotifications] = useState([]);
-  
+
   // User Profile Dropdown
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
-  
+
   // Button Loading States
   const [loadingAddBrand, setLoadingAddBrand] = useState(false);
   const [loadingLogin, setLoadingLogin] = useState(false);
-  
+
   // Scroll Metrics
   const [scrollPercent, setScrollPercent] = useState(0);
   const [showScrollTop, setShowScrollTop] = useState(false);
-  
+
   // Mouse Glow Position
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
 
@@ -96,19 +96,19 @@ export default function Header() {
     const adminAuth = localStorage.getItem("adminLoggedIn");
     const investorAuth = localStorage.getItem("investorLoggedIn");
     const brandAuth = localStorage.getItem("brandLoggedIn");
-    
+
     const invName = localStorage.getItem("investorName");
     const brName = localStorage.getItem("brandName");
 
     setIsAdmin(adminAuth === "true");
     setIsInvestor(investorAuth === "true");
     setIsBrand(brandAuth === "true");
-    
+
     setInvestorName(invName || "Investor");
     setBrandName(brName || "Brand Owner");
-    
+
     setMobileMenuOpen(false);
-    
+
     // Notifications init
     const storedNotifs = localStorage.getItem("userNotifications");
     if (storedNotifs) {
@@ -134,14 +134,14 @@ export default function Header() {
       } else {
         setIsScrolled(false);
       }
-      
+
       // show scroll top
       if (window.scrollY > 300) {
         setShowScrollTop(true);
       } else {
         setShowScrollTop(false);
       }
-      
+
       // calculate reading progress
       const totalHeight = document.documentElement.scrollHeight - window.innerHeight;
       if (totalHeight > 0) {
@@ -225,9 +225,9 @@ export default function Header() {
     const query = searchQuery.toLowerCase();
     const results = allBrands.filter(
       b => b.name.toLowerCase().includes(query) ||
-           b.company.toLowerCase().includes(query) ||
-           b.category.toLowerCase().includes(query) ||
-           b.description.toLowerCase().includes(query)
+        b.company.toLowerCase().includes(query) ||
+        b.category.toLowerCase().includes(query) ||
+        b.description.toLowerCase().includes(query)
     );
     setFilteredBrands(results);
   }, [searchQuery, allBrands]);
@@ -305,7 +305,7 @@ export default function Header() {
     setNotifications(updated);
     localStorage.setItem("userNotifications", JSON.stringify(updated));
     setNotificationDropdownOpen(false);
-    
+
     // Direct link depending on notification
     if (isAdmin) router.push("/admin");
     else if (isInvestor) router.push("/investor-panel");
@@ -342,10 +342,10 @@ export default function Header() {
           {/* Logo */}
           <Link href="/" style={{ display: 'flex', alignItems: 'center', transition: 'var(--transition-normal)' }}>
             <img 
-              src="/logo.jpg" 
+              src="/WhatsApp_Image_2026-07-16_at_4.40.00_PM__2_-removebg-preview.png" 
               alt="Franchise Roots" 
               style={{
-                height: isScrolled ? '36px' : '44px',
+                height: isScrolled ? '130px' : '185px',
                 width: 'auto',
                 transition: 'var(--transition-normal)',
                 objectFit: 'contain'
@@ -354,11 +354,10 @@ export default function Header() {
           </Link>
 
           {/* Mobile Hamburger Button */}
-          <button 
-            className="mobile-menu-toggle flex-center" 
+          <button
+            className="mobile-menu-toggle flex-center"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             aria-label="Toggle menu"
-            style={{ display: "none" }}
           >
             {mobileMenuOpen ? <X size={22} /> : <Menu size={22} />}
           </button>
@@ -371,9 +370,9 @@ export default function Header() {
                   Home
                 </Link>
               </li>
-              
+
               {/* Mega Dropdown / Solutions menu */}
-              <li 
+              <li
                 onMouseEnter={() => setActiveDropdown(true)}
                 onMouseLeave={() => setActiveDropdown(false)}
                 style={{ position: 'relative' }}
@@ -446,20 +445,20 @@ export default function Header() {
               {/* Search and Notification Utility Icons */}
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginRight: '4px' }} className="nav-utility-icons">
                 {/* Search Trigger Button */}
-                <button 
-                  aria-label="Search opportunities" 
-                  className="nav-icon-btn" 
+                <button
+                  aria-label="Search opportunities"
+                  className="nav-icon-btn"
                   onClick={() => setSearchModalOpen(true)}
                   title="Search (Ctrl + K)"
                 >
                   <Search size={18} />
                 </button>
-                
+
                 {/* Notifications dropdown trigger */}
                 <div style={{ position: 'relative' }} ref={notificationRef}>
-                  <button 
-                    aria-label="Notifications" 
-                    className="nav-icon-btn" 
+                  <button
+                    aria-label="Notifications"
+                    className="nav-icon-btn"
                     onClick={() => setNotificationDropdownOpen(prev => !prev)}
                   >
                     <Bell size={18} />
@@ -491,8 +490,8 @@ export default function Header() {
                           </div>
                         ) : (
                           notifications.map((notif) => (
-                            <div 
-                              key={notif.id} 
+                            <div
+                              key={notif.id}
                               className={`notification-item-premium ${notif.read ? "" : "unread"}`}
                               onClick={() => handleNotificationClick(notif)}
                             >
@@ -522,13 +521,13 @@ export default function Header() {
               {/* Login Profile Actions */}
               {isAdmin || isInvestor || isBrand ? (
                 <div style={{ position: 'relative' }} ref={userDropdownRef}>
-                  <div 
-                    className="user-profile-group" 
+                  <div
+                    className="user-profile-group"
                     style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }}
                     onClick={() => setUserDropdownOpen(prev => !prev)}
                   >
                     <div className="user-avatar-btn">
-                      {isAdmin ? "AD" : isInvestor ? investorName.substring(0,2).toUpperCase() : brandName.substring(0,2).toUpperCase()}
+                      {isAdmin ? "AD" : isInvestor ? investorName.substring(0, 2).toUpperCase() : brandName.substring(0, 2).toUpperCase()}
                     </div>
                     <span className="user-greeting" style={{ fontSize: '14px', fontWeight: '700', color: 'var(--text-dark)', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
                       Hi, {isAdmin ? "Admin" : isInvestor ? investorName.split(" ")[0] : brandName.split(" ")[0]}
@@ -546,35 +545,35 @@ export default function Header() {
                         </span>
                       </div>
                       <div className="dropdown-panel-body" style={{ padding: "6px" }}>
-                        <Link 
-                          href={isAdmin ? "/admin" : isInvestor ? "/investor-panel" : "/brand-panel"} 
-                          className="dropdown-item-hover" 
+                        <Link
+                          href={isAdmin ? "/admin" : isInvestor ? "/investor-panel" : "/brand-panel"}
+                          className="dropdown-item-hover"
                           style={{ display: 'flex', gap: '10px', padding: '10px 14px', borderRadius: '8px', fontSize: '13.5px', fontWeight: '600' }}
                           onClick={() => setUserDropdownOpen(false)}
                         >
                           <Layers size={16} style={{ color: 'var(--primary)' }} />
                           Dashboard
                         </Link>
-                        <Link 
-                          href={isInvestor ? "/investor-panel?tab=applications" : isBrand ? "/brand-panel?tab=applications" : "/admin"} 
-                          className="dropdown-item-hover" 
+                        <Link
+                          href={isInvestor ? "/investor-panel?tab=applications" : isBrand ? "/brand-panel?tab=applications" : "/admin"}
+                          className="dropdown-item-hover"
                           style={{ display: 'flex', gap: '10px', padding: '10px 14px', borderRadius: '8px', fontSize: '13.5px', fontWeight: '600' }}
                           onClick={() => setUserDropdownOpen(false)}
                         >
                           <Building size={16} style={{ color: 'var(--secondary)' }} />
                           My Applications
                         </Link>
-                        <Link 
-                          href="/" 
-                          className="dropdown-item-hover" 
+                        <Link
+                          href="/"
+                          className="dropdown-item-hover"
                           style={{ display: 'flex', gap: '10px', padding: '10px 14px', borderRadius: '8px', fontSize: '13.5px', fontWeight: '600' }}
                           onClick={() => setUserDropdownOpen(false)}
                         >
                           <Star size={16} style={{ color: 'var(--accent)' }} />
                           Saved Brands
                         </Link>
-                        <button 
-                          className="dropdown-item-hover" 
+                        <button
+                          className="dropdown-item-hover"
                           style={{ display: 'flex', gap: '10px', padding: '10px 14px', borderRadius: '8px', fontSize: '13.5px', fontWeight: '600', width: '100%', textAlign: 'left', border: 'none', background: 'none', cursor: 'pointer' }}
                           onClick={() => { setUserDropdownOpen(false); setNotificationDropdownOpen(true); }}
                         >
@@ -582,8 +581,8 @@ export default function Header() {
                           Notifications
                         </button>
                         <div style={{ height: '1px', background: 'rgba(229,231,235,0.5)', margin: '6px 0' }}></div>
-                        <button 
-                          onClick={() => { setUserDropdownOpen(false); handleLogout(); }} 
+                        <button
+                          onClick={() => { setUserDropdownOpen(false); handleLogout(); }}
                           className="dropdown-item-hover"
                           style={{ display: 'flex', gap: '10px', padding: '10px 14px', borderRadius: '8px', fontSize: '13.5px', fontWeight: '600', color: 'var(--danger)', width: '100%', textAlign: 'left', border: 'none', background: 'none', cursor: 'pointer' }}
                         >
@@ -596,15 +595,15 @@ export default function Header() {
                 </div>
               ) : (
                 <div className="auth-buttons-group" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                  <button 
+                  <button
                     onClick={() => {
                       setLoadingLogin(true);
                       setTimeout(() => {
                         setLoadingLogin(false);
                         window.dispatchEvent(new CustomEvent("open-auth-modal", { detail: { tab: "login" } }));
                       }, 400);
-                    }} 
-                    className="btn btn-outline" 
+                    }}
+                    className="btn btn-outline"
                     style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '10px 20px' }}
                   >
                     {loadingLogin ? (
@@ -614,15 +613,15 @@ export default function Header() {
                     )}
                     Login
                   </button>
-                  <button 
+                  <button
                     onClick={() => {
                       setLoadingAddBrand(true);
                       setTimeout(() => {
                         setLoadingAddBrand(false);
                         router.push("/brand-registration");
                       }, 500);
-                    }} 
-                    className="btn btn-primary add-brand-btn-premium" 
+                    }}
+                    className="btn btn-primary add-brand-btn-premium"
                     style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '10px 20px' }}
                   >
                     {loadingAddBrand ? (
@@ -646,9 +645,9 @@ export default function Header() {
             <div className="search-modal-header">
               <div className="search-modal-input-wrapper">
                 <Search size={22} style={{ color: "var(--primary)" }} />
-                <input 
+                <input
                   ref={searchInputRef}
-                  type="text" 
+                  type="text"
                   className="search-modal-input"
                   placeholder="Search brands, sectors, locations... (e.g. Bombay Kulfi)"
                   value={searchQuery}
@@ -656,15 +655,15 @@ export default function Header() {
                   onKeyDown={(e) => e.key === "Enter" && handleSearchSubmit(e)}
                 />
               </div>
-              <button 
-                className="search-modal-close-btn" 
+              <button
+                className="search-modal-close-btn"
                 onClick={() => setSearchModalOpen(false)}
                 aria-label="Close search"
               >
                 <X size={20} />
               </button>
             </div>
-            
+
             <div className="search-modal-body">
               {/* History and Suggestions if Query is empty */}
               {!searchQuery ? (
@@ -717,7 +716,7 @@ export default function Header() {
                 /* Search Results display */
                 <div>
                   <span className="search-section-title">Matching Results ({filteredBrands.length})</span>
-                  
+
                   {loadingSearch ? (
                     <div className="flex-center" style={{ padding: "30px 0", flexDirection: "column", gap: "10px" }}>
                       <div className="spinner" style={{ borderTopColor: "var(--primary)" }}></div>
@@ -732,15 +731,15 @@ export default function Header() {
                   ) : (
                     <div className="search-results-list">
                       {filteredBrands.map((brand) => (
-                        <div 
-                          key={brand.id} 
+                        <div
+                          key={brand.id}
                           className="search-result-item-card"
                           onClick={() => handleResultClick(brand)}
                         >
-                          <img 
-                            className="search-result-thumb" 
-                            src={brand.image || "https://images.unsplash.com/photo-1524178232363-1fb2b075b655?auto=format&fit=crop&q=80&w=100"} 
-                            alt={brand.name} 
+                          <img
+                            className="search-result-thumb"
+                            src={brand.image || "https://images.unsplash.com/photo-1524178232363-1fb2b075b655?auto=format&fit=crop&q=80&w=100"}
+                            alt={brand.name}
                           />
                           <div className="search-result-info">
                             <span className="search-result-name">{brand.name}</span>
@@ -763,7 +762,7 @@ export default function Header() {
       )}
 
       {/* 5. Scroll to Top Floating Action Button */}
-      <button 
+      <button
         className={`scroll-to-top-btn ${showScrollTop ? "visible" : ""}`}
         onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
         aria-label="Scroll to top"
@@ -773,28 +772,28 @@ export default function Header() {
 
       {/* 6. Mobile bottom navigation bar */}
       <div className="mobile-bottom-nav">
-        <button 
+        <button
           className={`mobile-bottom-nav-item ${pathname === "/" && !searchModalOpen ? "active" : ""}`}
           onClick={() => { setSearchModalOpen(false); router.push("/"); }}
         >
           <Layers size={20} />
           <span>Catalog</span>
         </button>
-        <button 
+        <button
           className={`mobile-bottom-nav-item ${searchModalOpen ? "active" : ""}`}
           onClick={() => setSearchModalOpen(true)}
         >
           <Search size={20} />
           <span>Search</span>
         </button>
-        <button 
+        <button
           className="mobile-bottom-nav-item"
           onClick={() => router.push("/brand-registration")}
         >
           <PlusCircle size={20} />
           <span>Add Brand</span>
         </button>
-        <button 
+        <button
           className={`mobile-bottom-nav-item ${notificationDropdownOpen ? "active" : ""}`}
           onClick={() => { setNotificationDropdownOpen(prev => !prev); setUserDropdownOpen(false); }}
         >
@@ -804,7 +803,7 @@ export default function Header() {
           </div>
           <span>Alerts</span>
         </button>
-        <button 
+        <button
           className={`mobile-bottom-nav-item ${userDropdownOpen || pathname.includes("-panel") ? "active" : ""}`}
           onClick={() => {
             if (isAdmin || isInvestor || isBrand) {
