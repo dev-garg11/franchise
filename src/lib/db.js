@@ -1,10 +1,10 @@
 import fs from "fs";
 import path from "path";
 import mongoose from "mongoose";
-import Brand from "../../models/Brand";
-import Investor from "../../models/Investor";
-import Admin from "../../models/Admin";
-import User from "../../models/User";
+import Brand from "@/models/Brand";
+import Investor from "@/models/Investor";
+import Admin from "@/models/Admin";
+import User from "@/models/User";
 import bcrypt from "bcryptjs";
 import {
   sendBrandRegistrationEmail,

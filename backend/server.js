@@ -28,10 +28,10 @@ app.use('/api', authRoutes);
 
 // 4. Default API Root Route
 app.get('/', (req, res) => {
-  res.status(200).json({
-    success: true,
-    message: 'Welcome to the Franchise Roots MongoDB Backend API'
-  });
+    res.status(200).json({
+        success: true,
+        message: 'Welcome to the Franchise Roots MongoDB Backend API'
+    });
 });
 
 // 5. Global Error Handler Middleware
@@ -41,18 +41,18 @@ const PORT = process.env.PORT || 5000;
 
 // 6. Connect to database before starting the Express server
 const startServer = async () => {
-  try {
-    // Attempt to connect to MongoDB Atlas
-    await connectDB();
-    
-    // Start listening on port
-    app.listen(PORT, () => {
-      console.log(`Server started successfully on port ${PORT}`);
-    });
-  } catch (error) {
-    console.error(`Failed to start Express server: ${error.message}`);
-    process.exit(1);
-  }
+    try {
+        // Attempt to connect to MongoDB Atlas
+        await connectDB();
+
+        // Start listening on port
+        app.listen(PORT, () => {
+            console.log(`Server started successfully on port ${PORT}`);
+        });
+    } catch (error) {
+        console.error(`Failed to start Express server: ${error.message}`);
+        process.exit(1);
+    }
 };
 
 startServer();

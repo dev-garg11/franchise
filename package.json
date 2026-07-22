@@ -8,8 +8,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "server": "nodemon server.js",
-    "backend": "node server.js"
+    "server": "nodemon backend/server.js",
+    "backend": "node backend/server.js"
   },
   "dependencies": {
     "bcryptjs": "^3.0.3",
