@@ -319,10 +319,10 @@ export default function AuthModal({ isOpen, onClose, initialTab = "login" }) {
 
         {/* Top Header Text (Below Logo) */}
         <div style={{ textAlign: "center", marginBottom: "0px" }}>
-          <h2 style={{ fontSize: "19px", fontWeight: "800", color: "#0F172A", margin: "0 0 4px 0", letterSpacing: "-0.02em" }}>
+          <h2 style={{ fontSize: "19px", fontWeight: "800", color: "var(--text-dark, #0F172A)", margin: "0 0 4px 0", letterSpacing: "-0.02em" }}>
             Begin Your Journey
           </h2>
-          <p style={{ fontSize: "12.5px", color: "#64748B", margin: 0, fontWeight: "500" }}>
+          <p style={{ fontSize: "12.5px", color: "var(--text-muted, #64748B)", margin: 0, fontWeight: "500" }}>
             Connect with India's Premier Franchise Network
           </p>
         </div>
@@ -345,7 +345,7 @@ export default function AuthModal({ isOpen, onClose, initialTab = "login" }) {
               fontWeight: "700",
               fontSize: "15px",
               letterSpacing: "0.5px",
-              color: activeTab === "login" ? "#8B0000" : "#6B7280",
+              color: activeTab === "login" ? "var(--primary)" : "#6B7280",
               background: "none",
               border: "none",
               cursor: "pointer",
@@ -361,8 +361,9 @@ export default function AuthModal({ isOpen, onClose, initialTab = "login" }) {
                   bottom: "-2px",
                   left: 0,
                   right: 0,
-                  height: "2px",
-                  backgroundColor: "#8B0000"
+                  height: "3px",
+                  background: "linear-gradient(90deg, var(--primary), var(--secondary))",
+                  borderRadius: "2px"
                 }}
               />
             )}
@@ -376,7 +377,7 @@ export default function AuthModal({ isOpen, onClose, initialTab = "login" }) {
               fontWeight: "700",
               fontSize: "15px",
               letterSpacing: "0.5px",
-              color: activeTab === "register" ? "#8B0000" : "#6B7280",
+              color: activeTab === "register" ? "var(--primary)" : "#6B7280",
               background: "none",
               border: "none",
               cursor: "pointer",
@@ -392,8 +393,9 @@ export default function AuthModal({ isOpen, onClose, initialTab = "login" }) {
                   bottom: "-2px",
                   left: 0,
                   right: 0,
-                  height: "2px",
-                  backgroundColor: "#8B0000"
+                  height: "3px",
+                  background: "linear-gradient(90deg, var(--primary), var(--secondary))",
+                  borderRadius: "2px"
                 }}
               />
             )}
@@ -453,18 +455,28 @@ export default function AuthModal({ isOpen, onClose, initialTab = "login" }) {
                   disabled={loading}
                   style={{
                     width: "100%",
-                    border: "1px solid #D1D5DB",
+                    border: "1.5px solid #D1D5DB",
                     borderRadius: "8px",
-                    padding: "10px 12px 10px 38px",
-                    fontSize: "14px",
-                    color: "#1F2937",
-                    outline: "none"
+                    padding: "12px 12px 12px 38px",
+                    fontSize: "14.5px",
+                    color: "var(--text-dark, #1F2937)",
+                    backgroundColor: "#F8FAFC",
+                    outline: "none",
+                    transition: "all 0.2s ease-in-out"
                   }}
                   placeholder="Enter email or mobile number"
                   value={loginIdentifier}
                   onChange={(e) => setLoginIdentifier(e.target.value)}
-                  onFocus={(e) => e.target.style.borderColor = "#8B0000"}
-                  onBlur={(e) => e.target.style.borderColor = "#D1D5DB"}
+                  onFocus={(e) => {
+                    e.currentTarget.style.borderColor = "var(--primary)";
+                    e.currentTarget.style.backgroundColor = "#ffffff";
+                    e.currentTarget.style.boxShadow = "0 0 0 4px var(--primary-glow, rgba(13, 23, 60, 0.12))";
+                  }}
+                  onBlur={(e) => {
+                    e.currentTarget.style.borderColor = "#D1D5DB";
+                    e.currentTarget.style.backgroundColor = "#F8FAFC";
+                    e.currentTarget.style.boxShadow = "none";
+                  }}
                 />
               </div>
             </div>
@@ -483,18 +495,28 @@ export default function AuthModal({ isOpen, onClose, initialTab = "login" }) {
                   disabled={loading}
                   style={{
                     width: "100%",
-                    border: "1px solid #D1D5DB",
+                    border: "1.5px solid #D1D5DB",
                     borderRadius: "8px",
-                    padding: "10px 36px 10px 38px",
-                    fontSize: "14px",
-                    color: "#1F2937",
-                    outline: "none"
+                    padding: "12px 36px 12px 38px",
+                    fontSize: "14.5px",
+                    color: "var(--text-dark, #1F2937)",
+                    backgroundColor: "#F8FAFC",
+                    outline: "none",
+                    transition: "all 0.2s ease-in-out"
                   }}
                   placeholder="Enter password"
                   value={loginPassword}
                   onChange={(e) => setLoginPassword(e.target.value)}
-                  onFocus={(e) => e.target.style.borderColor = "#8B0000"}
-                  onBlur={(e) => e.target.style.borderColor = "#D1D5DB"}
+                  onFocus={(e) => {
+                    e.currentTarget.style.borderColor = "var(--primary)";
+                    e.currentTarget.style.backgroundColor = "#ffffff";
+                    e.currentTarget.style.boxShadow = "0 0 0 4px var(--primary-glow, rgba(13, 23, 60, 0.12))";
+                  }}
+                  onBlur={(e) => {
+                    e.currentTarget.style.borderColor = "#D1D5DB";
+                    e.currentTarget.style.backgroundColor = "#F8FAFC";
+                    e.currentTarget.style.boxShadow = "none";
+                  }}
                 />
                 <button
                   type="button"
@@ -526,7 +548,7 @@ export default function AuthModal({ isOpen, onClose, initialTab = "login" }) {
                   style={{
                     width: "15px",
                     height: "15px",
-                    accentColor: "#8B0000",
+                    accentColor: "var(--primary)",
                     cursor: "pointer"
                   }}
                   checked={rememberMe}
@@ -537,10 +559,13 @@ export default function AuthModal({ isOpen, onClose, initialTab = "login" }) {
               <Link
                 href="/forgot-password"
                 style={{
-                  color: "#8B0000",
+                  color: "var(--primary)",
                   textDecoration: "none",
-                  fontWeight: "600"
+                  fontWeight: "600",
+                  transition: "color 0.2s ease-in-out"
                 }}
+                onMouseEnter={(e) => e.currentTarget.style.color = "var(--secondary)"}
+                onMouseLeave={(e) => e.currentTarget.style.color = "var(--primary)"}
               >
                 Forgot Password?
               </Link>
@@ -551,24 +576,32 @@ export default function AuthModal({ isOpen, onClose, initialTab = "login" }) {
               disabled={loading}
               style={{
                 width: "100%",
-                background: "#8B0000",
+                background: "linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%)",
                 color: "#ffffff",
                 border: "none",
-                borderRadius: "8px",
+                borderRadius: "var(--radius-sm, 8px)",
                 padding: "12px",
                 fontSize: "14.5px",
                 fontWeight: "700",
                 cursor: "pointer",
-                transition: "all 0.2s",
+                transition: "all 0.2s ease-in-out",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
                 gap: "8px",
-                boxShadow: "0 2px 4px rgba(139, 0, 0, 0.15)",
+                boxShadow: "0 4px 14px rgba(13, 23, 60, 0.15)",
                 marginTop: "8px"
               }}
-              onMouseEnter={(e) => e.target.style.background = "#a30000"}
-              onMouseLeave={(e) => e.target.style.background = "#8B0000"}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = "linear-gradient(135deg, var(--primary-hover) 0%, var(--secondary-hover) 100%)";
+                e.currentTarget.style.boxShadow = "0 8px 24px rgba(37, 99, 235, 0.35)";
+                e.currentTarget.style.transform = "translateY(-1px)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = "linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%)";
+                e.currentTarget.style.boxShadow = "0 4px 14px rgba(13, 23, 60, 0.15)";
+                e.currentTarget.style.transform = "none";
+              }}
             >
               {loading ? (
                 <>
@@ -594,34 +627,34 @@ export default function AuthModal({ isOpen, onClose, initialTab = "login" }) {
                 width: "100%",
                 minHeight: "84px",
                 backgroundColor: "#ffffff",
-                border: "1px solid #D1D5DB",
-                borderRadius: "10px",
+                border: "1.5px solid var(--border-color, #D1D5DB)",
+                borderRadius: "var(--radius-md, 14px)",
                 padding: "16px 20px",
                 textDecoration: "none",
                 cursor: "pointer",
                 transition: "all 0.3s ease-in-out",
-                boxShadow: "0 2px 4px rgba(0, 0, 0, 0.02)"
+                boxShadow: "var(--shadow-sm, 0 2px 4px rgba(0, 0, 0, 0.02))"
               }}
               onMouseEnter={(e) => {
                 e.currentTarget.style.transform = "scale(1.02)";
-                e.currentTarget.style.borderColor = "#8B0000";
-                e.currentTarget.style.boxShadow = "0 8px 16px rgba(139, 0, 0, 0.08)";
+                e.currentTarget.style.borderColor = "var(--primary)";
+                e.currentTarget.style.boxShadow = "var(--shadow-md, 0 8px 16px rgba(13, 23, 60, 0.08))";
               }}
               onMouseLeave={(e) => {
                 e.currentTarget.style.transform = "none";
-                e.currentTarget.style.borderColor = "#D1D5DB";
-                e.currentTarget.style.boxShadow = "0 2px 4px rgba(0, 0, 0, 0.02)";
+                e.currentTarget.style.borderColor = "var(--border-color, #D1D5DB)";
+                e.currentTarget.style.boxShadow = "var(--shadow-sm, 0 2px 4px rgba(0, 0, 0, 0.02))";
               }}
             >
               <div style={{ display: "flex", flexDirection: "column", gap: "4px", paddingRight: "16px", textAlign: "left" }}>
-                <span style={{ fontSize: "16px", fontWeight: "700", color: "#1F2937" }}>
+                <span style={{ fontSize: "16px", fontWeight: "700", color: "var(--text-dark, #1F2937)" }}>
                   Register Your Brand
                 </span>
-                <span style={{ fontSize: "12px", color: "#6B7280", lineHeight: "1.4" }}>
+                <span style={{ fontSize: "12px", color: "var(--text-muted, #6B7280)", lineHeight: "1.4" }}>
                   Promote and Grow Your Business with Franchise Roots
                 </span>
               </div>
-              <ChevronRight size={20} style={{ color: "#8B0000", flexShrink: 0 }} />
+              <ChevronRight size={20} style={{ color: "var(--primary)", flexShrink: 0 }} />
             </Link>
 
             {/* Card 2: Start A Business */}
@@ -635,34 +668,34 @@ export default function AuthModal({ isOpen, onClose, initialTab = "login" }) {
                 width: "100%",
                 minHeight: "84px",
                 backgroundColor: "#ffffff",
-                border: "1px solid #D1D5DB",
-                borderRadius: "10px",
+                border: "1.5px solid var(--border-color, #D1D5DB)",
+                borderRadius: "var(--radius-md, 14px)",
                 padding: "16px 20px",
                 textDecoration: "none",
                 cursor: "pointer",
                 transition: "all 0.3s ease-in-out",
-                boxShadow: "0 2px 4px rgba(0, 0, 0, 0.02)"
+                boxShadow: "var(--shadow-sm, 0 2px 4px rgba(0, 0, 0, 0.02))"
               }}
               onMouseEnter={(e) => {
                 e.currentTarget.style.transform = "scale(1.02)";
-                e.currentTarget.style.borderColor = "#8B0000";
-                e.currentTarget.style.boxShadow = "0 8px 16px rgba(139, 0, 0, 0.08)";
+                e.currentTarget.style.borderColor = "var(--primary)";
+                e.currentTarget.style.boxShadow = "var(--shadow-md, 0 8px 16px rgba(13, 23, 60, 0.08))";
               }}
               onMouseLeave={(e) => {
                 e.currentTarget.style.transform = "none";
-                e.currentTarget.style.borderColor = "#D1D5DB";
-                e.currentTarget.style.boxShadow = "0 2px 4px rgba(0, 0, 0, 0.02)";
+                e.currentTarget.style.borderColor = "var(--border-color, #D1D5DB)";
+                e.currentTarget.style.boxShadow = "var(--shadow-sm, 0 2px 4px rgba(0, 0, 0, 0.02))";
               }}
             >
               <div style={{ display: "flex", flexDirection: "column", gap: "4px", paddingRight: "16px", textAlign: "left" }}>
-                <span style={{ fontSize: "16px", fontWeight: "700", color: "#1F2937" }}>
+                <span style={{ fontSize: "16px", fontWeight: "700", color: "var(--text-dark, #1F2937)" }}>
                   Start A Business
                 </span>
-                <span style={{ fontSize: "12px", color: "#6B7280", lineHeight: "1.4" }}>
+                <span style={{ fontSize: "12px", color: "var(--text-muted, #6B7280)", lineHeight: "1.4" }}>
                   Become an Investor and Explore Franchise Opportunities
                 </span>
               </div>
-              <ChevronRight size={20} style={{ color: "#8B0000", flexShrink: 0 }} />
+              <ChevronRight size={20} style={{ color: "var(--primary)", flexShrink: 0 }} />
             </Link>
 
             {/* Divider */}
@@ -670,10 +703,10 @@ export default function AuthModal({ isOpen, onClose, initialTab = "login" }) {
 
             {/* Why Register Checklist */}
             <div style={{ display: "flex", flexDirection: "column", gap: "16px", textAlign: "left" }}>
-              <h3 style={{ fontSize: "22px", fontWeight: "700", color: "#1F2937", margin: 0 }}>
+              <h3 style={{ fontSize: "22px", fontWeight: "700", color: "var(--text-dark, #1F2937)", margin: 0 }}>
                 Why Register with Franchise Roots?
               </h3>
-              <p style={{ fontSize: "15px", color: "#6B7280", lineHeight: "1.5", margin: 0 }}>
+              <p style={{ fontSize: "15px", color: "var(--text-muted, #6B7280)", lineHeight: "1.5", margin: 0 }}>
                 Join India's trusted franchise ecosystem and connect with thousands of verified business opportunities. Register today to grow your brand or start your entrepreneurial journey with expert support.
               </p>
 
@@ -688,7 +721,7 @@ export default function AuthModal({ isOpen, onClose, initialTab = "login" }) {
                   "Expert guidance from the Franchise Roots business consulting team."
                 ].map((benefit, idx) => (
                   <li key={idx} style={{ display: "flex", alignItems: "flex-start", gap: "12px", fontSize: "14.5px", color: "#4B5563", lineHeight: "1.4" }}>
-                    <CheckCircle size={18} style={{ color: "#10B981", flexShrink: 0, marginTop: "2px" }} />
+                    <CheckCircle size={18} style={{ color: "var(--secondary, #10B981)", flexShrink: 0, marginTop: "2px" }} />
                     <span>{benefit}</span>
                   </li>
                 ))}
@@ -706,15 +739,18 @@ export default function AuthModal({ isOpen, onClose, initialTab = "login" }) {
                   type="button"
                   onClick={() => { setActiveTab("login"); setError(""); setSuccess(""); }}
                   style={{
-                    color: "#8B0000",
+                    color: "var(--primary)",
                     fontWeight: "700",
                     border: "none",
                     background: "none",
                     cursor: "pointer",
                     textDecoration: "underline",
                     padding: 0,
-                    fontSize: "14.5px"
+                    fontSize: "14.5px",
+                    transition: "color 0.2s ease-in-out"
                   }}
+                  onMouseEnter={(e) => e.target.style.color = "var(--secondary)"}
+                  onMouseLeave={(e) => e.target.style.color = "var(--primary)"}
                 >
                   Login Here
                 </button>
@@ -732,9 +768,10 @@ export default function AuthModal({ isOpen, onClose, initialTab = "login" }) {
               textDecoration: "underline",
               border: "none",
               background: "none",
-              cursor: "pointer"
+              cursor: "pointer",
+              transition: "color 0.2s ease-in-out"
             }}
-            onMouseEnter={(e) => e.target.style.color = "#1F2937"}
+            onMouseEnter={(e) => e.target.style.color = "var(--primary)"}
             onMouseLeave={(e) => e.target.style.color = "#6B7280"}
           >
             Back to Home

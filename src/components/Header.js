@@ -266,7 +266,7 @@ export default function Header() {
     if (searchQuery.trim()) {
       addQueryToHistory(searchQuery);
       setSearchModalOpen(false);
-      router.push(`/?search=${encodeURIComponent(searchQuery)}`);
+      router.push(`/brands/?search=${encodeURIComponent(searchQuery)}`);
     }
   };
 
@@ -274,13 +274,13 @@ export default function Header() {
     setSearchQuery(term);
     addQueryToHistory(term);
     setSearchModalOpen(false);
-    router.push(`/?search=${encodeURIComponent(term)}`);
+    router.push(`/brands/?search=${encodeURIComponent(term)}`);
   };
 
   const handleResultClick = (brand) => {
     addQueryToHistory(brand.name);
     setSearchModalOpen(false);
-    router.push(`/?search=${encodeURIComponent(brand.name)}`);
+    router.push(`/brands/?search=${encodeURIComponent(brand.name)}`);
   };
 
   const clearSearchHistory = () => {
@@ -370,23 +370,6 @@ export default function Header() {
                   Home
                 </Link>
               </li>
-              <li>
-                <Link
-                  href="/brands"
-                  className={`nav-link ${pathname === "/brands" ? "active" : ""}`}
-                >
-                  Brands
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/blogs"
-                  className={`nav-link ${pathname === "/blogs" || pathname.startsWith("/blogs/") ? "active" : ""}`}
-                >
-                  Blogs
-                </Link>
-              </li>
-
               {/* Mega Dropdown / Solutions menu */}
               <li
                 onMouseEnter={() => setActiveDropdown(true)}
@@ -437,7 +420,6 @@ export default function Header() {
                   </div>
                 )}
               </li>
-
               <li>
                 <Link
                   href="/brand-registration"
@@ -452,6 +434,30 @@ export default function Header() {
                   className={`nav-link ${pathname === "/investor-registration" ? "active" : ""}`}
                 >
                   Start A Business
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/brands"
+                  className={`nav-link ${pathname === "/brands" ? "active" : ""}`}
+                >
+                  Brands
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/blogs"
+                  className={`nav-link ${pathname === "/blogs" || pathname.startsWith("/blogs/") ? "active" : ""}`}
+                >
+                  Blogs
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/contact"
+                  className={`nav-link ${pathname === "/contact" ? "active" : ""}`}
+                >
+                  Contact
                 </Link>
               </li>
             </ul>
@@ -719,7 +725,7 @@ export default function Header() {
                       {["Food and Beverage", "Retail", "Education", "Automobiles", "Health and Wellness"].map((category, index) => (
                         <div key={index} className="search-tag-chip" style={{ background: "rgba(124, 58, 237, 0.05)", color: "var(--secondary)", borderColor: "rgba(124, 58, 237, 0.1)" }} onClick={() => {
                           setSearchModalOpen(false);
-                          router.push(`/?category=${encodeURIComponent(category)}`);
+                          router.push(`/brands/?category=${encodeURIComponent(category)}`);
                         }}>
                           <Building size={12} />
                           {category}

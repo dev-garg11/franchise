@@ -98,11 +98,11 @@ export default function Footer() {
             <h4 style={{ color: 'white', fontSize: '13px', fontWeight: '800', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '24px' }}>Popular Categories</h4>
             <ul className="footer-links" style={{ listStyle: 'none' }}>
               {[
-                { name: 'Food & Beverage', url: '/?category=Food and Beverage' },
-                { name: 'Retail Directory', url: '/?category=Retail' },
-                { name: 'Educational Centers', url: '/?category=Education' },
-                { name: 'Automobiles & EV', url: '/?category=Automobiles' },
-                { name: 'Health & Wellness', url: '/?category=Health and Wellness' }
+                { name: 'Food & Beverage', url: '/brands/?category=Food and Beverage' },
+                { name: 'Retail Directory', url: '/brands/?category=Retail' },
+                { name: 'Educational Centers', url: '/brands/?category=Education' },
+                { name: 'Automobiles & EV', url: '/brands/?category=Automobiles' },
+                { name: 'Health & Wellness', url: '/brands/?category=Health and Wellness' }
               ].map((link, idx) => (
                 <li key={idx} style={{ marginBottom: '12px' }}>
                   <Link href={link.url} style={{ fontSize: '13.5px', color: '#94A3B8', display: 'inline-flex', alignItems: 'center', gap: '4px' }} className="footer-link-hover">
@@ -122,6 +122,7 @@ export default function Footer() {
                 { name: 'Latest Blog Articles', url: '/blogs' },
                 { name: 'Register Your Brand', url: '/brand-registration' },
                 { name: 'Start New Business', url: '/investor-registration' },
+                { name: 'Contact Consulting Desk', url: '/contact' },
                 { name: 'Partner Login Area', url: '/login' },
                 { name: 'Admin Verification Panel', url: '/admin' }
               ].map((link, idx) => (
@@ -171,6 +172,7 @@ export default function Footer() {
           <div style={{ display: 'flex', gap: '24px' }}>
             <Link href="/terms" style={{ transition: 'var(--transition-normal)' }} className="footer-bottom-link">Terms & Conditions</Link>
             <Link href="/privacy" style={{ transition: 'var(--transition-normal)' }} className="footer-bottom-link">Privacy Policy</Link>
+            <Link href="/contact" style={{ transition: 'var(--transition-normal)' }} className="footer-bottom-link">Contact Us</Link>
           </div>
         </div>
       </div>
