@@ -420,7 +420,7 @@ export default function Header() {
                   </div>
                 )}
               </li>
-              <li>
+              {/* <li>
                 <Link
                   href="/brand-registration"
                   className={`nav-link ${pathname === "/brand-registration" ? "active" : ""}`}
@@ -435,7 +435,7 @@ export default function Header() {
                 >
                   Start A Business
                 </Link>
-              </li>
+              </li> */}
               <li>
                 <Link
                   href="/brands"
