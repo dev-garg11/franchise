@@ -118,6 +118,7 @@ export default function Footer() {
             <ul className="footer-links" style={{ listStyle: 'none' }}>
               {[
                 { name: 'Homepage Directory', url: '/' },
+                { name: 'Latest Blog Articles', url: '/blogs' },
                 { name: 'Register Your Brand', url: '/brand-registration' },
                 { name: 'Start New Business', url: '/investor-registration' },
                 { name: 'Partner Login Area', url: '/login' },

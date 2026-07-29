@@ -24,8 +24,15 @@ export default function AdminDashboard() {
   // Data State
   const [brands, setBrands] = useState([]);
   const [investors, setInvestors] = useState([]);
+  const [blogs, setBlogs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
+
+  // Blog Management State
+  const [blogModalOpen, setBlogModalOpen] = useState(false);
+  const [blogForm, setBlogForm] = useState({ title: "", content: "", image: "" });
+  const [editingBlogId, setEditingBlogId] = useState(null);
+  const [isSavingBlog, setIsSavingBlog] = useState(false);
 
   // Investor Leads Filters State
   const [filterBrand, setFilterBrand] = useState("");
@@ -85,13 +92,14 @@ export default function AdminDashboard() {
     }
   }, [router]);
 
-  // Fetch all brands and investors
+  // Fetch all brands, investors, and blogs
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [brandsRes, investorsRes] = await Promise.all([
+      const [brandsRes, investorsRes, blogsRes] = await Promise.all([
         fetch("/api/brands"),
-        fetch("/api/investors")
+        fetch("/api/investors"),
+        fetch("/api/blogs")
       ]);
 
       if (brandsRes.ok) {
@@ -101,6 +109,10 @@ export default function AdminDashboard() {
       if (investorsRes.ok) {
         const investorsData = await investorsRes.json();
         setInvestors(investorsData);
+      }
+      if (blogsRes.ok) {
+        const blogsData = await blogsRes.json();
+        setBlogs(blogsData);
       }
     } catch (error) {
       console.error("Error loading data:", error);
@@ -212,6 +224,73 @@ export default function AdminDashboard() {
     }
   };
 
+  // Open modal to create a new blog
+  const handleOpenCreateBlog = () => {
+    setBlogForm({ title: "", content: "", image: "" });
+    setEditingBlogId(null);
+    setBlogModalOpen(true);
+  };
+
+  // Open modal to edit an existing blog
+  const handleOpenEditBlog = (blog) => {
+    setBlogForm({
+      title: blog.title || "",
+      content: blog.content || "",
+      image: blog.image || ""
+    });
+    setEditingBlogId(blog.id || blog._id);
+    setBlogModalOpen(true);
+  };
+
+  // Create or Update blog DB record
+  const handleSaveBlog = async (e) => {
+    e.preventDefault();
+    if (!blogForm.title || !blogForm.content) {
+      alert("Title and content are required.");
+      return;
+    }
+    setIsSavingBlog(true);
+    try {
+      const url = editingBlogId ? `/api/blogs/${editingBlogId}` : "/api/blogs";
+      const method = editingBlogId ? "PATCH" : "POST";
+      const res = await fetch(url, {
+        method,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(blogForm)
+      });
+      if (res.ok) {
+        alert(editingBlogId ? "Blog updated successfully!" : "Blog created successfully!");
+        setBlogModalOpen(false);
+        fetchData();
+      } else {
+        const errorData = await res.json();
+        alert(errorData.error || "Failed to save blog post.");
+      }
+    } catch (err) {
+      console.error("Failed to save blog:", err);
+      alert("An error occurred while saving the blog.");
+    } finally {
+      setIsSavingBlog(false);
+    }
+  };
+
+  // Delete Blog record
+  const handleDeleteBlog = async (id) => {
+    if (!confirm("Are you sure you want to permanently delete this blog post?")) return;
+    try {
+      const res = await fetch(`/api/blogs/${id}`, {
+        method: "DELETE"
+      });
+      if (res.ok) {
+        fetchData();
+      } else {
+        alert("Failed to delete blog post.");
+      }
+    } catch (err) {
+      console.error("Failed to delete blog:", err);
+    }
+  };
+
   // Formatting helpers
   const formatLakhs = (val) => {
     if (!val) return "N/A";
@@ -253,7 +332,7 @@ export default function AdminDashboard() {
 
     // 2. Filter by Brand (both assignedBrands array or applied brandId/brandName if saved as application)
     const matchesBrand = !filterBrand ? true : (
-      (i.brandId && i.brandId === filterBrand) || 
+      (i.brandId && i.brandId === filterBrand) ||
       (i.brandName && i.brandName.toLowerCase().includes(filterBrand.toLowerCase())) ||
       (i.assignedBrands && i.assignedBrands.includes(filterBrand))
     );
@@ -338,6 +417,15 @@ export default function AdminDashboard() {
                   Investor Leads ({investors.length})
                 </div>
               </li>
+              <li className="admin-nav-item">
+                <div
+                  className={`admin-nav-link ${activeTab === "blogs" ? "active" : ""}`}
+                  onClick={() => { setActiveTab("blogs"); setSearchTerm(""); }}
+                >
+                  <FileText size={18} />
+                  Manage Blogs ({blogs.length})
+                </div>
+              </li>
             </ul>
           </div>
         </div>
@@ -359,9 +447,10 @@ export default function AdminDashboard() {
               {activeTab === "dashboard" && "Dashboard Overview"}
               {activeTab === "brands" && "Manage Franchise Brands"}
               {activeTab === "investors" && "Investor Registration Leads"}
+              {activeTab === "blogs" && "Manage Blog Articles"}
             </h1>
             <p style={{ color: "var(--text-muted)", fontSize: "14px", marginTop: "4px" }}>
-              Welcome back, Administrator. Review pending listings submitted by brand owners.
+              {activeTab === "blogs" ? "Create, publish, edit, and delete informational blog posts." : "Welcome back, Administrator. Review pending listings submitted by brand owners."}
             </p>
           </div>
 
@@ -380,7 +469,7 @@ export default function AdminDashboard() {
             {/* Overview Stats Grid */}
             {activeTab === "dashboard" && (
               <>
-                <section className="stats-grid">
+                <section className="stats-grid" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))" }}>
                   <div className="stat-card">
                     <div className="stat-icon flex-center">
                       <Building size={24} />
@@ -408,6 +497,16 @@ export default function AdminDashboard() {
                     <div className="stat-info">
                       <h3>{totalInvestorsCount}</h3>
                       <p>Registered Investor Leads</p>
+                    </div>
+                  </div>
+
+                  <div className="stat-card" style={{ cursor: "pointer" }} onClick={() => setActiveTab("blogs")}>
+                    <div className="stat-icon flex-center" style={{ background: "rgba(99, 102, 241, 0.1)", color: "var(--primary)" }}>
+                      <FileText size={24} />
+                    </div>
+                    <div className="stat-info">
+                      <h3>{blogs.length}</h3>
+                      <p>Total Blog Posts</p>
                     </div>
                   </div>
                 </section>
@@ -810,6 +909,85 @@ export default function AdminDashboard() {
                 </table>
               </div>
             )}
+
+            {/* Blogs Tab */}
+            {activeTab === "blogs" && (
+              <div className="table-container">
+                <div className="table-header">
+                  <h3 style={{ fontSize: "18px" }}>Blog Posts Directory</h3>
+                  <div style={{ display: "flex", gap: "16px", alignItems: "center" }}>
+                    <div className="table-search">
+                      <Search size={16} color="var(--text-muted)" />
+                      <input
+                        type="text"
+                        placeholder="Search blogs by title..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                      />
+                    </div>
+                    <button className="btn btn-primary" onClick={handleOpenCreateBlog} style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                      <FileText size={16} /> Create New Blog
+                    </button>
+                  </div>
+                </div>
+
+                <table className="admin-table">
+                  <thead>
+                    <tr>
+                      <th style={{ width: "120px" }}>Cover</th>
+                      <th>Title</th>
+                      <th>Snippet</th>
+                      <th>Date Published</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {blogs
+                      .filter(blog => blog.title.toLowerCase().includes(searchTerm.toLowerCase()))
+                      .length === 0 ? (
+                      <tr>
+                        <td colSpan="5" style={{ textAlign: "center", padding: "30px", color: "var(--text-muted)" }}>
+                          No blog posts found. Click "Create New Blog" to publish one.
+                        </td>
+                      </tr>
+                    ) : (
+                      blogs
+                        .filter(blog => blog.title.toLowerCase().includes(searchTerm.toLowerCase()))
+                        .map((blog) => (
+                          <tr key={blog.id || blog._id}>
+                            <td>
+                              <img
+                                src={blog.image || "https://images.unsplash.com/photo-1546074177-ffedd79d494d?auto=format&fit=crop&q=80&w=150"}
+                                alt={blog.title}
+                                style={{ width: "80px", height: "50px", borderRadius: "6px", objectFit: "cover", border: "1px solid var(--border-color)" }}
+                              />
+                            </td>
+                            <td>
+                              <span style={{ fontWeight: "700" }}>{blog.title}</span>
+                            </td>
+                            <td>
+                              <span style={{ color: "var(--text-muted)", fontSize: "13px" }}>
+                                {blog.content && blog.content.length > 90 ? `${blog.content.substring(0, 90)}...` : blog.content}
+                              </span>
+                            </td>
+                            <td style={{ fontSize: "13px", color: "var(--text-muted)" }}>
+                              {blog.createdAt ? new Date(blog.createdAt).toLocaleDateString("en-IN", { day: 'numeric', month: 'short', year: 'numeric' }) : "N/A"}
+                            </td>
+                            <td>
+                              <button className="action-btn view" onClick={() => handleOpenEditBlog(blog)}>
+                                Edit Post
+                              </button>
+                              <button className="action-btn reject" style={{ background: "none", color: "var(--error)", border: "1px solid var(--error)" }} onClick={() => handleDeleteBlog(blog.id || blog._id)}>
+                                <Trash2 size={14} />
+                              </button>
+                            </td>
+                          </tr>
+                        ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </>
         )}
       </main>
@@ -951,7 +1129,7 @@ export default function AdminDashboard() {
                 </div>
               </div>
 
-               {/* Attached Brands / Applied Brand */}
+              {/* Attached Brands / Applied Brand */}
               {(selectedItem.brandId || selectedItem.brandName) ? (
                 <div style={{ background: "#f8fafc", padding: "16px", borderRadius: "8px", marginBottom: "20px" }}>
                   <h4 style={{ fontSize: "14px", marginBottom: "8px" }}>Applied Franchise Brand</h4>
@@ -1003,6 +1181,79 @@ export default function AdminDashboard() {
               <button className="btn btn-outline" style={{ background: "var(--error)", color: "white", borderColor: "transparent" }} onClick={() => handleDeleteInvestor(selectedItem.id || selectedItem._id)}>Delete Lead</button>
               <button className="btn btn-outline" onClick={() => setSelectedItem(null)}>Close Window</button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Create/Edit Blog Modal */}
+      {blogModalOpen && (
+        <div className="modal-overlay" onClick={() => setBlogModalOpen(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: "600px" }}>
+            <div className="modal-header">
+              <h3>{editingBlogId ? "Edit Blog Post" : "Create New Blog Post"}</h3>
+              <button className="close-btn" onClick={() => setBlogModalOpen(false)}>×</button>
+            </div>
+            <form onSubmit={handleSaveBlog}>
+              <div className="modal-body" style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+                <div className="form-group">
+                  <label htmlFor="blog-title" style={{ fontWeight: 700, color: "var(--text-dark)", fontSize: "13.5px" }}>Blog Title <span style={{ color: "var(--danger)" }}>*</span></label>
+                  <input
+                    id="blog-title"
+                    type="text"
+                    className="form-input"
+                    placeholder="Enter catchy title..."
+                    value={blogForm.title}
+                    onChange={(e) => setBlogForm({ ...blogForm, title: e.target.value })}
+                    required
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label htmlFor="blog-image" style={{ fontWeight: 700, color: "var(--text-dark)", fontSize: "13.5px" }}>Cover Image URL</label>
+                  <input
+                    id="blog-image"
+                    type="url"
+                    className="form-input"
+                    placeholder="https://images.unsplash.com/... or keep blank"
+                    value={blogForm.image}
+                    onChange={(e) => setBlogForm({ ...blogForm, image: e.target.value })}
+                  />
+                  {blogForm.image && (
+                    <div style={{ marginTop: "8px" }}>
+                      <p style={{ fontSize: "11px", color: "var(--text-muted)", marginBottom: "4px" }}>Image Preview:</p>
+                      <img
+                        src={blogForm.image}
+                        alt="Preview"
+                        style={{ width: "100%", maxHeight: "150px", objectFit: "cover", borderRadius: "6px", border: "1px solid var(--border-color)" }}
+                        onError={(e) => { e.target.src = "https://images.unsplash.com/photo-1546074177-ffedd79d494d?auto=format&fit=crop&q=80&w=300"; }}
+                      />
+                    </div>
+                  )}
+                </div>
+
+                <div className="form-group">
+                  <label htmlFor="blog-content" style={{ fontWeight: 700, color: "var(--text-dark)", fontSize: "13.5px" }}>Blog Content <span style={{ color: "var(--danger)" }}>*</span></label>
+                  <textarea
+                    id="blog-content"
+                    className="form-input"
+                    placeholder="Write detailed article here..."
+                    rows={8}
+                    value={blogForm.content}
+                    onChange={(e) => setBlogForm({ ...blogForm, content: e.target.value })}
+                    style={{ resize: "vertical", minHeight: "150px", fontFamily: "inherit" }}
+                    required
+                  />
+                </div>
+              </div>
+              <div className="modal-footer">
+                <button type="button" className="btn btn-outline" onClick={() => setBlogModalOpen(false)}>
+                  Cancel
+                </button>
+                <button type="submit" className="btn btn-primary" disabled={isSavingBlog}>
+                  {isSavingBlog ? "Saving Post..." : (editingBlogId ? "Save Changes" : "Publish Post")}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

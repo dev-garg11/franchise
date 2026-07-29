@@ -341,15 +341,15 @@ export default function Header() {
         }}>
           {/* Logo */}
           <Link href="/" style={{ display: 'flex', alignItems: 'center', transition: 'var(--transition-normal)' }}>
-            <img 
-              src="/WhatsApp_Image_2026-07-16_at_4.40.00_PM__2_-removebg-preview.png" 
-              alt="Franchise Roots" 
+            <img
+              src="/WhatsApp_Image_2026-07-16_at_4.40.00_PM__2_-removebg-preview.png"
+              alt="Franchise Roots"
               style={{
                 height: isScrolled ? '130px' : '185px',
                 width: 'auto',
                 transition: 'var(--transition-normal)',
                 objectFit: 'contain'
-              }} 
+              }}
             />
           </Link>
 
@@ -368,6 +368,14 @@ export default function Header() {
               <li>
                 <Link href="/" className={`nav-link ${pathname === "/" ? "active" : ""}`}>
                   Home
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/blogs"
+                  className={`nav-link ${pathname === "/blogs" || pathname.startsWith("/blogs/") ? "active" : ""}`}
+                >
+                  Blogs
                 </Link>
               </li>
 

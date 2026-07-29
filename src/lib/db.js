@@ -5,6 +5,7 @@ import Brand from "@/models/Brand";
 import Investor from "@/models/Investor";
 import Admin from "@/models/Admin";
 import User from "@/models/User";
+import Blog from "@/models/Blog";
 import bcrypt from "bcryptjs";
 import {
   sendBrandRegistrationEmail,
@@ -598,4 +599,92 @@ export async function deleteInvestor(id) {
     throw error;
   }
 }
+
+export async function getBlogs() {
+  await dbConnect();
+  try {
+    const blogs = await Blog.find({}).sort({ createdAt: -1 }).lean();
+    return blogs.map(b => ({
+      ...b,
+      id: b._id.toString()
+    }));
+  } catch (error) {
+    console.error("Error reading blogs from MongoDB:", error);
+    return [];
+  }
+}
+
+export async function saveBlog(blogData) {
+  await dbConnect();
+  try {
+    const blog = new Blog(blogData);
+    const saved = await blog.save();
+    const obj = saved.toObject();
+    return {
+      ...obj,
+      id: obj._id.toString()
+    };
+  } catch (error) {
+    console.error("Error saving blog to MongoDB:", error);
+    throw error;
+  }
+}
+
+export async function updateBlog(id, updatedFields) {
+  await dbConnect();
+  try {
+    const query = mongoose.Types.ObjectId.isValid(id) ? { _id: id } : null;
+    if (!query) throw new Error("Invalid Blog ID");
+
+    const updated = await Blog.findOneAndUpdate(
+      query,
+      { $set: updatedFields },
+      { new: true }
+    ).lean();
+
+    if (!updated) return null;
+
+    return {
+      ...updated,
+      id: updated._id.toString()
+    };
+  } catch (error) {
+    console.error("Error updating blog in MongoDB:", error);
+    throw error;
+  }
+}
+
+export async function deleteBlog(id) {
+  await dbConnect();
+  try {
+    const query = mongoose.Types.ObjectId.isValid(id) ? { _id: id } : null;
+    if (!query) throw new Error("Invalid Blog ID");
+
+    const result = await Blog.deleteOne(query);
+    return result.deletedCount > 0;
+  } catch (error) {
+    console.error("Error deleting blog from MongoDB:", error);
+    throw error;
+  }
+}
+
+export async function getBlogById(id) {
+  await dbConnect();
+  try {
+    const query = mongoose.Types.ObjectId.isValid(id) ? { _id: id } : null;
+    if (!query) return null;
+
+    const blog = await Blog.findOne(query).lean();
+    if (!blog) return null;
+
+    return {
+      ...blog,
+      id: blog._id.toString()
+    };
+  } catch (error) {
+    console.error("Error reading blog by ID from MongoDB:", error);
+    return null;
+  }
+}
+
 
