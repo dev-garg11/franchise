@@ -5,7 +5,8 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
   Building, Users, FileText, CheckCircle, XCircle, Trash2, LogOut,
-  Home, Search, LayoutDashboard, ShieldCheck, Mail, Phone, MapPin
+  Home, Search, LayoutDashboard, ShieldCheck, Mail, Phone, MapPin,
+  UploadCloud
 } from "lucide-react";
 
 const isNew = (dateString) => {
@@ -289,6 +290,61 @@ export default function AdminDashboard() {
     } catch (err) {
       console.error("Failed to delete blog:", err);
     }
+  };
+
+  const handleBlogImageUpload = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Check size limit: e.g. 5MB
+    const maxSize = 5 * 1024 * 1024;
+    if (file.size > maxSize) {
+      alert("File is too large. Maximum size allowed is 5 MB.");
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      // Create an image to resize it (optional, but good for saving DB space)
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        const ctx = canvas.getContext("2d");
+
+        // Resize to 800px width limit or similar
+        const maxDim = 800;
+        let width = img.width;
+        let height = img.height;
+        if (width > maxDim || height > maxDim) {
+          if (width > height) {
+            height = Math.round((height * maxDim) / width);
+            width = maxDim;
+          } else {
+            width = Math.round((width * maxDim) / height);
+            height = maxDim;
+          }
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+        ctx.drawImage(img, 0, 0, width, height);
+
+        const base64 = canvas.toDataURL("image/jpeg", 0.85);
+        setBlogForm(prev => ({
+          ...prev,
+          image: base64
+        }));
+      };
+      img.src = event.target.result;
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleRemoveBlogImage = () => {
+    setBlogForm(prev => ({
+      ...prev,
+      image: ""
+    }));
   };
 
   // Formatting helpers
@@ -1209,25 +1265,65 @@ export default function AdminDashboard() {
                 </div>
 
                 <div className="form-group">
-                  <label htmlFor="blog-image" style={{ fontWeight: 700, color: "var(--text-dark)", fontSize: "13.5px" }}>Cover Image URL</label>
-                  <input
-                    id="blog-image"
-                    type="url"
-                    className="form-input"
-                    placeholder="https://images.unsplash.com/... or keep blank"
-                    value={blogForm.image}
-                    onChange={(e) => setBlogForm({ ...blogForm, image: e.target.value })}
-                  />
-                  {blogForm.image && (
-                    <div style={{ marginTop: "8px" }}>
-                      <p style={{ fontSize: "11px", color: "var(--text-muted)", marginBottom: "4px" }}>Image Preview:</p>
+                  <label style={{ fontWeight: 700, color: "var(--text-dark)", fontSize: "13.5px" }}>Cover Image</label>
+
+                  {blogForm.image ? (
+                    <div style={{ position: "relative", border: "1px solid var(--border-color)", borderRadius: "8px", overflow: "hidden", background: "#f8fafc" }}>
                       <img
                         src={blogForm.image}
                         alt="Preview"
-                        style={{ width: "100%", maxHeight: "150px", objectFit: "cover", borderRadius: "6px", border: "1px solid var(--border-color)" }}
-                        onError={(e) => { e.target.src = "https://images.unsplash.com/photo-1546074177-ffedd79d494d?auto=format&fit=crop&q=80&w=300"; }}
+                        style={{ width: "100%", maxHeight: "200px", objectFit: "cover" }}
                       />
+                      <button
+                        type="button"
+                        onClick={handleRemoveBlogImage}
+                        style={{
+                          position: "absolute",
+                          top: "10px",
+                          right: "10px",
+                          background: "var(--error)",
+                          color: "white",
+                          border: "none",
+                          borderRadius: "50%",
+                          width: "32px",
+                          height: "32px",
+                          cursor: "pointer",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          boxShadow: "0 2px 6px rgba(0,0,0,0.15)",
+                          fontSize: "12px",
+                          fontWeight: "800"
+                        }}
+                        title="Remove Image"
+                      >
+                        ✕
+                      </button>
                     </div>
+                  ) : (
+                    <label style={{
+                      display: "flex",
+                      flexDirection: "column",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      border: "2px dashed var(--border-color)",
+                      borderRadius: "8px",
+                      padding: "30px",
+                      cursor: "pointer",
+                      background: "#f8fafc",
+                      textAlign: "center",
+                      transition: "all 0.2s ease"
+                    }} className="blog-upload-dropzone">
+                      <UploadCloud size={32} style={{ color: "var(--text-muted)", marginBottom: "8px" }} />
+                      <span style={{ fontSize: "14px", fontWeight: "700", color: "var(--text-dark)" }}>Click to upload cover image</span>
+                      <span style={{ fontSize: "11px", color: "var(--text-muted)", marginTop: "2px" }}>PNG, JPG, JPEG, WEBP or SVG up to 5 MB</span>
+                      <input
+                        type="file"
+                        onChange={handleBlogImageUpload}
+                        accept=".png,.jpg,.jpeg,.webp,.svg"
+                        style={{ display: "none" }}
+                      />
+                    </label>
                   )}
                 </div>
 

@@ -372,6 +372,14 @@ export default function Header() {
               </li>
               <li>
                 <Link
+                  href="/brands"
+                  className={`nav-link ${pathname === "/brands" ? "active" : ""}`}
+                >
+                  Brands
+                </Link>
+              </li>
+              <li>
+                <Link
                   href="/blogs"
                   className={`nav-link ${pathname === "/blogs" || pathname.startsWith("/blogs/") ? "active" : ""}`}
                 >

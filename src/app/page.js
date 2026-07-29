@@ -2,11 +2,11 @@
 
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { 
-  Search, MapPin, IndianRupee, RotateCcw, Building, Users, Star, ArrowRight, 
-  GraduationCap, Utensils, Store, Car, HeartPulse, Building2, HelpCircle, 
-  CheckCircle, ShieldCheck, Award, ThumbsUp, ChevronRight, MessageSquare, Mail, 
+import { usePathname, useRouter } from "next/navigation";
+import {
+  Search, MapPin, IndianRupee, RotateCcw, Building, Users, Star, ArrowRight,
+  GraduationCap, Utensils, Store, Car, HeartPulse, Building2, HelpCircle,
+  CheckCircle, ShieldCheck, Award, ThumbsUp, ChevronRight, MessageSquare, Mail,
   Phone, Globe, Eye, ChevronLeft, Send, Sparkles, ShieldAlert
 } from "lucide-react";
 
@@ -47,12 +47,12 @@ const FAQS = [
 
 export default function Home() {
   const sliderRef = useRef(null);
+  const router = useRouter();
   const [brands, setBrands] = useState([]);
-  const [filteredBrands, setFilteredBrands] = useState([]);
   const [loading, setLoading] = useState(true);
   const pathname = usePathname();
-  
-  // Search Filters State
+
+  // Temporary Search Filters Form State (will redirect to /brands page on submit)
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("");
   const [selectedBudget, setSelectedBudget] = useState("");
@@ -79,7 +79,6 @@ export default function Home() {
       if (res.ok) {
         const data = await res.json();
         setBrands(data);
-        setFilteredBrands(data);
       }
     } catch (error) {
       console.error("Error fetching brands:", error);
@@ -107,66 +106,15 @@ export default function Home() {
     }
   }, [selectedBrand]);
 
-  // Sync URL search parameters with search states
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      const params = new URLSearchParams(window.location.search);
-      const categoryParam = params.get("category");
-      const locationParam = params.get("location");
-      const searchParam = params.get("search");
-      if (categoryParam) setSelectedCategory(categoryParam);
-      if (locationParam) setSelectedLocation(locationParam);
-      if (searchParam) setSearchTerm(searchParam);
-      if (categoryParam || locationParam || searchParam) {
-        setTimeout(() => {
-          const element = document.getElementById("directory-section");
-          if (element) element.scrollIntoView({ behavior: "smooth" });
-        }, 150);
-      }
-    }
-  }, [pathname, brands]);
-
-  // Handle Filtering
-  useEffect(() => {
-    let result = [...brands];
-
-    // Search keyword
-    if (searchTerm) {
-      const keyword = searchTerm.toLowerCase();
-      result = result.filter(
-        b => b.name.toLowerCase().includes(keyword) || 
-             b.company.toLowerCase().includes(keyword) || 
-             b.description.toLowerCase().includes(keyword)
-      );
-    }
-
-    // Category
-    if (selectedCategory) {
-      result = result.filter(b => b.category === selectedCategory);
-    }
-
-    // Location (HQ)
-    if (selectedLocation) {
-      result = result.filter(b => b.hq === selectedLocation);
-    }
-
-    // Budget
-    if (selectedBudget) {
-      result = result.filter(b => {
-        const min = b.minInvestment;
-        if (selectedBudget === "under-2l") return min < 200000;
-        if (selectedBudget === "2l-5l") return min >= 200000 && min <= 500000;
-        if (selectedBudget === "5l-10l") return min >= 500000 && min <= 1000000;
-        if (selectedBudget === "10l-15l") return min >= 1000000 && min <= 1500000;
-        if (selectedBudget === "15l-20l") return min >= 1500000 && min <= 2000000;
-        if (selectedBudget === "20l-30l") return min >= 2000000 && min <= 3000000;
-        if (selectedBudget === "above-30l") return min > 3000000;
-        return true;
-      });
-    }
-
-    setFilteredBrands(result);
-  }, [searchTerm, selectedCategory, selectedBudget, selectedLocation, brands]);
+  // Handle Search Submission Redirection
+  const handleSearchSubmit = (e) => {
+    if (e) e.preventDefault();
+    const params = new URLSearchParams();
+    if (searchTerm) params.set("search", searchTerm);
+    if (selectedCategory) params.set("category", selectedCategory);
+    if (selectedBudget) params.set("budget", selectedBudget);
+    router.push(`/brands?${params.toString()}`);
+  };
 
   // Reset Filters
   const handleReset = () => {
@@ -176,22 +124,14 @@ export default function Home() {
     setSelectedLocation("");
   };
 
-  // Quick category select from cards
+  // Quick category select from cards -> Redirection
   const selectCategory = (categoryName) => {
-    setSelectedCategory(categoryName);
-    const element = document.getElementById("directory-section");
-    if (element) {
-      element.scrollIntoView({ behavior: "smooth" });
-    }
+    router.push(`/brands?category=${encodeURIComponent(categoryName)}`);
   };
 
-  // Quick location select
+  // Quick location select -> Redirection
   const selectLocation = (locationName) => {
-    setSelectedLocation(locationName);
-    const element = document.getElementById("directory-section");
-    if (element) {
-      element.scrollIntoView({ behavior: "smooth" });
-    }
+    router.push(`/brands?location=${encodeURIComponent(locationName)}`);
   };
 
   // Format currency
@@ -277,7 +217,7 @@ export default function Home() {
         {/* Decorative Blobs */}
         <div className="hero-blob hero-blob-1"></div>
         <div className="hero-blob hero-blob-2"></div>
-        
+
         <div className="container hero-container-inner">
           <div className="hero-content">
             <span className="hero-tag">
@@ -318,12 +258,12 @@ export default function Home() {
           <div className="hero-artwork">
             <div className="artwork-glow"></div>
             <div className="luxury-illustration-container">
-              <img 
-                src="https://images.unsplash.com/photo-1542744173-8e7e53415bb0?auto=format&fit=crop&q=80&w=800" 
-                alt="Corporate Meeting" 
+              <img
+                src="https://images.unsplash.com/photo-1542744173-8e7e53415bb0?auto=format&fit=crop&q=80&w=800"
+                alt="Corporate Meeting"
                 className="illustration-bg-image"
               />
-              
+
               {/* Overlapping Glass Card 1 */}
               <div className="floating-glass-card fg-card-1">
                 <span className="fg-label">Active Investors</span>
@@ -402,9 +342,9 @@ export default function Home() {
               </select>
             </div>
 
-            <button className="btn btn-primary" onClick={handleReset} style={{ padding: "14px 24px", height: '100%' }}>
-              <RotateCcw size={16} />
-              Reset Filters
+            <button className="btn btn-primary" onClick={handleSearchSubmit} style={{ padding: "14px 24px", height: '100%', gap: '8px', display: 'inline-flex', alignItems: 'center' }}>
+              <Search size={16} />
+              Search Now
             </button>
           </div>
         </div>
@@ -417,8 +357,8 @@ export default function Home() {
           <div className="logo-slider">
             <div className="logo-track">
               {[
-                "JAIPUR CHAI", "DOCTOR GARAGE", "EDUQUANTUM", "JAAZ BATHWARE", "AMUL PARLIAMENT", 
-                "BOMBAY KULFI", "JAIPUR CHAI", "DOCTOR GARAGE", "EDUQUANTUM", "JAAZ BATHWARE", 
+                "JAIPUR CHAI", "DOCTOR GARAGE", "EDUQUANTUM", "JAAZ BATHWARE", "AMUL PARLIAMENT",
+                "BOMBAY KULFI", "JAIPUR CHAI", "DOCTOR GARAGE", "EDUQUANTUM", "JAAZ BATHWARE",
                 "AMUL PARLIAMENT", "BOMBAY KULFI"
               ].map((logoName, idx) => (
                 <div key={idx} className="logo-item">
@@ -486,8 +426,8 @@ export default function Home() {
           {CATEGORIES.map((cat, i) => {
             const Icon = cat.icon;
             return (
-              <div 
-                key={i} 
+              <div
+                key={i}
                 className={`category-card ${selectedCategory === cat.name ? "active-category" : ""}`}
                 onClick={() => selectCategory(cat.name)}
                 style={{ cursor: 'pointer' }}
@@ -529,13 +469,13 @@ export default function Home() {
                     <div className="slider-image-wrapper">
                       <div className="slider-badge">{brand.hq}</div>
                       <div className="slider-overlay-gradient"></div>
-                      <img 
-                        src={brand.image || "https://images.unsplash.com/photo-1524178232363-1fb2b075b655?auto=format&fit=crop&q=80&w=400"} 
+                      <img
+                        src={brand.image || "https://images.unsplash.com/photo-1524178232363-1fb2b075b655?auto=format&fit=crop&q=80&w=400"}
                         alt={brand.name}
                         className="slider-image"
                       />
                       <div className="slider-brand-logo">
-                        <span style={{ fontSize: '22px', fontWeight: '800', color: 'var(--primary)' }}>{brand.name.substring(0,2).toUpperCase()}</span>
+                        <span style={{ fontSize: '22px', fontWeight: '800', color: 'var(--primary)' }}>{brand.name.substring(0, 2).toUpperCase()}</span>
                       </div>
                     </div>
                     <div className="slider-card-content">
@@ -544,7 +484,7 @@ export default function Home() {
                       <p style={{ fontSize: '13px', color: 'var(--text-muted)', height: '40px', overflow: 'hidden', marginBottom: '16px', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
                         {brand.description}
                       </p>
-                      
+
                       <div className="slider-meta-row">
                         <div className="slider-meta-col">
                           <span className="slider-meta-label">Min Investment</span>
@@ -573,83 +513,7 @@ export default function Home() {
         </section>
       )}
 
-      {/* 7. Directory List of Opportunities */}
-      <section id="directory-section" className="container" style={{ marginBottom: "80px", scrollMarginTop: "100px" }}>
-        <div className="section-title-wrapper">
-          <div className="section-title">
-            <h2>Explore Franchise Opportunities</h2>
-            <p>
-              Showing {filteredBrands.length} verified investment options {selectedCategory && `in ${selectedCategory}`} {selectedLocation && `in ${selectedLocation}`}
-            </p>
-          </div>
-          {(selectedCategory || selectedLocation || selectedBudget || searchTerm) && (
-            <button className="btn btn-outline" onClick={handleReset} style={{ padding: "10px 18px", fontSize: '13px' }}>
-              Clear Active Filters
-            </button>
-          )}
-        </div>
-
-        {loading ? (
-          <div className="flex-center" style={{ minHeight: "200px", flexDirection: "column", gap: "16px" }}>
-            <div className="spinner" style={{ borderTopColor: "var(--primary)" }}></div>
-            <p style={{ color: "var(--text-muted)", fontWeight: "500" }}>Querying Directory Data...</p>
-          </div>
-        ) : filteredBrands.length === 0 ? (
-          <div className="flex-center" style={{ minHeight: "250px", flexDirection: "column", background: "white", borderRadius: "18px", border: "1px dashed var(--border-color)", padding: "40px", textAlign: 'center' }}>
-            <HelpCircle size={48} color="var(--text-muted)" style={{ marginBottom: "16px" }} />
-            <h3 style={{ marginBottom: "8px" }}>No Opportunities Found</h3>
-            <p style={{ color: "var(--text-muted)", marginBottom: "20px" }}>We couldn't find any approved brands matching your filter configuration.</p>
-            <button className="btn btn-primary" onClick={handleReset}>Show All Opportunities</button>
-          </div>
-        ) : (
-          <div className="grid-auto">
-            {filteredBrands.map((brand) => (
-              <div key={brand.id} className="franchise-card">
-                <div className="franchise-card-image">
-                  <div className="franchise-badge">{brand.hq}</div>
-                  <img 
-                    src={brand.image || "https://images.unsplash.com/photo-1524178232363-1fb2b075b655?auto=format&fit=crop&q=80&w=400"} 
-                    alt={brand.name}
-                  />
-                </div>
-                <div className="franchise-card-content">
-                  <div>
-                    <span className="franchise-category">{brand.category}</span>
-                    <h3 className="franchise-title">{brand.name}</h3>
-                    <p style={{ fontSize: "13.5px", color: "var(--text-muted)", marginBottom: "20px", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", lineHeight: '1.6' }}>
-                      {brand.description}
-                    </p>
-                  </div>
-
-                  <div>
-                    <div className="franchise-meta">
-                      <div className="meta-item">
-                        <span className="meta-label">Investment Bracket</span>
-                        <span className="meta-value" style={{ color: "var(--primary)" }}>
-                          {formatLakhs(brand.minInvestment)}
-                        </span>
-                      </div>
-                      <div className="meta-item">
-                        <span className="meta-label">Space Required</span>
-                        <span className="meta-value">{brand.areaRequired || "Any Size"}</span>
-                      </div>
-                    </div>
-
-                    <div className="franchise-actions">
-                      <button className="btn btn-outline" onClick={() => { setSelectedBrand(brand); setIsEnquiryOnlyMode(false); setEnquirySubmitted(false); }}>
-                        Know More
-                      </button>
-                      <button className="btn btn-primary" onClick={() => { setSelectedBrand(brand); setIsEnquiryOnlyMode(true); setEnquirySubmitted(false); }}>
-                        Apply Now
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </section>
+      {/* Directory listing moved to standalone /brands page */}
 
       {/* 8. Process Section (Timeline) */}
       <section className="timeline-section">
@@ -662,7 +526,7 @@ export default function Home() {
 
           <div className="timeline-grid">
             <div className="timeline-connector"></div>
-            
+
             <div className="timeline-card">
               <div className="timeline-num flex-center">1</div>
               <h3>Browse & Search</h3>
@@ -726,9 +590,9 @@ export default function Home() {
         </div>
         <div className="states-grid">
           {STATES.map((state, i) => (
-            <div 
-              key={i} 
-              className="state-item" 
+            <div
+              key={i}
+              className="state-item"
               onClick={() => selectLocation(state)}
               style={{ cursor: "pointer" }}
             >
@@ -802,8 +666,8 @@ export default function Home() {
 
         <div className="faq-grid">
           {FAQS.map((faq, i) => (
-            <div 
-              key={i} 
+            <div
+              key={i}
               className={`faq-item ${openFaqIndex === i ? "open" : ""}`}
               onClick={() => setOpenFaqIndex(openFaqIndex === i ? null : i)}
             >
@@ -825,7 +689,7 @@ export default function Home() {
           <div className="newsletter-content">
             <h2>Join the Inner Circle</h2>
             <p>Receive exclusive alerts on newly verified franchise proposals, ROI analysis briefs, and local market reports weekly.</p>
-            
+
             {newsletterSuccess ? (
               <div className="alert flex-center" style={{ background: 'rgba(255, 255, 255, 0.1)', color: 'white', border: '1px solid rgba(255, 255, 255, 0.2)' }}>
                 <CheckCircle size={20} style={{ marginRight: '8px' }} />
@@ -833,8 +697,8 @@ export default function Home() {
               </div>
             ) : (
               <form onSubmit={handleNewsletterSubmit} className="newsletter-form">
-                <input 
-                  type="email" 
+                <input
+                  type="email"
                   required
                   placeholder="Enter your corporate email address"
                   className="newsletter-input"
@@ -865,8 +729,8 @@ export default function Home() {
                 /* Focused Enquiry Mode for Guest / Any User */
                 <div>
                   <div className="modal-profile-header" style={{ marginBottom: "20px", display: "flex", gap: "16px", alignItems: "center" }}>
-                    <img 
-                      src={selectedBrand.image || "https://images.unsplash.com/photo-1524178232363-1fb2b075b655?auto=format&fit=crop&q=80&w=400"} 
+                    <img
+                      src={selectedBrand.image || "https://images.unsplash.com/photo-1524178232363-1fb2b075b655?auto=format&fit=crop&q=80&w=400"}
                       alt={selectedBrand.name}
                       style={{ width: "90px", height: "90px", borderRadius: "12px", objectFit: "cover" }}
                     />
@@ -957,8 +821,8 @@ export default function Home() {
                 /* Full Detail Layout (Original) */
                 <div>
                   <div className="modal-profile-header">
-                    <img 
-                      src={selectedBrand.image || "https://images.unsplash.com/photo-1524178232363-1fb2b075b655?auto=format&fit=crop&q=80&w=400"} 
+                    <img
+                      src={selectedBrand.image || "https://images.unsplash.com/photo-1524178232363-1fb2b075b655?auto=format&fit=crop&q=80&w=400"}
                       alt={selectedBrand.name}
                       style={{ width: "120px", height: "120px", borderRadius: "12px", objectFit: "cover" }}
                     />
