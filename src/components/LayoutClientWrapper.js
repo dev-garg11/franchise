@@ -6,6 +6,9 @@ import Header from "./Header";
 import Footer from "./Footer";
 import AuthModal from "./AuthModal";
 
+import FloatingWhatsApp from "./FloatingWhatsApp";
+import AskExpertsModal from "./AskExpertsModal";
+
 function AuthParamsHandler({ setIsAuthModalOpen, setAuthModalTab }) {
   const searchParams = useSearchParams();
 
@@ -23,18 +26,32 @@ function AuthParamsHandler({ setIsAuthModalOpen, setAuthModalTab }) {
 export default function LayoutClientWrapper({ children }) {
   const pathname = usePathname();
   
+  const [mounted, setMounted] = useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [authModalTab, setAuthModalTab] = useState("login");
+  const [isAskExpertsOpen, setIsAskExpertsOpen] = useState(false);
+  const [askExpertsMode, setAskExpertsMode] = useState("buy");
 
-  // Listen to global open-auth-modal events
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // Listen to global open-auth-modal and open-ask-experts events
   useEffect(() => {
     const handleOpenAuth = (e) => {
       setIsAuthModalOpen(true);
       setAuthModalTab(e.detail?.tab || "login");
     };
+    const handleOpenAskExperts = (e) => {
+      setIsAskExpertsOpen(true);
+      setAskExpertsMode(e.detail?.mode || "buy");
+    };
+
     window.addEventListener("open-auth-modal", handleOpenAuth);
+    window.addEventListener("open-ask-experts", handleOpenAskExperts);
     return () => {
       window.removeEventListener("open-auth-modal", handleOpenAuth);
+      window.removeEventListener("open-ask-experts", handleOpenAskExperts);
     };
   }, []);
 
@@ -46,7 +63,7 @@ export default function LayoutClientWrapper({ children }) {
     pathname === "/login";
 
   return (
-    <>
+    <div suppressHydrationWarning>
       <Suspense fallback={null}>
         <AuthParamsHandler 
           setIsAuthModalOpen={setIsAuthModalOpen} 
@@ -65,6 +82,22 @@ export default function LayoutClientWrapper({ children }) {
         onClose={() => setIsAuthModalOpen(false)} 
         initialTab={authModalTab} 
       />
-    </>
+
+      {/* Global Floating WhatsApp & Ask Experts Modal (rendered after mounted) */}
+      {mounted && !isNoHeaderFooter && (
+        <FloatingWhatsApp onOpenModal={() => { setAskExpertsMode("buy"); setIsAskExpertsOpen(true); }} />
+      )}
+
+      {mounted && (
+        <AskExpertsModal
+          isOpen={isAskExpertsOpen}
+          onClose={() => setIsAskExpertsOpen(false)}
+          initialMode={askExpertsMode}
+        />
+      )}
+    </div>
   );
 }
+
+
+
