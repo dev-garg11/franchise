@@ -286,7 +286,7 @@ export default function TopFranchiseOpportunities({ brands = [], onSelectBrand, 
         {/* Footer CTA */}
         <div style={{ marginTop: "40px", textAlign: "center" }}>
           <button
-            onClick={onAskExperts}
+            onClick={() => onAskExperts && onAskExperts("buy")}
             style={{
               padding: "14px 28px",
               borderRadius: "30px",

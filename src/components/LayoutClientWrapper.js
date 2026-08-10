@@ -44,7 +44,9 @@ export default function LayoutClientWrapper({ children }) {
     };
     const handleOpenAskExperts = (e) => {
       setIsAskExpertsOpen(true);
-      setAskExpertsMode(e.detail?.mode || "buy");
+      const requestedMode = e.detail?.mode;
+      const mode = typeof requestedMode === "string" && requestedMode === "expand" ? "expand" : "buy";
+      setAskExpertsMode(mode);
     };
 
     window.addEventListener("open-auth-modal", handleOpenAuth);

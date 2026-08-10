@@ -214,8 +214,9 @@ export default function Home() {
   };
 
   const handleOpenAskExperts = (mode = "buy") => {
+    const targetMode = typeof mode === "string" && mode === "expand" ? "expand" : "buy";
     if (typeof window !== "undefined") {
-      window.dispatchEvent(new CustomEvent("open-ask-experts", { detail: { mode } }));
+      window.dispatchEvent(new CustomEvent("open-ask-experts", { detail: { mode: targetMode } }));
     }
   };
 

@@ -5,7 +5,7 @@ import { X, MessageCircle, CheckCircle, User, Phone, Mail, MapPin, Building, Bri
 
 export default function AskExpertsModal({ isOpen, onClose, initialMode = "buy" }) {
   const modalRef = useRef(null);
-  const [activeMode, setActiveMode] = useState(initialMode); // "buy" | "expand"
+  const [activeMode, setActiveMode] = useState(initialMode === "expand" ? "expand" : "buy"); // "buy" | "expand"
 
   // Buy a Franchise state
   const [buyData, setBuyData] = useState({
@@ -36,7 +36,7 @@ export default function AskExpertsModal({ isOpen, onClose, initialMode = "buy" }
 
   useEffect(() => {
     if (isOpen) {
-      setActiveMode(initialMode);
+      setActiveMode(initialMode === "expand" ? "expand" : "buy");
       setSubmitted(false);
     }
   }, [isOpen, initialMode]);
@@ -149,6 +149,7 @@ export default function AskExpertsModal({ isOpen, onClose, initialMode = "buy" }
 
   const handleReset = () => {
     setSubmitted(false);
+    setActiveMode("buy");
     setBuyData({
       name: "",
       phone: "",
