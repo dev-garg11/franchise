@@ -449,114 +449,11 @@ export default function Header() {
                   Contact
                 </Link>
               </li>
-              {!isAdmin && !isInvestor && !isBrand && (
-                <>
-                  <li className="mobile-auth-item">
-                    <button
-                      className="nav-link"
-                      onClick={() => {
-                        setMobileMenuOpen(false);
-                        window.dispatchEvent(new CustomEvent("open-auth-modal", { detail: { tab: "login" } }));
-                      }}
-                      style={{ background: "none", border: "none", cursor: "pointer", width: "100%", textAlign: "left", display: "flex", alignItems: "center", gap: "8px", color: "var(--text-dark)", fontWeight: "700" }}
-                    >
-                      <LogIn size={16} /> Login
-                    </button>
-                  </li>
-                  <li className="mobile-auth-item">
-                    <button
-                      className="nav-link"
-                      onClick={() => {
-                        setMobileMenuOpen(false);
-                        window.dispatchEvent(new CustomEvent("open-auth-modal", { detail: { tab: "register" } }));
-                      }}
-                      style={{ background: "none", border: "none", cursor: "pointer", width: "100%", textAlign: "left", display: "flex", alignItems: "center", gap: "8px", color: "var(--primary)", fontWeight: "800" }}
-                    >
-                      <User size={16} /> Register Account
-                    </button>
-                  </li>
-                </>
-              )}
+              {!isAdmin && !isInvestor && !isBrand && null}
             </ul>
 
             {/* Right-side utilities and CTAs */}
             <div className="nav-actions">
-
-              {/* Search and Notification Utility Icons */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginRight: '4px' }} className="nav-utility-icons">
-                {/* Search Trigger Button */}
-                <button
-                  aria-label="Search opportunities"
-                  className="nav-icon-btn"
-                  onClick={() => setSearchModalOpen(true)}
-                  title="Search (Ctrl + K)"
-                >
-                  <Search size={18} />
-                </button>
-
-                {/* Notifications dropdown trigger */}
-                <div style={{ position: 'relative' }} ref={notificationRef}>
-                  <button
-                    aria-label="Notifications"
-                    className="nav-icon-btn"
-                    onClick={() => setNotificationDropdownOpen(prev => !prev)}
-                  >
-                    <Bell size={18} />
-                    {unreadCount > 0 && (
-                      <span className="notification-badge-red">{unreadCount}</span>
-                    )}
-                  </button>
-
-                  {/* Premium glass notification panel */}
-                  {notificationDropdownOpen && (
-                    <div className="dropdown-panel-premium notification-panel">
-                      <div className="dropdown-panel-header">
-                        <span className="dropdown-panel-title">Notifications</span>
-                        <div style={{ display: "flex", gap: "10px" }}>
-                          {unreadCount > 0 && (
-                            <button className="dropdown-panel-action" onClick={markAllNotificationsRead}>Mark read</button>
-                          )}
-                          {notifications.length > 0 && (
-                            <button className="dropdown-panel-action" style={{ color: "var(--danger)" }} onClick={clearAllNotifications}>Clear</button>
-                          )}
-                        </div>
-                      </div>
-                      <div className="dropdown-panel-body">
-                        {notifications.length === 0 ? (
-                          <div className="panel-empty-state">
-                            <CheckCircle size={32} style={{ color: "var(--success)" }} />
-                            <span className="panel-empty-title">All Caught Up!</span>
-                            <p style={{ fontSize: "11px", marginTop: "4px" }}>No new notifications to display.</p>
-                          </div>
-                        ) : (
-                          notifications.map((notif) => (
-                            <div
-                              key={notif.id}
-                              className={`notification-item-premium ${notif.read ? "" : "unread"}`}
-                              onClick={() => handleNotificationClick(notif)}
-                            >
-                              <div className={`notification-icon-wrapper-premium ${notif.category}`}>
-                                {notif.category === "system" && <Shield size={16} />}
-                                {notif.category === "opportunity" && <Sparkles size={16} />}
-                                {notif.category === "application" && <Building size={16} />}
-                                {notif.category === "profile" && <User size={16} />}
-                              </div>
-                              <div className="notification-info-premium">
-                                <h5>{notif.title}</h5>
-                                <p>{notif.message}</p>
-                                <span className="notification-time-label">
-                                  <Clock size={10} style={{ display: "inline", marginRight: "3px", verticalAlign: "middle" }} />
-                                  {notif.time}
-                                </span>
-                              </div>
-                            </div>
-                          ))
-                        )}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
 
               {/* Login Profile Actions */}
               {isAdmin || isInvestor || isBrand ? (
@@ -643,7 +540,7 @@ export default function Header() {
                         window.dispatchEvent(new CustomEvent("open-auth-modal", { detail: { tab: "login" } }));
                       }, 300);
                     }}
-                    className="btn btn-outline"
+                    className="btn btn-outline desktop-only-auth"
                     style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '9px 16px', fontSize: '13.5px', fontWeight: '700' }}
                   >
                     {loadingLogin ? (
@@ -658,7 +555,7 @@ export default function Header() {
                     onClick={() => {
                       window.dispatchEvent(new CustomEvent("open-auth-modal", { detail: { tab: "register" } }));
                     }}
-                    className="btn"
+                    className="btn desktop-only-auth"
                     style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '9px 16px', fontSize: '13.5px', fontWeight: '700', background: 'rgba(37, 99, 235, 0.1)', color: 'var(--primary)', border: '1px solid rgba(37, 99, 235, 0.2)' }}
                   >
                     <User size={15} />
@@ -808,6 +705,61 @@ export default function Header() {
                     </div>
                   )}
                 </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Standalone Notification Modal (Triggered by Alerts on mobile-bottom-nav) */}
+      {notificationDropdownOpen && (
+        <div className="notification-modal-overlay" onClick={() => setNotificationDropdownOpen(false)}>
+          <div
+            ref={notificationRef}
+            className="dropdown-panel-premium notification-panel-modal"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="dropdown-panel-header">
+              <span className="dropdown-panel-title">Notifications</span>
+              <div style={{ display: "flex", gap: "10px" }}>
+                {unreadCount > 0 && (
+                  <button className="dropdown-panel-action" onClick={markAllNotificationsRead}>Mark read</button>
+                )}
+                {notifications.length > 0 && (
+                  <button className="dropdown-panel-action" style={{ color: "var(--danger)" }} onClick={clearAllNotifications}>Clear</button>
+                )}
+              </div>
+            </div>
+            <div className="dropdown-panel-body">
+              {notifications.length === 0 ? (
+                <div className="panel-empty-state">
+                  <CheckCircle size={32} style={{ color: "var(--success)" }} />
+                  <span className="panel-empty-title">All Caught Up!</span>
+                  <p style={{ fontSize: "11px", marginTop: "4px" }}>No new notifications to display.</p>
+                </div>
+              ) : (
+                notifications.map((notif) => (
+                  <div
+                    key={notif.id}
+                    className={`notification-item-premium ${notif.read ? "" : "unread"}`}
+                    onClick={() => handleNotificationClick(notif)}
+                  >
+                    <div className={`notification-icon-wrapper-premium ${notif.category}`}>
+                      {notif.category === "system" && <Shield size={16} />}
+                      {notif.category === "opportunity" && <Sparkles size={16} />}
+                      {notif.category === "application" && <Building size={16} />}
+                      {notif.category === "profile" && <User size={16} />}
+                    </div>
+                    <div className="notification-info-premium">
+                      <h5>{notif.title}</h5>
+                      <p>{notif.message}</p>
+                      <span className="notification-time-label">
+                        <Clock size={10} style={{ display: "inline", marginRight: "3px", verticalAlign: "middle" }} />
+                        {notif.time}
+                      </span>
+                    </div>
+                  </div>
+                ))
               )}
             </div>
           </div>
