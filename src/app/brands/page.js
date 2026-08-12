@@ -5,8 +5,9 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import {
     Search, MapPin, IndianRupee, RotateCcw, Building, Users, Star,
-    CheckCircle, ChevronRight, Mail, Phone, Globe, HelpCircle, Filter, Sparkles
+    CheckCircle, ChevronRight, Mail, Phone, Globe, HelpCircle, Filter, Sparkles, MessageCircle
 } from "lucide-react";
+import { ProductSkeletonGrid } from "@/components/SkeletonLoader";
 
 const CATEGORIES = [
     "Food and Beverage",
@@ -365,10 +366,7 @@ function BrandsDirectoryPage() {
                         </div>
 
                         {loading ? (
-                            <div className="flex-center" style={{ minHeight: "300px", flexDirection: "column", gap: "16px", background: "white", borderRadius: "18px", border: "1px solid var(--border-color)" }}>
-                                <div className="spinner" style={{ borderTopColor: "var(--primary)" }}></div>
-                                <p style={{ color: "var(--text-muted)", fontWeight: "600" }}>Querying catalog listings...</p>
-                            </div>
+                            <ProductSkeletonGrid count={6} minWidth="280px" />
                         ) : filteredBrands.length === 0 ? (
                             <div className="flex-center" style={{ minHeight: "350px", flexDirection: "column", background: "white", borderRadius: "18px", border: "1px dashed var(--border-color)", padding: "40px", textAlign: 'center' }}>
                                 <HelpCircle size={48} color="var(--text-muted)" style={{ marginBottom: "16px" }} />

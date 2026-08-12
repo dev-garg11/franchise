@@ -2,12 +2,14 @@
 
 import { useState, useEffect } from "react";
 import { Briefcase, Zap, ShieldCheck, ArrowRight, MessageCircle, Percent, DollarSign, ChevronRight, X, CheckCircle, Award, RefreshCw } from "lucide-react";
+import { ProductSkeletonGrid } from "@/components/SkeletonLoader";
 
-export default function TopBusinessOpportunities({ brands = [], onAskExperts }) {
+export default function TopBusinessOpportunities({ brands = [], loading = false, onAskExperts }) {
   const [activeFilter, setActiveFilter] = useState("All");
   const [selectedOpportunity, setSelectedOpportunity] = useState(null);
   const [dbBrands, setDbBrands] = useState(brands);
-  const [loading, setLoading] = useState(false);
+  const [fetchingLoading, setFetchingLoading] = useState(false);
+  const isSkeletonLoading = loading || fetchingLoading;
 
   // Fetch approved brands if not passed via props
   useEffect(() => {
@@ -20,7 +22,7 @@ export default function TopBusinessOpportunities({ brands = [], onAskExperts }) 
 
   const fetchApprovedBrands = async () => {
     try {
-      setLoading(true);
+      setFetchingLoading(true);
       const res = await fetch("/api/brands?status=Approved");
       if (res.ok) {
         const data = await res.json();
@@ -29,7 +31,7 @@ export default function TopBusinessOpportunities({ brands = [], onAskExperts }) 
     } catch (err) {
       console.error("Error fetching dynamic business opportunities from DB:", err);
     } finally {
-      setLoading(false);
+      setFetchingLoading(false);
     }
   };
 
@@ -280,110 +282,114 @@ export default function TopBusinessOpportunities({ brands = [], onAskExperts }) 
         </div>
 
         {/* Opportunities List Grid */}
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(350px, 1fr))", gap: "24px" }}>
-          {filteredOpportunities.map((biz) => (
-            <div
-              key={biz.id}
-              style={{
-                borderRadius: "16px",
-                border: "1px solid #e2e8f0",
-                background: "#ffffff",
-                boxShadow: "0 4px 20px rgba(0, 0, 0, 0.04)",
-                overflow: "hidden",
-                display: "flex",
-                flexDirection: "column",
-                position: "relative"
-              }}
-            >
-              {/* Image Banner */}
-              <div style={{ position: "relative", height: "160px" }}>
-                <img
-                  src={biz.image}
-                  alt={biz.title}
-                  style={{ width: "100%", height: "100%", objectFit: "cover" }}
-                />
-                <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, rgba(15,23,42,0.85) 0%, transparent 60%)" }}></div>
+        {isSkeletonLoading ? (
+          <ProductSkeletonGrid count={6} minWidth="350px" />
+        ) : (
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(350px, 1fr))", gap: "24px" }}>
+            {filteredOpportunities.map((biz) => (
+              <div
+                key={biz.id}
+                style={{
+                  borderRadius: "16px",
+                  border: "1px solid #e2e8f0",
+                  background: "#ffffff",
+                  boxShadow: "0 4px 20px rgba(0, 0, 0, 0.04)",
+                  overflow: "hidden",
+                  display: "flex",
+                  flexDirection: "column",
+                  position: "relative"
+                }}
+              >
+                {/* Image Banner */}
+                <div style={{ position: "relative", height: "160px" }}>
+                  <img
+                    src={biz.image}
+                    alt={biz.title}
+                    style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                  />
+                  <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, rgba(15,23,42,0.85) 0%, transparent 60%)" }}></div>
 
-                <div style={{ position: "absolute", top: "12px", right: "12px", background: "rgba(15, 23, 42, 0.8)", color: "#38bdf8", padding: "4px 10px", borderRadius: "20px", fontSize: "11px", fontWeight: "700", border: "1px solid rgba(56, 189, 248, 0.3)" }}>
-                  {biz.badge}
-                </div>
-
-                <div style={{ position: "absolute", bottom: "12px", left: "16px", right: "16px" }}>
-                  <span style={{ fontSize: "11px", color: "#cbd5e1", fontWeight: "600", textTransform: "uppercase" }}>{biz.category}</span>
-                  <h3 style={{ fontSize: "18px", fontWeight: "700", color: "#ffffff", margin: "2px 0 0 0" }}>{biz.title}</h3>
-                </div>
-              </div>
-
-              {/* Body */}
-              <div style={{ padding: "20px", display: "flex", flexDirection: "column", flexGrow: 1 }}>
-                <p
-                  style={{ fontSize: "13px", color: "#64748b", margin: "0 0 16px 0", height: "38px", overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" }}
-                  dangerouslySetInnerHTML={{ __html: biz.description || "" }}
-                />
-
-                {/* Metrics */}
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px", padding: "12px", background: "#f8fafc", borderRadius: "10px", marginBottom: "16px" }}>
-                  <div>
-                    <span style={{ fontSize: "11px", color: "#94a3b8", fontWeight: "600", display: "block" }}>INVESTMENT</span>
-                    <span style={{ fontSize: "14px", fontWeight: "800", color: "#0f172a" }}>{biz.investment}</span>
+                  <div style={{ position: "absolute", top: "12px", right: "12px", background: "rgba(15, 23, 42, 0.8)", color: "#38bdf8", padding: "4px 10px", borderRadius: "20px", fontSize: "11px", fontWeight: "700", border: "1px solid rgba(56, 189, 248, 0.3)" }}>
+                    {biz.badge}
                   </div>
-                  <div>
-                    <span style={{ fontSize: "11px", color: "#94a3b8", fontWeight: "600", display: "block" }}>MARGIN / ROYALTY</span>
-                    <span style={{ fontSize: "14px", fontWeight: "800", color: "#16a34a" }}>{biz.margin}</span>
+
+                  <div style={{ position: "absolute", bottom: "12px", left: "16px", right: "16px" }}>
+                    <span style={{ fontSize: "11px", color: "#cbd5e1", fontWeight: "600", textTransform: "uppercase" }}>{biz.category}</span>
+                    <h3 style={{ fontSize: "18px", fontWeight: "700", color: "#ffffff", margin: "2px 0 0 0" }}>{biz.title}</h3>
                   </div>
                 </div>
 
-                {/* Tags */}
-                <div style={{ display: "flex", gap: "6px", flexWrap: "wrap", marginBottom: "18px" }}>
-                  {biz.tags.map((t, idx) => (
-                    <span key={idx} style={{ background: "#e0f2fe", color: "#0369a1", fontSize: "11px", fontWeight: "600", padding: "3px 9px", borderRadius: "12px" }}>
-                      ✓ {t}
-                    </span>
-                  ))}
-                </div>
+                {/* Body */}
+                <div style={{ padding: "20px", display: "flex", flexDirection: "column", flexGrow: 1 }}>
+                  <p
+                    style={{ fontSize: "13px", color: "#64748b", margin: "0 0 16px 0", height: "38px", overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" }}
+                    dangerouslySetInnerHTML={{ __html: biz.description || "" }}
+                  />
 
-                {/* Action Buttons Grid */}
-                <div style={{ marginTop: "auto", display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
-                  <button
-                    onClick={() => setSelectedOpportunity(biz)}
-                    style={{
-                      padding: "10px",
-                      borderRadius: "8px",
-                      border: "1px solid #cbd5e1",
-                      background: "#ffffff",
-                      color: "#0f172a",
-                      fontWeight: "700",
-                      fontSize: "13px",
-                      cursor: "pointer"
-                    }}
-                  >
-                    View Details
-                  </button>
+                  {/* Metrics */}
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px", padding: "12px", background: "#f8fafc", borderRadius: "10px", marginBottom: "16px" }}>
+                    <div>
+                      <span style={{ fontSize: "11px", color: "#94a3b8", fontWeight: "600", display: "block" }}>INVESTMENT</span>
+                      <span style={{ fontSize: "14px", fontWeight: "800", color: "#0f172a" }}>{biz.investment}</span>
+                    </div>
+                    <div>
+                      <span style={{ fontSize: "11px", color: "#94a3b8", fontWeight: "600", display: "block" }}>MARGIN / ROYALTY</span>
+                      <span style={{ fontSize: "14px", fontWeight: "800", color: "#16a34a" }}>{biz.margin}</span>
+                    </div>
+                  </div>
 
-                  <button
-                    onClick={() => handleWhatsAppEnquiry(biz)}
-                    style={{
-                      padding: "10px",
-                      borderRadius: "8px",
-                      border: "none",
-                      background: "#25D366",
-                      color: "#ffffff",
-                      fontWeight: "700",
-                      fontSize: "13px",
-                      cursor: "pointer",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      gap: "6px"
-                    }}
-                  >
-                    <MessageCircle size={16} /> WhatsApp
-                  </button>
+                  {/* Tags */}
+                  <div style={{ display: "flex", gap: "6px", flexWrap: "wrap", marginBottom: "18px" }}>
+                    {biz.tags.map((t, idx) => (
+                      <span key={idx} style={{ background: "#e0f2fe", color: "#0369a1", fontSize: "11px", fontWeight: "600", padding: "3px 9px", borderRadius: "12px" }}>
+                        ✓ {t}
+                      </span>
+                    ))}
+                  </div>
+
+                  {/* Action Buttons Grid */}
+                  <div style={{ marginTop: "auto", display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
+                    <button
+                      onClick={() => setSelectedOpportunity(biz)}
+                      style={{
+                        padding: "10px",
+                        borderRadius: "8px",
+                        border: "1px solid #cbd5e1",
+                        background: "#ffffff",
+                        color: "#0f172a",
+                        fontWeight: "700",
+                        fontSize: "13px",
+                        cursor: "pointer"
+                      }}
+                    >
+                      View Details
+                    </button>
+
+                    <button
+                      onClick={() => handleWhatsAppEnquiry(biz)}
+                      style={{
+                        padding: "10px",
+                        borderRadius: "8px",
+                        border: "none",
+                        background: "#25D366",
+                        color: "#ffffff",
+                        fontWeight: "700",
+                        fontSize: "13px",
+                        cursor: "pointer",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        gap: "6px"
+                      }}
+                    >
+                      <MessageCircle size={16} /> WhatsApp
+                    </button>
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Opportunity Details Popup Modal */}

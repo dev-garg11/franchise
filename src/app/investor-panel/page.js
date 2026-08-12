@@ -141,23 +141,16 @@ export default function InvestorPanel() {
             justifyContent: "center",
             alignItems: "center",
             width: "100%",
-            padding: "10px 20px 18px 20px",
+            padding: "20px 16px 16px 16px",
             borderBottom: "1px solid rgba(255, 255, 255, 0.08)",
             marginBottom: "16px",
             background: "transparent"
           }}>
-            <Link href="/investor/dashboard" style={{ display: "block" }}>
+            <Link href="/investor-panel" style={{ display: "block" }}>
               <img
                 src="/logo-footer.png"
-                alt="Franchise Roots"
-                style={{
-                  height: "150px",
-                  width: "auto",
-                  objectFit: "contain",
-                  display: "block",
-                  margin: "0 auto",
-                  background: "transparent"
-                }}
+                alt="Franchise Roots Investor Portal"
+                className="sidebar-logo-img"
               />
             </Link>
           </div>

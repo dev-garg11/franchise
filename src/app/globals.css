@@ -4119,5 +4119,58 @@ button {
   }
 }
 
+/* ==========================================================================
+   Skeleton Loader Styles & Shimmer Animation
+   ========================================================================== */
+@keyframes skeleton-shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.skeleton-box {
+  background: linear-gradient(
+    90deg,
+    #e2e8f0 25%,
+    #f1f5f9 37%,
+    #e2e8f0 63%
+  );
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.5s infinite ease-in-out;
+  border-radius: 8px;
+}
+
+.skeleton-card {
+  background: #ffffff;
+  border-radius: 16px;
+  border: 1px solid #e2e8f0;
+  overflow: hidden;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03);
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+/* Admin / Panel Sidebar Logo UI */
+.sidebar-logo-img {
+  height: 52px;
+  max-width: 180px;
+  width: auto;
+  object-fit: contain;
+  display: block;
+  margin: 0 auto;
+  filter: brightness(1.1) drop-shadow(0 2px 6px rgba(0, 0, 0, 0.3));
+  transition: transform 0.3s ease;
+}
+
+.sidebar-logo-img:hover {
+  transform: scale(1.03);
+}
+
+
+
 
 

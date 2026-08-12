@@ -2,8 +2,9 @@
 
 import { useState } from "react";
 import { Star, Award, Building, ArrowRight, MessageCircle, CheckCircle2, TrendingUp } from "lucide-react";
+import { ProductSkeletonGrid } from "@/components/SkeletonLoader";
 
-export default function TopFranchiseOpportunities({ brands = [], onSelectBrand, onAskExperts }) {
+export default function TopFranchiseOpportunities({ brands = [], loading = false, onSelectBrand, onAskExperts }) {
   const [activeCategory, setActiveCategory] = useState("All");
 
   const categories = ["All", "Food and Beverage", "Retail", "Education", "Health and Wellness", "Automobiles"];
@@ -162,7 +163,10 @@ export default function TopFranchiseOpportunities({ brands = [], onSelectBrand, 
         </div>
 
         {/* Brand Cards Grid */}
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(340px, 1fr))", gap: "24px" }}>
+        {loading ? (
+          <ProductSkeletonGrid count={6} minWidth="340px" />
+        ) : (
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(340px, 1fr))", gap: "24px" }}>
           {displayBrands.map((brand) => (
             <div
               key={brand.id || brand._id}
@@ -282,6 +286,7 @@ export default function TopFranchiseOpportunities({ brands = [], onSelectBrand, 
             </div>
           ))}
         </div>
+        )}
 
         {/* Footer CTA */}
         <div style={{ marginTop: "40px", textAlign: "center" }}>

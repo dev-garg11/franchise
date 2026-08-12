@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import TopFranchiseOpportunities from "@/components/TopFranchiseOpportunities";
 import TopBusinessOpportunities from "@/components/TopBusinessOpportunities";
+import { ProductSkeletonSlider } from "@/components/SkeletonLoader";
 
 
 // Mock Categories with Icons
@@ -432,6 +433,7 @@ export default function Home() {
       {/* NEW: Top Franchise Opportunities Section (Franchise India Reference) */}
       <TopFranchiseOpportunities
         brands={brands}
+        loading={loading}
         onSelectBrand={(brand) => {
           setSelectedBrand(brand);
           setIsEnquiryOnlyMode(true);
@@ -470,28 +472,30 @@ export default function Home() {
       </section>
 
       {/* NEW: Top Business Opportunities Section (Franchise India Reference) */}
-      <TopBusinessOpportunities brands={brands} onAskExperts={handleOpenAskExperts} />
+      <TopBusinessOpportunities brands={brands} loading={loading} onAskExperts={handleOpenAskExperts} />
 
 
       {/* 6. Premium Brand Slider/Carousel Section */}
-      {brands.length > 0 && (
-        <section className="slider-section">
-          <div className="container">
-            <div className="section-title-wrapper">
-              <div className="section-title">
-                <h2>Featured Opportunities</h2>
-                <p>Trending franchises gaining high network expansion leads this month.</p>
-              </div>
-              <div style={{ display: 'flex', gap: '10px' }}>
-                <button className="slider-nav-btn" onClick={handlePrevSlide} aria-label="Previous slide">
-                  <ChevronLeft size={20} />
-                </button>
-                <button className="slider-nav-btn" onClick={handleNextSlide} aria-label="Next slide">
-                  <ChevronRight size={20} />
-                </button>
-              </div>
+      <section className="slider-section">
+        <div className="container">
+          <div className="section-title-wrapper">
+            <div className="section-title">
+              <h2>Featured Opportunities</h2>
+              <p>Trending franchises gaining high network expansion leads this month.</p>
             </div>
+            <div style={{ display: 'flex', gap: '10px' }}>
+              <button className="slider-nav-btn" onClick={handlePrevSlide} aria-label="Previous slide">
+                <ChevronLeft size={20} />
+              </button>
+              <button className="slider-nav-btn" onClick={handleNextSlide} aria-label="Next slide">
+                <ChevronRight size={20} />
+              </button>
+            </div>
+          </div>
 
+          {loading ? (
+            <ProductSkeletonSlider count={3} />
+          ) : brands.length > 0 && (
             <div className="slider-container" ref={sliderRef}>
               <div className="slider-track">
                 {brands.slice(0, 9).map((brand) => (
@@ -541,9 +545,9 @@ export default function Home() {
                 ))}
               </div>
             </div>
-          </div>
-        </section>
-      )}
+          )}
+        </div>
+      </section>
 
       {/* NEW: Ask Our Experts WhatsApp Banner Section */}
       <section className="container">
