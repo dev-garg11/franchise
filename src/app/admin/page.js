@@ -8,6 +8,7 @@ import {
   Home, Search, LayoutDashboard, ShieldCheck, Mail, Phone, MapPin,
   UploadCloud
 } from "lucide-react";
+import Pagination from "@/components/Pagination";
 
 const isNew = (dateString) => {
   if (!dateString) return false;
@@ -45,6 +46,25 @@ export default function AdminDashboard() {
   const [modalType, setModalType] = useState(""); // brand, investor
   const [selectedInvestorsForBrand, setSelectedInvestorsForBrand] = useState([]);
   const [isSavingAssign, setIsSavingAssign] = useState(false);
+
+  // Pagination State
+  const [brandsPage, setBrandsPage] = useState(1);
+  const [brandsPerPage, setBrandsPerPage] = useState(10);
+  const [investorsPage, setInvestorsPage] = useState(1);
+  const [investorsPerPage, setInvestorsPerPage] = useState(10);
+  const [blogsPage, setBlogsPage] = useState(1);
+  const [blogsPerPage, setBlogsPerPage] = useState(10);
+
+  // Reset pagination when search or filters change
+  useEffect(() => {
+    setBrandsPage(1);
+    setInvestorsPage(1);
+    setBlogsPage(1);
+  }, [searchTerm]);
+
+  useEffect(() => {
+    setInvestorsPage(1);
+  }, [filterBrand, filterCategory, filterStatus]);
 
   useEffect(() => {
     if (selectedItem && modalType === "brand") {
@@ -369,12 +389,13 @@ export default function AdminDashboard() {
   const pendingBrandsCount = brands.filter(b => b.status === "Pending").length;
   const totalInvestorsCount = investors.length;
 
-  // Filtered Lists
+  // Filtered Lists & Paginated Data Slices
   const filteredBrands = brands.filter(b =>
     b.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     b.company.toLowerCase().includes(searchTerm.toLowerCase()) ||
     b.category.toLowerCase().includes(searchTerm.toLowerCase())
   );
+  const paginatedBrands = filteredBrands.slice((brandsPage - 1) * brandsPerPage, brandsPage * brandsPerPage);
 
   const filteredInvestors = investors.filter(i => {
     // 1. Search by name, email, phone or target location
@@ -407,6 +428,10 @@ export default function AdminDashboard() {
 
     return matchesSearch && matchesBrand && matchesCategory && matchesStatus;
   });
+  const paginatedInvestors = filteredInvestors.slice((investorsPage - 1) * investorsPerPage, investorsPage * investorsPerPage);
+
+  const filteredBlogs = blogs.filter(blog => blog.title.toLowerCase().includes(searchTerm.toLowerCase()));
+  const paginatedBlogs = filteredBlogs.slice((blogsPage - 1) * blogsPerPage, blogsPage * blogsPerPage);
 
   return (
     <div className="admin-layout">
@@ -678,7 +703,7 @@ export default function AdminDashboard() {
                         </td>
                       </tr>
                     ) : (
-                      filteredBrands.map((b) => {
+                      paginatedBrands.map((b) => {
                         const attachedCount = investors.filter(inv => inv.assignedBrands && (inv.assignedBrands.includes(b.id) || inv.assignedBrands.includes(b._id))).length;
                         return (
                           <tr key={b.id}>
@@ -740,6 +765,14 @@ export default function AdminDashboard() {
                     )}
                   </tbody>
                 </table>
+
+                <Pagination
+                  totalItems={filteredBrands.length}
+                  itemsPerPage={brandsPerPage}
+                  currentPage={brandsPage}
+                  onPageChange={(p) => setBrandsPage(p)}
+                  onItemsPerPageChange={(size) => { setBrandsPerPage(size); setBrandsPage(1); }}
+                />
               </div>
             )}
 
@@ -855,7 +888,7 @@ export default function AdminDashboard() {
                         </td>
                       </tr>
                     ) : (
-                      filteredInvestors.map((i) => {
+                      paginatedInvestors.map((i) => {
                         // Resolve brand connection
                         let displayBrandName = "General Lead";
                         let targetBrand = null;
@@ -956,6 +989,14 @@ export default function AdminDashboard() {
                     )}
                   </tbody>
                 </table>
+
+                <Pagination
+                  totalItems={filteredInvestors.length}
+                  itemsPerPage={investorsPerPage}
+                  currentPage={investorsPage}
+                  onPageChange={(p) => setInvestorsPage(p)}
+                  onItemsPerPageChange={(size) => { setInvestorsPerPage(size); setInvestorsPage(1); }}
+                />
               </div>
             )}
 
@@ -991,50 +1032,50 @@ export default function AdminDashboard() {
                     </tr>
                   </thead>
                   <tbody>
-                    {blogs
-                      .filter(blog => blog.title.toLowerCase().includes(searchTerm.toLowerCase()))
-                      .length === 0 ? (
+                    {filteredBlogs.length === 0 ? (
                       <tr>
                         <td colSpan="5" style={{ textAlign: "center", padding: "30px", color: "var(--text-muted)" }}>
                           No blog posts found. Click "Create New Blog" to publish one.
                         </td>
                       </tr>
                     ) : (
-                      blogs
-                        .filter(blog => blog.title.toLowerCase().includes(searchTerm.toLowerCase()))
-                        .map((blog) => (
-                          <tr key={blog.id || blog._id}>
-                            <td>
-                              <img
-                                src={blog.image || "https://images.unsplash.com/photo-1546074177-ffedd79d494d?auto=format&fit=crop&q=80&w=150"}
-                                alt={blog.title}
-                                style={{ width: "80px", height: "50px", borderRadius: "6px", objectFit: "cover", border: "1px solid var(--border-color)" }}
-                              />
-                            </td>
-                            <td>
-                              <span style={{ fontWeight: "700" }}>{blog.title}</span>
-                            </td>
-                            <td>
-                              <span style={{ color: "var(--text-muted)", fontSize: "13px" }}>
-                                {blog.content && blog.content.length > 90 ? `${blog.content.substring(0, 90)}...` : blog.content}
-                              </span>
-                            </td>
-                            <td style={{ fontSize: "13px", color: "var(--text-muted)" }}>
-                              {blog.createdAt ? new Date(blog.createdAt).toLocaleDateString("en-IN", { day: 'numeric', month: 'short', year: 'numeric' }) : "N/A"}
-                            </td>
-                            <td>
-                              <button className="action-btn view" onClick={() => handleOpenEditBlog(blog)}>
-                                Edit Post
-                              </button>
-                              <button className="action-btn reject" style={{ background: "none", color: "var(--error)", border: "1px solid var(--error)" }} onClick={() => handleDeleteBlog(blog.id || blog._id)}>
-                                <Trash2 size={14} />
-                              </button>
-                            </td>
-                          </tr>
-                        ))
+                      paginatedBlogs.map((blog) => (
+                        <tr key={blog.id || blog._id}>
+                          <td>
+                            <img
+                              src={blog.image || "https://images.unsplash.com/photo-1546074177-ffedd79d494d?auto=format&fit=crop&q=80&w=150"}
+                              alt={blog.title}
+                              style={{ width: "80px", height: "50px", borderRadius: "6px", objectFit: "cover", border: "1px solid var(--border-color)" }}
+                            />
+                          </td>
+                          <td>
+                            <span style={{ fontWeight: "700" }}>{blog.title}</span>
+                          </td>
+                          <td>
+                            <span style={{ color: "var(--text-muted)", fontSize: "13px" }}>
+                              {blog.content && blog.content.length > 90 ? `${blog.content.substring(0, 90)}...` : blog.content}
+                            </span>
+                          </td>
+                          <td style={{ fontSize: "13px", color: "var(--text-muted)" }}>
+                            {blog.createdAt ? new Date(blog.createdAt).toLocaleDateString("en-IN", { day: 'numeric', month: 'short', year: 'numeric' }) : "N/A"}
+                          </td>
+                          <td>
+                            <button className="action-btn view" onClick={() => handleOpenEditBlog(blog)}>Edit</button>
+                            <button className="action-btn reject" style={{ background: "none", color: "var(--error)", border: "1px solid var(--error)", marginLeft: "6px" }} onClick={() => handleDeleteBlog(blog.id || blog._id)}>Delete</button>
+                          </td>
+                        </tr>
+                      ))
                     )}
                   </tbody>
                 </table>
+
+                <Pagination
+                  totalItems={filteredBlogs.length}
+                  itemsPerPage={blogsPerPage}
+                  currentPage={blogsPage}
+                  onPageChange={(p) => setBlogsPage(p)}
+                  onItemsPerPageChange={(size) => { setBlogsPerPage(size); setBlogsPage(1); }}
+                />
               </div>
             )}
           </>
