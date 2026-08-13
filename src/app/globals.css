@@ -2322,8 +2322,13 @@ button {
 
 /* 992px and under (Tablets, iPads portrait) */
 @media (max-width: 992px) {
+  .header {
+    background: rgba(255, 255, 255, 0.96) !important;
+    top: 0 !important;
+  }
+
   .header-container {
-    height: 70px;
+    height: 64px;
   }
 
   .mobile-menu-toggle {
@@ -4828,6 +4833,187 @@ button {
   color: #ffffff;
   border-color: #25D366;
   box-shadow: 0 4px 14px rgba(37, 211, 102, 0.35);
+}
+
+/* Mobile Responsiveness Overrides for fi-hero-section */
+@media (max-width: 1024px) {
+  .fi-hero-section {
+    background-attachment: scroll;
+    min-height: auto;
+    padding: 40px 0;
+  }
+
+  .fi-hero-grid {
+    grid-template-columns: 1fr;
+    gap: 24px;
+  }
+}
+
+@media (max-width: 768px) {
+  .fi-hero-section {
+    padding: 20px 0 28px 0;
+  }
+
+  .fi-search-card {
+    padding: 20px 16px;
+    border-radius: 18px;
+  }
+
+  .fi-search-header {
+    margin-bottom: 14px;
+  }
+
+  .fi-search-title {
+    font-size: 22px;
+    margin-bottom: 4px;
+  }
+
+  .fi-search-subtitle {
+    font-size: 13px;
+    line-height: 1.45;
+  }
+
+  .fi-search-tabs {
+    margin-bottom: 14px;
+    padding: 4px;
+    gap: 4px;
+    border-radius: 12px;
+  }
+
+  .fi-tab-btn {
+    padding: 9px 8px;
+    font-size: 12px;
+    gap: 5px;
+    border-radius: 8px;
+  }
+
+  .fi-search-fields-grid {
+    grid-template-columns: 1fr;
+    gap: 10px;
+    margin-bottom: 14px;
+  }
+
+  .fi-input-group label {
+    font-size: 10.5px;
+    letter-spacing: 0.5px;
+  }
+
+  .fi-select-control {
+    padding: 10px 12px;
+    font-size: 13px;
+    border-radius: 10px;
+  }
+
+  .fi-search-action-bar {
+    padding-top: 4px;
+  }
+
+  .fi-btn-search-main {
+    padding: 12px 18px;
+    font-size: 14px;
+    border-radius: 12px;
+  }
+
+  .fi-action-cards-grid {
+    gap: 12px;
+  }
+
+  .fi-action-card {
+    padding: 14px 16px;
+    border-radius: 14px;
+  }
+
+  .fi-action-title {
+    font-size: 15px;
+  }
+
+  .fi-action-sub {
+    font-size: 12px;
+  }
+
+  .fi-action-arrow {
+    width: 36px;
+    height: 36px;
+  }
+
+  .fi-ask-experts-widget {
+    padding: 14px 16px;
+    border-radius: 14px;
+  }
+
+  .fi-expert-header {
+    margin-bottom: 10px;
+  }
+
+  .fi-expert-title {
+    font-size: 13.5px;
+  }
+
+  .fi-expert-toggle-btn {
+    padding: 8px 6px;
+    font-size: 11.5px;
+    border-radius: 8px;
+  }
+
+  .floating-whatsapp-btn {
+    bottom: 76px !important;
+    right: 16px !important;
+    width: 50px !important;
+    height: 50px !important;
+  }
+
+  .floating-whatsapp-btn svg {
+    width: 24px !important;
+    height: 24px !important;
+  }
+
+  .scroll-to-top-btn {
+    bottom: 76px !important;
+    left: 16px !important;
+    right: auto !important;
+    width: 44px !important;
+    height: 44px !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .fi-hero-section {
+    padding: 16px 0 24px 0;
+  }
+
+  .fi-search-card {
+    padding: 16px 12px;
+    border-radius: 14px;
+  }
+
+  .fi-search-title {
+    font-size: 19px;
+  }
+
+  .fi-search-subtitle {
+    font-size: 12px;
+  }
+
+  .fi-search-tabs {
+    padding: 3px;
+    gap: 3px;
+  }
+
+  .fi-tab-btn {
+    padding: 8px 4px;
+    font-size: 11.5px;
+    gap: 3px;
+  }
+
+  .fi-tab-btn svg {
+    width: 13px !important;
+    height: 13px !important;
+  }
+
+  .fi-btn-search-main {
+    padding: 11px 14px;
+    font-size: 13.5px;
+  }
 }
 
 /* 4. Leading Franchises Today Banner Showcase Carousel */
