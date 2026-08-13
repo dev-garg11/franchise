@@ -7,7 +7,8 @@ import {
   Search, MapPin, IndianRupee, RotateCcw, Building, Users, Star, ArrowRight,
   GraduationCap, Utensils, Store, Car, HeartPulse, Building2, HelpCircle,
   CheckCircle, ShieldCheck, Award, ThumbsUp, ChevronRight, MessageSquare, Mail,
-  Phone, Globe, Eye, ChevronLeft, Send, Sparkles, ShieldAlert, MessageCircle
+  Phone, Globe, Eye, ChevronLeft, Send, Sparkles, ShieldAlert, MessageCircle,
+  Filter, Layers, Briefcase
 } from "lucide-react";
 import TopFranchiseOpportunities from "@/components/TopFranchiseOpportunities";
 import TopBusinessOpportunities from "@/components/TopBusinessOpportunities";
@@ -27,6 +28,134 @@ const CATEGORIES = [
 const STATES = [
   "New Delhi", "Maharashtra", "Gujarat", "Karnataka", "Tamil Nadu", "Haryana",
   "Punjab", "Rajasthan", "Uttar Pradesh", "Kerala", "West Bengal", "Andhra Pradesh"
+];
+
+// Franchise India-Style Banner Constants
+const FI_INDUSTRIES = [
+  "Automotive", "Beauty & Health", "Business Services", "Dealers & Distributors",
+  "Education", "Fashion", "Food and Beverage", "Home Based Business",
+  "Hotel, Travel & Tourism", "Retail", "Sports, Fitness & Entertainment"
+];
+
+const FI_SECTORS_MAP = {
+  "Food and Beverage": ["Café & Kulhad Tea", "QSR & Fast Food", "Fine Dining & Restobar", "Ice Cream & Desserts", "Bakery & Confectionery"],
+  "Retail": ["Fashion Apparel", "Footwear & Accessories", "Luxury Goods", "Supermarket & Grocery", "Eyewear"],
+  "Education": ["Preschool & Daycare", "STEM & Robotics Labs", "Coaching Institute", "Skill Training Academy"],
+  "Beauty & Health": ["Unisex Salon & Spa", "Fitness Gym & Wellness", "Cosmetics & Skincare", "Ayurveda & Pharmacy"],
+  "Automobiles": ["EV Service Station", "2-Wheeler Workshop", "Car Washing & Detailing", "Spare Parts & Tires"],
+  "Business Services": ["Financial & Accounting", "Digital Marketing", "Co-Working Space", "Logistics & Courier"],
+  "Dealers & Distributors": ["FMCG Distribution", "Solar & Energy Solutions", "Construction Materials", "Industrial Equipment"]
+};
+
+const FI_STATES = [
+  "Delhi NCR", "Maharashtra", "Gujarat", "Karnataka", "Tamil Nadu",
+  "Punjab", "Haryana", "Rajasthan", "Uttar Pradesh", "West Bengal", "Kerala", "Telangana"
+];
+
+const FI_CITIES = [
+  "Mumbai", "Delhi", "Bengaluru", "Ahmedabad", "Pune", "Chandigarh",
+  "Jaipur", "Hyderabad", "Chennai", "Kolkata", "Ludhiana", "Surat", "Indore", "Lucknow"
+];
+
+const FI_MIN_BUDGETS = [
+  "Rs. 50,000", "Rs. 2 Lakhs", "Rs. 5 Lakhs", "Rs. 10 Lakhs",
+  "Rs. 20 Lakhs", "Rs. 30 Lakhs", "Rs. 50 Lakhs", "Rs. 1 Crore"
+];
+
+const FI_MAX_BUDGETS = [
+  "Rs. 2 Lakhs", "Rs. 5 Lakhs", "Rs. 10 Lakhs", "Rs. 20 Lakhs",
+  "Rs. 30 Lakhs", "Rs. 50 Lakhs", "Rs. 1 Crore", "Rs. 2 Crores", "Rs. 5 Crores+"
+];
+
+const LEADING_FRANCHISES = [
+  {
+    id: "lf-1",
+    name: "Performax Activewear",
+    category: "Sports & Fitness",
+    minInvestment: 1500000,
+    maxInvestment: 3000000,
+    hq: "Mumbai, MH",
+    roi: "12-18 Mos",
+    image: "https://images.unsplash.com/photo-1517838277536-f5f99be501cd?auto=format&fit=crop&q=80&w=600",
+    badge: "Trending"
+  },
+  {
+    id: "lf-2",
+    name: "Lee Cooper Denim",
+    category: "Fashion Apparel",
+    minInvestment: 2500000,
+    maxInvestment: 5000000,
+    hq: "New Delhi, DL",
+    roi: "18-24 Mos",
+    image: "https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&q=80&w=600",
+    badge: "Top Brand"
+  },
+  {
+    id: "lf-3",
+    name: "Cult Fitness Hub",
+    category: "Health & Fitness",
+    minInvestment: 3000000,
+    maxInvestment: 7500000,
+    hq: "Bengaluru, KA",
+    roi: "15-20 Mos",
+    image: "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&q=80&w=600",
+    badge: "High ROI"
+  },
+  {
+    id: "lf-4",
+    name: "Presto Personalised Gifts",
+    category: "Retail & Gifting",
+    minInvestment: 800000,
+    maxInvestment: 1500000,
+    hq: "Kolkata, WB",
+    roi: "10-14 Mos",
+    image: "https://images.unsplash.com/photo-1513885535751-8b9238bd345a?auto=format&fit=crop&q=80&w=600",
+    badge: "Popular"
+  },
+  {
+    id: "lf-5",
+    name: "Lakme Salon & Spa",
+    category: "Beauty & Wellness",
+    minInvestment: 3500000,
+    maxInvestment: 8000000,
+    hq: "Mumbai, MH",
+    roi: "18-24 Mos",
+    image: "https://images.unsplash.com/photo-1560066984-138dadb4c035?auto=format&fit=crop&q=80&w=600",
+    badge: "Luxury"
+  },
+  {
+    id: "lf-6",
+    name: "Zudio Fashion Outlet",
+    category: "Retail Apparel",
+    minInvestment: 4000000,
+    maxInvestment: 10000000,
+    hq: "Pune, MH",
+    roi: "20-24 Mos",
+    image: "https://images.unsplash.com/photo-1441986300917-64674bd600d8?auto=format&fit=crop&q=80&w=600",
+    badge: "Hot Demand"
+  },
+  {
+    id: "lf-7",
+    name: "Jaipur Chai Premium",
+    category: "Food & Beverage",
+    minInvestment: 500000,
+    maxInvestment: 1200000,
+    hq: "Jaipur, RJ",
+    roi: "10-15 Mos",
+    image: "https://images.unsplash.com/photo-1544787219-7f47ccb76574?auto=format&fit=crop&q=80&w=600",
+    badge: "#1 Pick"
+  },
+  {
+    id: "lf-8",
+    name: "Doctor Garage EV Hub",
+    category: "Automobiles",
+    minInvestment: 1000000,
+    maxInvestment: 2500000,
+    hq: "Ahmedabad, GJ",
+    roi: "12-18 Mos",
+    image: "https://images.unsplash.com/photo-1617814076367-b759c7d7e738?auto=format&fit=crop&q=80&w=600",
+    badge: "EV Growth"
+  }
 ];
 
 // FAQS mock data
@@ -51,10 +180,27 @@ const FAQS = [
 
 export default function Home() {
   const sliderRef = useRef(null);
+  const leadingCarouselRef = useRef(null);
   const router = useRouter();
   const [brands, setBrands] = useState([]);
   const [loading, setLoading] = useState(true);
   const pathname = usePathname();
+
+  // Franchise India Search Form & Multi-Criteria States
+  const [searchTab, setSearchTab] = useState("categories"); // "categories" | "location" | "investment"
+  const [fiIndustry, setFiIndustry] = useState("");
+  const [fiSector, setFiSector] = useState("");
+  const [fiService, setFiService] = useState("");
+
+  const [fiLocIndustry, setFiLocIndustry] = useState("");
+  const [fiState, setFiState] = useState("");
+  const [fiCity, setFiCity] = useState("");
+
+  const [fiInvIndustry, setFiInvIndustry] = useState("");
+  const [fiMinInv, setFiMinInv] = useState("");
+  const [fiMaxInv, setFiMaxInv] = useState("");
+
+  const [expertMode, setExpertMode] = useState("buy"); // "buy" | "expand"
 
   // Temporary Search Filters Form State (will redirect to /brands page on submit)
   const [searchTerm, setSearchTerm] = useState("");
@@ -109,6 +255,41 @@ export default function Home() {
       }
     }
   }, [selectedBrand]);
+
+  // Franchise India Search Submit Handler
+  const handleFiSearchSubmit = (e) => {
+    if (e) e.preventDefault();
+    const params = new URLSearchParams();
+
+    if (searchTab === "categories") {
+      if (fiIndustry) params.set("category", fiIndustry);
+      if (fiSector) params.set("sector", fiSector);
+      if (fiService) params.set("search", fiService);
+    } else if (searchTab === "location") {
+      if (fiLocIndustry) params.set("category", fiLocIndustry);
+      if (fiState) params.set("state", fiState);
+      if (fiCity) params.set("location", fiCity);
+    } else if (searchTab === "investment") {
+      if (fiInvIndustry) params.set("category", fiInvIndustry);
+      if (fiMinInv) params.set("minBudget", fiMinInv);
+      if (fiMaxInv) params.set("maxBudget", fiMaxInv);
+    }
+
+    router.push(`/brands?${params.toString()}`);
+  };
+
+  // Carousel controls for Leading Franchises
+  const handlePrevLeading = () => {
+    if (leadingCarouselRef.current) {
+      leadingCarouselRef.current.scrollBy({ left: -310, behavior: "smooth" });
+    }
+  };
+
+  const handleNextLeading = () => {
+    if (leadingCarouselRef.current) {
+      leadingCarouselRef.current.scrollBy({ left: 310, behavior: "smooth" });
+    }
+  };
 
   // Handle Search Submission Redirection
   const handleSearchSubmit = (e) => {
@@ -224,147 +405,383 @@ export default function Home() {
 
   return (
     <div>
-      {/* 1. Hero Section (Apple + Stripe style left/right layout) */}
-      <section className="hero">
-        {/* Decorative Blobs */}
-        <div className="hero-blob hero-blob-1"></div>
-        <div className="hero-blob hero-blob-2"></div>
+      {/* 1. Main Hero Banner & Multi-Criteria Search (Franchise India Style) */}
+      <section className="fi-hero-section">
+        <div className="fi-hero-orb orb-1"></div>
+        <div className="fi-hero-orb orb-2"></div>
 
-        <div className="container hero-container-inner">
-          <div className="hero-content">
-            <span className="hero-tag">
-              <Sparkles size={14} style={{ display: 'inline', marginRight: '4px', verticalAlign: 'middle' }} />
-              India's Premier Franchise Catalog
-            </span>
-            <h1>
-              Build Your Future. <br />
-              Start a <span>Luxury Franchise</span>.
-            </h1>
-            <p>
-              Connect with 50,000+ verified corporate investors. Discover high-ROI business concepts, secure master agreements, and launch premium networks inside local state boundaries.
-            </p>
-
-            <div className="hero-buttons">
-              <Link href="/investor-registration" className="btn btn-primary">
-                Start A Business <ArrowRight size={16} />
-              </Link>
-              <button onClick={handleOpenAskExperts} className="btn" style={{ background: '#25D366', color: '#ffffff', border: 'none', gap: '8px', display: 'inline-flex', alignItems: 'center', fontWeight: '700', padding: '14px 22px', borderRadius: '12px' }}>
-                <MessageCircle size={18} /> Ask Experts on WhatsApp
-              </button>
-              <Link href="/brand-registration" className="btn btn-outline">
-                Register Brand <Building size={16} />
-              </Link>
-            </div>
-
-
-            <div className="hero-badges-wrapper">
-              <p className="hero-badges-title">Trusted By Leading Corporate Networks</p>
-              <div className="hero-badges">
-                <span className="hero-badge-item">
-                  <ShieldCheck size={16} /> 100% Audited Directory
-                </span>
-                <span className="hero-badge-item">
-                  <Star size={16} style={{ color: 'var(--accent)' }} /> 4.9/5 Average ROI Rating
-                </span>
-              </div>
-            </div>
-          </div>
-
-          {/* Hero Right side: 3D-styled floating elements */}
-          <div className="hero-artwork">
-            <div className="artwork-glow"></div>
-            <div className="luxury-illustration-container">
-              <img
-                src="https://images.unsplash.com/photo-1542744173-8e7e53415bb0?auto=format&fit=crop&q=80&w=800"
-                alt="Corporate Meeting"
-                className="illustration-bg-image"
-              />
-
-              {/* Overlapping Glass Card 1 */}
-              <div className="floating-glass-card fg-card-1">
-                <span className="fg-label">Active Investors</span>
-                <span className="fg-metric">50k+</span>
-                <div className="fg-user-group">
-                  <div className="fg-avatar flex-center">IN</div>
-                  <div className="fg-avatar flex-center" style={{ background: 'var(--secondary)' }}>BR</div>
-                  <div className="fg-avatar flex-center" style={{ background: 'var(--accent)' }}>+</div>
+        <div className="container">
+          <div className="fi-hero-grid">
+            {/* Left Column: Interactive Multi-Criteria Search Banner */}
+            <div className="fi-search-card">
+              <div>
+                <div className="fi-search-header">
+                  <h1 className="fi-search-title">
+                    Find India's Top <span>Franchise Opportunities</span>
+                  </h1>
+                  <p className="fi-search-subtitle">
+                    Explore 1,200+ audited business setups, master dealerships & ROI-proven brands
+                  </p>
                 </div>
-              </div>
 
-              {/* Overlapping Glass Card 2 */}
-              <div className="floating-glass-card fg-card-2">
-                <span className="fg-label">Verified Models</span>
-                <span className="fg-metric" style={{ color: 'var(--success)' }}>100%</span>
-                <span style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: '600' }}>Compliance Approved</span>
-              </div>
+                {/* Filter Tabs */}
+                <div className="fi-search-tabs">
+                  <button
+                    type="button"
+                    className={`fi-tab-btn ${searchTab === "categories" ? "active" : ""}`}
+                    onClick={() => setSearchTab("categories")}
+                  >
+                    <Filter size={15} /> Categories
+                  </button>
+                  <button
+                    type="button"
+                    className={`fi-tab-btn ${searchTab === "location" ? "active" : ""}`}
+                    onClick={() => setSearchTab("location")}
+                  >
+                    <MapPin size={15} /> Location
+                  </button>
+                  <button
+                    type="button"
+                    className={`fi-tab-btn ${searchTab === "investment" ? "active" : ""}`}
+                    onClick={() => setSearchTab("investment")}
+                  >
+                    <IndianRupee size={15} /> Investment
+                  </button>
+                </div>
 
-              {/* Overlapping Glass Card 3 */}
-              <div className="floating-glass-card fg-card-3">
-                <span className="fg-label">Average Investment</span>
-                <span className="fg-metric" style={{ fontSize: '18px' }}>₹10L - ₹25L</span>
+                {/* Form Controls depending on Active Tab */}
+                <form onSubmit={handleFiSearchSubmit}>
+                  {searchTab === "categories" && (
+                    <div className="fi-search-fields-grid">
+                      <div className="fi-input-group">
+                        <label>Select Industry</label>
+                        <select
+                          className="fi-select-control"
+                          value={fiIndustry}
+                          onChange={(e) => {
+                            setFiIndustry(e.target.value);
+                            setFiSector("");
+                          }}
+                        >
+                          <option value="">All Industries</option>
+                          {FI_INDUSTRIES.map((ind, idx) => (
+                            <option key={idx} value={ind}>{ind}</option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div className="fi-input-group">
+                        <label>Select Sector</label>
+                        <select
+                          className="fi-select-control"
+                          value={fiSector}
+                          onChange={(e) => setFiSector(e.target.value)}
+                        >
+                          <option value="">All Sectors</option>
+                          {fiIndustry && FI_SECTORS_MAP[fiIndustry]
+                            ? FI_SECTORS_MAP[fiIndustry].map((sec, i) => (
+                                <option key={i} value={sec}>{sec}</option>
+                              ))
+                            : ["QSR", "Preschool", "Salon", "Retail", "Services"].map((sec, i) => (
+                                <option key={i} value={sec}>{sec}</option>
+                              ))}
+                        </select>
+                      </div>
+
+                      <div className="fi-input-group">
+                        <label>Search Concept</label>
+                        <input
+                          type="text"
+                          className="fi-select-control"
+                          placeholder="e.g. Chai, EV, Gym..."
+                          value={fiService}
+                          onChange={(e) => setFiService(e.target.value)}
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  {searchTab === "location" && (
+                    <div className="fi-search-fields-grid">
+                      <div className="fi-input-group">
+                        <label>Select Industry</label>
+                        <select
+                          className="fi-select-control"
+                          value={fiLocIndustry}
+                          onChange={(e) => setFiLocIndustry(e.target.value)}
+                        >
+                          <option value="">All Industries</option>
+                          {FI_INDUSTRIES.map((ind, idx) => (
+                            <option key={idx} value={ind}>{ind}</option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div className="fi-input-group">
+                        <label>Select State</label>
+                        <select
+                          className="fi-select-control"
+                          value={fiState}
+                          onChange={(e) => setFiState(e.target.value)}
+                        >
+                          <option value="">All States</option>
+                          {FI_STATES.map((st, i) => (
+                            <option key={i} value={st}>{st}</option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div className="fi-input-group">
+                        <label>Select City</label>
+                        <select
+                          className="fi-select-control"
+                          value={fiCity}
+                          onChange={(e) => setFiCity(e.target.value)}
+                        >
+                          <option value="">All Cities</option>
+                          {FI_CITIES.map((c, i) => (
+                            <option key={i} value={c}>{c}</option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+                  )}
+
+                  {searchTab === "investment" && (
+                    <div className="fi-search-fields-grid">
+                      <div className="fi-input-group">
+                        <label>Select Industry</label>
+                        <select
+                          className="fi-select-control"
+                          value={fiInvIndustry}
+                          onChange={(e) => setFiInvIndustry(e.target.value)}
+                        >
+                          <option value="">All Industries</option>
+                          {FI_INDUSTRIES.map((ind, idx) => (
+                            <option key={idx} value={ind}>{ind}</option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div className="fi-input-group">
+                        <label>Min Investment</label>
+                        <select
+                          className="fi-select-control"
+                          value={fiMinInv}
+                          onChange={(e) => setFiMinInv(e.target.value)}
+                        >
+                          <option value="">No Min Limit</option>
+                          {FI_MIN_BUDGETS.map((b, i) => (
+                            <option key={i} value={b}>{b}</option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div className="fi-input-group">
+                        <label>Max Investment</label>
+                        <select
+                          className="fi-select-control"
+                          value={fiMaxInv}
+                          onChange={(e) => setFiMaxInv(e.target.value)}
+                        >
+                          <option value="">No Max Limit</option>
+                          {FI_MAX_BUDGETS.map((b, i) => (
+                            <option key={i} value={b}>{b}</option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="fi-search-action-bar">
+                    <button type="submit" className="fi-btn-search-main">
+                      <Search size={18} /> Search Franchise Opportunities
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+
+            {/* Right Column: Hero Quick Action Banner Cards */}
+            <div className="fi-action-cards-grid">
+              <Link href="/investor-registration" className="fi-action-card card-green">
+                <div className="fi-action-info">
+                  <span className="fi-action-tag">Investor Hub</span>
+                  <h3 className="fi-action-title">Start A Business Today</h3>
+                  <p className="fi-action-sub">Investor Registration & ROI Profiles</p>
+                </div>
+                <div className="fi-action-arrow">
+                  <ArrowRight size={18} />
+                </div>
+              </Link>
+
+              <Link href="/brand-registration" className="fi-action-card card-blue">
+                <div className="fi-action-info">
+                  <span className="fi-action-tag">Franchisor Hub</span>
+                  <h3 className="fi-action-title">Appoint Channel Partners</h3>
+                  <p className="fi-action-sub">Franchisor & Brand Registration</p>
+                </div>
+                <div className="fi-action-arrow">
+                  <ArrowRight size={18} />
+                </div>
+              </Link>
+
+              {/* Ask Our Experts Interactive Card */}
+              <div className="fi-ask-experts-widget">
+                <div className="fi-expert-header">
+                  <div className="fi-expert-title">
+                    <Sparkles size={16} style={{ color: "#7cb02c" }} /> Ask Our Experts
+                  </div>
+                  <span style={{ fontSize: "11px", color: "#25D366", fontWeight: "700", display: "flex", alignItems: "center", gap: "6px" }}>
+                    <span className="live-dot-pulse"></span> Live Support
+                  </span>
+                </div>
+
+                <div className="fi-expert-btns" style={{ marginBottom: "12px" }}>
+                  <button
+                    type="button"
+                    className={`fi-expert-toggle-btn ${expertMode === "expand" ? "active" : ""}`}
+                    onClick={() => {
+                      setExpertMode("expand");
+                      handleOpenAskExperts("expand");
+                    }}
+                  >
+                    Expand My Brand
+                  </button>
+                  <button
+                    type="button"
+                    className={`fi-expert-toggle-btn ${expertMode === "buy" ? "active" : ""}`}
+                    onClick={() => {
+                      setExpertMode("buy");
+                      handleOpenAskExperts("buy");
+                    }}
+                  >
+                    Buy a Franchise
+                  </button>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => handleOpenAskExperts(expertMode)}
+                  style={{
+                    width: "100%",
+                    padding: "10px",
+                    background: "#25D366",
+                    color: "#ffffff",
+                    fontWeight: "800",
+                    fontSize: "13px",
+                    borderRadius: "10px",
+                    border: "none",
+                    cursor: "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: "8px"
+                  }}
+                >
+                  <MessageCircle size={16} /> Consult Franchise Expert on WhatsApp
+                </button>
               </div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* 2. Premium Search Section (Floating search box over transition) */}
-      <div className="search-section-wrapper">
+      {/* 2. Leading Franchises Today Banner Showcase Carousel */}
+      <section className="fi-leading-franchises-section">
         <div className="container">
-          <div className="search-container">
-            <div className="search-field">
-              <label>Search Directory</label>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <Search size={16} style={{ color: "var(--text-muted)", flexShrink: 0 }} />
-                <input
-                  type="text"
-                  placeholder="e.g. Bombay Kulfi, Education..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                />
-              </div>
+          <div className="fi-section-header">
+            <div className="fi-section-title-wrap">
+              <h2>
+                <Award size={24} style={{ color: "#7cb02c" }} /> Leading Franchises Today
+              </h2>
+              <p>Top performing franchise setups actively looking for regional & master partners</p>
             </div>
 
-            <div className="search-field">
-              <label>Business Category</label>
-              <select
-                value={selectedCategory}
-                onChange={(e) => setSelectedCategory(e.target.value)}
-              >
-                <option value="">All Segments</option>
-                <option value="Food and Beverage">Food & Beverage</option>
-                <option value="Retail">Retail</option>
-                <option value="Education">Education</option>
-                <option value="Automobiles">Automobiles</option>
-                <option value="Health and Wellness">Health & Wellness</option>
-                <option value="Business Services">Business Services</option>
-              </select>
+            <div className="fi-carousel-controls">
+              <button className="fi-carousel-btn" onClick={handlePrevLeading} title="Previous">
+                <ChevronLeft size={20} />
+              </button>
+              <button className="fi-carousel-btn" onClick={handleNextLeading} title="Next">
+                <ChevronRight size={20} />
+              </button>
             </div>
+          </div>
 
-            <div className="search-field">
-              <label>Investment Limit</label>
-              <select
-                value={selectedBudget}
-                onChange={(e) => setSelectedBudget(e.target.value)}
-              >
-                <option value="">Any Investment</option>
-                <option value="under-2l">Under ₹2 Lakhs</option>
-                <option value="2l-5l">₹2L - ₹5 Lakhs</option>
-                <option value="5l-10l">₹5L - ₹10 Lakhs</option>
-                <option value="10l-15l">₹10L - ₹15 Lakhs</option>
-                <option value="15l-20l">₹15L - ₹20 Lakhs</option>
-                <option value="20l-30l">₹20L - ₹30 Lakhs</option>
-                <option value="above-30l">Above ₹30 Lakhs</option>
-              </select>
-            </div>
+          <div className="fi-brand-cards-track" ref={leadingCarouselRef}>
+            {loading ? (
+              Array.from({ length: 5 }).map((_, idx) => (
+                <div key={`skel-leading-${idx}`} className="fi-brand-card-item" style={{ flex: "0 0 290px" }}>
+                  <div className="skeleton-box" style={{ height: "170px", width: "100%", borderRadius: "0" }} />
+                  <div className="fi-brand-body" style={{ padding: "18px" }}>
+                    <div className="skeleton-box" style={{ height: "14px", width: "90px", marginBottom: "10px" }} />
+                    <div className="skeleton-box" style={{ height: "20px", width: "75%", marginBottom: "12px" }} />
+                    <div className="skeleton-box" style={{ height: "16px", width: "85%", marginBottom: "16px" }} />
+                    <div style={{ display: "flex", justifyContent: "space-between", paddingTop: "10px", marginBottom: "16px" }}>
+                      <div className="skeleton-box" style={{ height: "12px", width: "60px" }} />
+                      <div className="skeleton-box" style={{ height: "12px", width: "50px" }} />
+                    </div>
+                    <div className="skeleton-box" style={{ height: "38px", width: "100%", borderRadius: "12px" }} />
+                  </div>
+                </div>
+              ))
+            ) : (
+              (brands.length > 0
+                ? brands.map((b, idx) => ({
+                    ...b,
+                    id: b.id || b._id || `db-${idx}`,
+                    name: b.name || b.brandName || "Luxury Franchise",
+                    company: b.company || b.name || "",
+                    category: b.category || "Franchise Opportunity",
+                    minInvestment: b.minInvestment || 500000,
+                    maxInvestment: b.maxInvestment || 2000000,
+                    hq: b.hq || b.location || "India",
+                    roi: b.roi || "12-18 Mos",
+                    image: b.image || b.logo || b.bannerImage || LEADING_FRANCHISES[idx % LEADING_FRANCHISES.length].image,
+                    badge: b.featured ? "Featured" : "#1 Pick"
+                  })).concat(
+                    LEADING_FRANCHISES.filter(fb => !brands.some(b => (b.name || b.brandName || "").toLowerCase() === fb.name.toLowerCase()))
+                  )
+                : LEADING_FRANCHISES
+              ).map((b) => (
+                <div key={b.id} className="fi-brand-card-item">
+                  <div className="fi-brand-img-box">
+                    <img src={b.image} alt={b.name} />
+                    <span className="fi-brand-cat-badge">{b.category}</span>
+                    <span className="fi-brand-roi-pill">ROI: {b.roi}</span>
+                  </div>
 
-            <button className="btn btn-primary" onClick={handleSearchSubmit} style={{ padding: "14px 24px", height: '100%', gap: '8px', display: 'inline-flex', alignItems: 'center' }}>
-              <Search size={16} />
-              Search Now
-            </button>
+                  <div className="fi-brand-body">
+                    <div>
+                      <h3 className="fi-brand-name">{b.name}</h3>
+                      <div className="fi-brand-investment">
+                        Investment: {formatLakhs(b.minInvestment)} - {formatLakhs(b.maxInvestment)}
+                      </div>
+                    </div>
+
+                    <div>
+                      <div className="fi-brand-meta">
+                        <span>HQ: {b.hq}</span>
+                        <span style={{ color: "#7cb02c", fontWeight: "700" }}>{b.badge}</span>
+                      </div>
+
+                      <button
+                        className="fi-btn-know-more"
+                        onClick={() => {
+                          setSelectedBrand(b);
+                          setIsEnquiryOnlyMode(true);
+                        }}
+                      >
+                        Know More <ArrowRight size={14} />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))
+            )}
           </div>
         </div>
-      </div>
+      </section>
 
       {/* 3. Trust Section (Auto Scrolling verified logos) */}
       <section className="trust-section">

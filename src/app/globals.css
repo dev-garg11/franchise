@@ -4243,8 +4243,800 @@ button {
   cursor: pointer;
 }
 
+/* ==========================================================================
+   Franchise India-Style Top Banner Redesign (Ultra-Professional Polish)
+   ========================================================================== */
 
+/* 1. Top Utility Navigation Strip */
+.fi-top-nav-strip {
+  background: linear-gradient(90deg, #050917 0%, #0d1b3e 50%, #060d26 100%);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 9px 0;
+  font-size: 13px;
+  color: #94a3b8;
+  position: relative;
+  z-index: 100;
+  backdrop-filter: blur(10px);
+}
 
+.fi-top-nav-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  overflow-x: auto;
+  white-space: nowrap;
+  scrollbar-width: none;
+}
 
+.fi-top-nav-inner::-webkit-scrollbar {
+  display: none;
+}
+
+.fi-utility-links {
+  display: flex;
+  align-items: center;
+  gap: 22px;
+  list-style: none;
+}
+
+.fi-utility-link {
+  color: #cbd5e1;
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12.5px;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  text-decoration: none;
+  position: relative;
+}
+
+.fi-utility-link:hover {
+  color: #38bdf8;
+  transform: translateY(-1px);
+  text-shadow: 0 0 10px rgba(56, 189, 248, 0.3);
+}
+
+.fi-utility-link .badge-hot {
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+  color: #ffffff;
+  font-size: 9.5px;
+  font-weight: 800;
+  padding: 2px 7px;
+  border-radius: 9999px;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  box-shadow: 0 2px 8px rgba(239, 68, 68, 0.4);
+  animation: badge-pulse 2s infinite;
+}
+
+@keyframes badge-pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.08); }
+}
+
+.fi-utility-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.fi-auth-shortcut {
+  color: #f8fafc;
+  font-weight: 600;
+  font-size: 12.5px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 14px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  transition: all 0.25s ease;
+  text-decoration: none;
+}
+
+.fi-auth-shortcut:hover {
+  background: rgba(255, 255, 255, 0.18);
+  border-color: rgba(255, 255, 255, 0.25);
+  color: #ffffff;
+  transform: translateY(-1px);
+}
+
+/* 2. Main Hero & Search Banner Container */
+.fi-hero-section {
+  background: 
+    linear-gradient(135deg, rgba(6, 11, 28, 0.92) 0%, rgba(13, 27, 62, 0.86) 50%, rgba(4, 8, 20, 0.95) 100%),
+    radial-gradient(rgba(255, 255, 255, 0.08) 1.2px, transparent 1.2px),
+    url('https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&q=80&w=2000');
+  background-size: cover, 30px 30px, cover;
+  background-position: center;
+  background-repeat: no-repeat, repeat, no-repeat;
+  background-attachment: fixed;
+  color: #ffffff;
+  min-height: 540px;
+  padding: 56px 0;
+  display: flex;
+  align-items: center;
+  position: relative;
+  overflow: hidden;
+  box-shadow: inset 0 -30px 50px rgba(0, 0, 0, 0.5);
+}
+
+.fi-hero-section::before {
+  content: '';
+  position: absolute;
+  top: -180px;
+  right: -120px;
+  width: 750px;
+  height: 750px;
+  background: radial-gradient(circle, rgba(124, 176, 44, 0.22) 0%, rgba(56, 189, 248, 0.08) 45%, transparent 70%);
+  pointer-events: none;
+  animation: aura-float 16s ease-in-out infinite alternate;
+}
+
+.fi-hero-section::after {
+  content: '';
+  position: absolute;
+  bottom: -180px;
+  left: -120px;
+  width: 650px;
+  height: 650px;
+  background: radial-gradient(circle, rgba(56, 189, 248, 0.18) 0%, rgba(249, 115, 22, 0.06) 45%, transparent 70%);
+  pointer-events: none;
+}
+
+.fi-hero-orb {
+  position: absolute;
+  border-radius: 50%;
+  pointer-events: none;
+  filter: blur(60px);
+  z-index: 1;
+}
+
+.fi-hero-orb.orb-1 {
+  top: 20%;
+  left: 25%;
+  width: 350px;
+  height: 350px;
+  background: radial-gradient(circle, rgba(124, 176, 44, 0.12) 0%, transparent 70%);
+  animation: orb-pulse 10s ease-in-out infinite alternate;
+}
+
+.fi-hero-orb.orb-2 {
+  bottom: 15%;
+  right: 20%;
+  width: 400px;
+  height: 400px;
+  background: radial-gradient(circle, rgba(56, 189, 248, 0.12) 0%, transparent 70%);
+  animation: orb-pulse 12s ease-in-out infinite alternate-reverse;
+}
+
+@keyframes orb-pulse {
+  0% { transform: scale(0.9) translate(0, 0); opacity: 0.6; }
+  100% { transform: scale(1.15) translate(20px, -20px); opacity: 0.95; }
+}
+
+@keyframes aura-float {
+  0% { transform: translate(0, 0) scale(1); }
+  100% { transform: translate(-30px, 30px) scale(1.1); }
+}
+
+.fi-hero-grid {
+  display: grid;
+  grid-template-columns: 1.25fr 0.75fr;
+  gap: 32px;
+  align-items: stretch;
+  position: relative;
+  z-index: 2;
+}
+
+@media (max-width: 1024px) {
+  .fi-hero-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Multi-Criteria Search Card */
+.fi-search-card {
+  background: rgba(15, 23, 42, 0.8);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 22px;
+  padding: 28px;
+  box-shadow: 0 30px 60px -12px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  transition: border-color 0.3s ease;
+}
+
+.fi-search-card:hover {
+  border-color: rgba(124, 176, 44, 0.35);
+}
+
+.fi-search-header {
+  margin-bottom: 22px;
+}
+
+.fi-search-title {
+  font-size: 28px;
+  font-weight: 800;
+  color: #ffffff;
+  margin-bottom: 6px;
+  letter-spacing: -0.03em;
+  line-height: 1.2;
+}
+
+.fi-search-title span {
+  background: linear-gradient(135deg, #7cb02c 0%, #38bdf8 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.fi-search-subtitle {
+  font-size: 14.5px;
+  color: #94a3b8;
+  font-weight: 400;
+}
+
+/* Tabs */
+.fi-search-tabs {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(2, 6, 23, 0.7);
+  padding: 6px;
+  border-radius: 14px;
+  margin-bottom: 22px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.fi-tab-btn {
+  flex: 1;
+  padding: 11px 16px;
+  font-size: 13.5px;
+  font-weight: 700;
+  color: #94a3b8;
+  border: none;
+  background: transparent;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.fi-tab-btn:hover {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.fi-tab-btn.active {
+  background: linear-gradient(135deg, #0d173c 0%, #1e293b 100%);
+  color: #ffffff;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(124, 176, 44, 0.5);
+}
+
+.fi-tab-btn.active svg {
+  color: #7cb02c;
+}
+
+/* Form Controls */
+.fi-search-fields-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  margin-bottom: 22px;
+}
+
+@media (max-width: 640px) {
+  .fi-search-fields-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.fi-input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.fi-input-group label {
+  font-size: 11.5px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: #cbd5e1;
+}
+
+.fi-select-control {
+  width: 100%;
+  padding: 13px 16px;
+  background: rgba(30, 41, 59, 0.95);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 12px;
+  color: #ffffff;
+  font-size: 13.5px;
+  font-weight: 500;
+  outline: none;
+  transition: all 0.25s ease;
+  cursor: pointer;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.fi-select-control:focus {
+  border-color: #7cb02c;
+  box-shadow: 0 0 0 3px rgba(124, 176, 44, 0.25), inset 0 2px 4px rgba(0, 0, 0, 0.2);
+  background: rgba(30, 41, 59, 1);
+}
+
+.fi-select-control option {
+  background: #0f172a;
+  color: #ffffff;
+  padding: 10px;
+}
+
+.fi-search-action-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding-top: 12px;
+}
+
+.fi-btn-search-main {
+  background: linear-gradient(135deg, #7cb02c 0%, #527c15 100%);
+  color: #ffffff;
+  font-size: 15.5px;
+  font-weight: 800;
+  padding: 15px 30px;
+  border-radius: 14px;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  box-shadow: 0 10px 25px -5px rgba(124, 176, 44, 0.45);
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  width: 100%;
+  letter-spacing: -0.01em;
+  position: relative;
+  overflow: hidden;
+}
+
+.fi-btn-search-main::after {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: linear-gradient(60deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  transform: rotate(30deg) translateY(-100%);
+  transition: transform 0.6s ease;
+}
+
+.fi-btn-search-main:hover::after {
+  transform: rotate(30deg) translateY(100%);
+}
+
+.fi-btn-search-main:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 14px 30px -5px rgba(124, 176, 44, 0.6);
+  background: linear-gradient(135deg, #8cc732 0%, #5c8b19 100%);
+}
+
+.fi-btn-search-main:active {
+  transform: translateY(0);
+}
+
+/* 3. Hero Quick Action Cards (Right Column) */
+.fi-action-cards-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.fi-action-card {
+  background: linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.98) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 18px;
+  padding: 20px 22px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+  text-decoration: none;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
+}
+
+.fi-action-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 5px;
+  height: 100%;
+  background: #7cb02c;
+  border-radius: 5px 0 0 5px;
+}
+
+.fi-action-card.card-blue::before {
+  background: #38bdf8;
+}
+
+.fi-action-card.card-orange::before {
+  background: #f97316;
+}
+
+.fi-action-card:hover {
+  transform: translateX(6px);
+  border-color: rgba(255, 255, 255, 0.28);
+  box-shadow: 0 16px 32px -8px rgba(0, 0, 0, 0.5);
+}
+
+.fi-action-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.fi-action-tag {
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.9px;
+  color: #7cb02c;
+}
+
+.fi-action-card.card-blue .fi-action-tag {
+  color: #38bdf8;
+}
+
+.fi-action-card.card-orange .fi-action-tag {
+  color: #f97316;
+}
+
+.fi-action-title {
+  font-size: 16.5px;
+  font-weight: 800;
+  color: #ffffff;
+  line-height: 1.3;
+}
+
+.fi-action-sub {
+  font-size: 13px;
+  color: #94a3b8;
+}
+
+.fi-action-arrow {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.08);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+  flex-shrink: 0;
+  transition: all 0.25s ease;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.fi-action-card:hover .fi-action-arrow {
+  background: #7cb02c;
+  color: #ffffff;
+  border-color: #7cb02c;
+  transform: scale(1.1) rotate(-10deg);
+  box-shadow: 0 4px 14px rgba(124, 176, 44, 0.4);
+}
+
+.fi-action-card.card-blue:hover .fi-action-arrow {
+  background: #38bdf8;
+  border-color: #38bdf8;
+  box-shadow: 0 4px 14px rgba(56, 189, 248, 0.4);
+}
+
+.fi-action-card.card-orange:hover .fi-action-arrow {
+  background: #f97316;
+  border-color: #f97316;
+  box-shadow: 0 4px 14px rgba(249, 115, 22, 0.4);
+}
+
+/* Ask Experts Widget */
+.fi-ask-experts-widget {
+  background: rgba(15, 23, 42, 0.9);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 18px;
+  padding: 18px 22px;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
+}
+
+.fi-expert-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+
+.fi-expert-title {
+  font-size: 14.5px;
+  font-weight: 800;
+  color: #f8fafc;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.live-dot-pulse {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  background: #25D366;
+  border-radius: 50%;
+  box-shadow: 0 0 0 0 rgba(37, 211, 102, 0.7);
+  animation: pulse-ring 1.8s infinite;
+}
+
+@keyframes pulse-ring {
+  0% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(37, 211, 102, 0.7);
+  }
+  70% {
+    transform: scale(1);
+    box-shadow: 0 0 0 6px rgba(37, 211, 102, 0);
+  }
+  100% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(37, 211, 102, 0);
+  }
+}
+
+.fi-expert-btns {
+  display: flex;
+  gap: 8px;
+}
+
+.fi-expert-toggle-btn {
+  flex: 1;
+  padding: 9px;
+  font-size: 12px;
+  font-weight: 800;
+  border-radius: 10px;
+  background: rgba(30, 41, 59, 0.85);
+  color: #94a3b8;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  cursor: pointer;
+  transition: all 0.25s ease;
+  text-align: center;
+}
+
+.fi-expert-toggle-btn.active {
+  background: #25D366;
+  color: #ffffff;
+  border-color: #25D366;
+  box-shadow: 0 4px 14px rgba(37, 211, 102, 0.35);
+}
+
+/* 4. Leading Franchises Today Banner Showcase Carousel */
+.fi-leading-franchises-section {
+  background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
+  padding: 56px 0;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.fi-section-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  margin-bottom: 32px;
+}
+
+.fi-section-title-wrap h2 {
+  font-size: 28px;
+  font-weight: 800;
+  color: #0f172a;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  letter-spacing: -0.02em;
+}
+
+.fi-section-title-wrap p {
+  font-size: 14.5px;
+  color: #64748b;
+  margin-top: 4px;
+}
+
+.fi-carousel-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.fi-carousel-btn {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 1px solid #cbd5e1;
+  background: #ffffff;
+  color: #334155;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+}
+
+.fi-carousel-btn:hover {
+  background: #0f172a;
+  color: #ffffff;
+  border-color: #0f172a;
+  transform: scale(1.05);
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.2);
+}
+
+/* Card Carousel Grid */
+.fi-brand-cards-track {
+  display: flex;
+  gap: 22px;
+  overflow-x: auto;
+  scroll-behavior: smooth;
+  padding-bottom: 20px;
+  scrollbar-width: none;
+}
+
+.fi-brand-cards-track::-webkit-scrollbar {
+  display: none;
+}
+
+.fi-brand-card-item {
+  flex: 0 0 290px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 18px;
+  overflow: hidden;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+  transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex;
+  flex-direction: column;
+}
+
+.fi-brand-card-item:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 20px 40px -10px rgba(15, 23, 42, 0.16);
+  border-color: #7cb02c;
+}
+
+.fi-brand-img-box {
+  position: relative;
+  height: 170px;
+  overflow: hidden;
+  background: #0f172a;
+}
+
+.fi-brand-img-box img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.6s ease;
+}
+
+.fi-brand-card-item:hover .fi-brand-img-box img {
+  transform: scale(1.1);
+}
+
+.fi-brand-cat-badge {
+  position: absolute;
+  top: 14px;
+  left: 14px;
+  background: rgba(15, 23, 42, 0.85);
+  backdrop-filter: blur(8px);
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 800;
+  padding: 5px 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+}
+
+.fi-brand-roi-pill {
+  position: absolute;
+  bottom: 14px;
+  right: 14px;
+  background: linear-gradient(135deg, #7cb02c 0%, #5c8b19 100%);
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 800;
+  padding: 4px 10px;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(124, 176, 44, 0.35);
+}
+
+.fi-brand-body {
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  justify-content: space-between;
+}
+
+.fi-brand-name {
+  font-size: 17px;
+  font-weight: 800;
+  color: #0f172a;
+  margin-bottom: 8px;
+  line-height: 1.3;
+}
+
+.fi-brand-investment {
+  font-size: 14.5px;
+  font-weight: 800;
+  color: #7cb02c;
+  margin-bottom: 14px;
+}
+
+.fi-brand-meta {
+  font-size: 12.5px;
+  color: #64748b;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 10px;
+  border-top: 1px dashed #e2e8f0;
+  margin-bottom: 16px;
+}
+
+.fi-btn-know-more {
+  width: 100%;
+  padding: 11px;
+  background: #0f172a;
+  color: #ffffff;
+  font-size: 13.5px;
+  font-weight: 800;
+  border-radius: 12px;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: all 0.25s ease;
+}
+
+.fi-brand-card-item:hover .fi-btn-know-more {
+  background: linear-gradient(135deg, #7cb02c 0%, #5c8b19 100%);
+  color: #ffffff;
+  box-shadow: 0 4px 14px rgba(124, 176, 44, 0.35);
+}
+
+/* Skeleton Loading Shimmer */
+@keyframes skeleton-shimmer {
+  0% { background-position: -200px 0; }
+  100% { background-position: calc(200px + 100%) 0; }
+}
+
+.skeleton-box {
+  background: #cbd5e1;
+  background-image: linear-gradient(90deg, #cbd5e1 0%, #e2e8f0 50%, #cbd5e1 100%);
+  background-size: 200px 100%;
+  background-repeat: no-repeat;
+  animation: skeleton-shimmer 1.5s infinite linear;
+  border-radius: 6px;
+}
 
 
