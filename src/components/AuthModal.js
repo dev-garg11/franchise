@@ -260,20 +260,21 @@ export default function AuthModal({ isOpen, onClose, initialTab = "login" }) {
         className="modal-card"
         style={{
           width: "100%",
-          maxWidth: "460px",
+          maxWidth: "680px",
           backgroundColor: "#ffffff",
-          borderRadius: "12px",
+          borderRadius: "20px",
           border: "1px solid #E5E7EB",
-          boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.25)",
-          padding: "24px 28px",
+          boxShadow: "0 25px 60px -12px rgba(15, 23, 42, 0.35)",
+          padding: "32px 38px",
           position: "relative",
           display: "flex",
           flexDirection: "column",
-          gap: "16px",
+          gap: "18px",
           maxHeight: "calc(100vh - 40px)",
           overflowY: "auto"
         }}
       >
+
         {/* Close Button */}
         <button
           onClick={onClose}
@@ -305,17 +306,21 @@ export default function AuthModal({ isOpen, onClose, initialTab = "login" }) {
         </button>
 
         {/* Logo Container */}
-        <div style={{ textAlign: "center", marginBottom: "0px", marginTop: "10px" }}>
+        <div style={{ textAlign: "center", padding: "6px 0 2px 0", display: "flex", justifyContent: "center" }}>
           <img
             src="/WhatsApp_Image_2026-07-16_at_4.40.00_PM__2_-removebg-preview.png"
             alt="Franchise Roots"
+            className="auth-modal-logo-img"
             style={{
-              height: "190px",
+              height: "75px",
               width: "auto",
-              objectFit: "contain"
+              objectFit: "contain",
+              filter: "drop-shadow(0 2px 8px rgba(0, 0, 0, 0.08))"
             }}
           />
         </div>
+
+
 
         {/* Top Header Text (Below Logo) */}
         <div style={{ textAlign: "center", marginBottom: "0px" }}>
@@ -615,88 +620,97 @@ export default function AuthModal({ isOpen, onClose, initialTab = "login" }) {
           </form>
         ) : (
           /* REGISTER TAB WITH TWO CLICKABLE CARDS AND INFORMATIONAL SECTION */
-          <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-            {/* Card 1: Register Your Brand */}
-            <Link
-              href="/brand-registration"
-              onClick={onClose}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-                width: "100%",
-                minHeight: "84px",
-                backgroundColor: "#ffffff",
-                border: "1.5px solid var(--border-color, #D1D5DB)",
-                borderRadius: "var(--radius-md, 14px)",
-                padding: "16px 20px",
-                textDecoration: "none",
-                cursor: "pointer",
-                transition: "all 0.3s ease-in-out",
-                boxShadow: "var(--shadow-sm, 0 2px 4px rgba(0, 0, 0, 0.02))"
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.transform = "scale(1.02)";
-                e.currentTarget.style.borderColor = "var(--primary)";
-                e.currentTarget.style.boxShadow = "var(--shadow-md, 0 8px 16px rgba(13, 23, 60, 0.08))";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.transform = "none";
-                e.currentTarget.style.borderColor = "var(--border-color, #D1D5DB)";
-                e.currentTarget.style.boxShadow = "var(--shadow-sm, 0 2px 4px rgba(0, 0, 0, 0.02))";
-              }}
-            >
-              <div style={{ display: "flex", flexDirection: "column", gap: "4px", paddingRight: "16px", textAlign: "left" }}>
-                <span style={{ fontSize: "16px", fontWeight: "700", color: "var(--text-dark, #1F2937)" }}>
-                  Register Your Brand
-                </span>
-                <span style={{ fontSize: "12px", color: "var(--text-muted, #6B7280)", lineHeight: "1.4" }}>
-                  Promote and Grow Your Business with Franchise Roots
-                </span>
-              </div>
-              <ChevronRight size={20} style={{ color: "var(--primary)", flexShrink: 0 }} />
-            </Link>
+          <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+            {/* 2-Column Action Cards */}
+            <div className="modal-register-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
 
-            {/* Card 2: Start A Business */}
-            <Link
-              href="/investor-registration"
-              onClick={onClose}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-                width: "100%",
-                minHeight: "84px",
-                backgroundColor: "#ffffff",
-                border: "1.5px solid var(--border-color, #D1D5DB)",
-                borderRadius: "var(--radius-md, 14px)",
-                padding: "16px 20px",
-                textDecoration: "none",
-                cursor: "pointer",
-                transition: "all 0.3s ease-in-out",
-                boxShadow: "var(--shadow-sm, 0 2px 4px rgba(0, 0, 0, 0.02))"
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.transform = "scale(1.02)";
-                e.currentTarget.style.borderColor = "var(--primary)";
-                e.currentTarget.style.boxShadow = "var(--shadow-md, 0 8px 16px rgba(13, 23, 60, 0.08))";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.transform = "none";
-                e.currentTarget.style.borderColor = "var(--border-color, #D1D5DB)";
-                e.currentTarget.style.boxShadow = "var(--shadow-sm, 0 2px 4px rgba(0, 0, 0, 0.02))";
-              }}
-            >
-              <div style={{ display: "flex", flexDirection: "column", gap: "4px", paddingRight: "16px", textAlign: "left" }}>
-                <span style={{ fontSize: "16px", fontWeight: "700", color: "var(--text-dark, #1F2937)" }}>
-                  Start A Business
-                </span>
-                <span style={{ fontSize: "12px", color: "var(--text-muted, #6B7280)", lineHeight: "1.4" }}>
-                  Become an Investor and Explore Franchise Opportunities
-                </span>
-              </div>
-              <ChevronRight size={20} style={{ color: "var(--primary)", flexShrink: 0 }} />
-            </Link>
+              {/* Card 1: Register Your Brand */}
+              <Link
+                href="/brand-registration"
+                onClick={onClose}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  width: "100%",
+                  minHeight: "90px",
+                  backgroundColor: "#F8FAFC",
+                  border: "1.5px solid var(--border-color, #D1D5DB)",
+                  borderRadius: "var(--radius-md, 14px)",
+                  padding: "16px 20px",
+                  textDecoration: "none",
+                  cursor: "pointer",
+                  transition: "all 0.3s ease-in-out",
+                  boxShadow: "var(--shadow-sm, 0 2px 4px rgba(0, 0, 0, 0.02))"
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = "translateY(-2px)";
+                  e.currentTarget.style.borderColor = "var(--primary)";
+                  e.currentTarget.style.backgroundColor = "#ffffff";
+                  e.currentTarget.style.boxShadow = "var(--shadow-md, 0 8px 16px rgba(13, 23, 60, 0.08))";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = "none";
+                  e.currentTarget.style.borderColor = "var(--border-color, #D1D5DB)";
+                  e.currentTarget.style.backgroundColor = "#F8FAFC";
+                  e.currentTarget.style.boxShadow = "var(--shadow-sm, 0 2px 4px rgba(0, 0, 0, 0.02))";
+                }}
+              >
+                <div style={{ display: "flex", flexDirection: "column", gap: "4px", paddingRight: "10px", textAlign: "left" }}>
+                  <span style={{ fontSize: "15px", fontWeight: "800", color: "var(--text-dark, #1F2937)" }}>
+                    Register Your Brand
+                  </span>
+                  <span style={{ fontSize: "12px", color: "var(--text-muted, #6B7280)", lineHeight: "1.4" }}>
+                    Promote & grow your brand with Franchise Roots
+                  </span>
+                </div>
+                <ChevronRight size={20} style={{ color: "var(--primary)", flexShrink: 0 }} />
+              </Link>
+
+              {/* Card 2: Start A Business */}
+              <Link
+                href="/investor-registration"
+                onClick={onClose}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  width: "100%",
+                  minHeight: "90px",
+                  backgroundColor: "#F8FAFC",
+                  border: "1.5px solid var(--border-color, #D1D5DB)",
+                  borderRadius: "var(--radius-md, 14px)",
+                  padding: "16px 20px",
+                  textDecoration: "none",
+                  cursor: "pointer",
+                  transition: "all 0.3s ease-in-out",
+                  boxShadow: "var(--shadow-sm, 0 2px 4px rgba(0, 0, 0, 0.02))"
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = "translateY(-2px)";
+                  e.currentTarget.style.borderColor = "var(--primary)";
+                  e.currentTarget.style.backgroundColor = "#ffffff";
+                  e.currentTarget.style.boxShadow = "var(--shadow-md, 0 8px 16px rgba(13, 23, 60, 0.08))";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = "none";
+                  e.currentTarget.style.borderColor = "var(--border-color, #D1D5DB)";
+                  e.currentTarget.style.backgroundColor = "#F8FAFC";
+                  e.currentTarget.style.boxShadow = "var(--shadow-sm, 0 2px 4px rgba(0, 0, 0, 0.02))";
+                }}
+              >
+                <div style={{ display: "flex", flexDirection: "column", gap: "4px", paddingRight: "10px", textAlign: "left" }}>
+                  <span style={{ fontSize: "15px", fontWeight: "800", color: "var(--text-dark, #1F2937)" }}>
+                    Start A Business
+                  </span>
+                  <span style={{ fontSize: "12px", color: "var(--text-muted, #6B7280)", lineHeight: "1.4" }}>
+                    Explore verified high-ROI franchise concepts
+                  </span>
+                </div>
+                <ChevronRight size={20} style={{ color: "var(--primary)", flexShrink: 0 }} />
+              </Link>
+            </div>
+
 
             {/* Divider */}
             <hr style={{ border: 0, borderTop: "1px solid #E5E7EB", margin: "16px 0 8px 0" }} />

@@ -340,15 +340,17 @@ export default function Header() {
           position: 'relative'
         }}>
           {/* Logo */}
-          <Link href="/" style={{ display: 'flex', alignItems: 'center', transition: 'var(--transition-normal)' }}>
+          <Link href="/" style={{ display: 'flex', alignItems: 'center', transition: 'all 0.3s ease', textDecoration: 'none' }}>
             <img
               src="/WhatsApp_Image_2026-07-16_at_4.40.00_PM__2_-removebg-preview.png"
               alt="Franchise Roots"
+              className="header-logo-img"
               style={{
-                height: isScrolled ? '130px' : '185px',
+                height: isScrolled ? '42px' : '54px',
                 width: 'auto',
-                transition: 'var(--transition-normal)',
-                objectFit: 'contain'
+                transition: 'all 0.3s ease',
+                objectFit: 'contain',
+                filter: 'drop-shadow(0 2px 6px rgba(0, 0, 0, 0.08))'
               }}
             />
           </Link>
@@ -366,7 +368,7 @@ export default function Header() {
           <nav className={`nav-container ${mobileMenuOpen ? "open" : ""}`}>
             <ul className="nav-links">
               <li>
-                <Link href="/" className={`nav-link ${pathname === "/" ? "active" : ""}`}>
+                <Link href="/" className={`nav-link ${pathname === "/" ? "active" : ""}`} onClick={() => setMobileMenuOpen(false)}>
                   Home
                 </Link>
               </li>
@@ -399,14 +401,14 @@ export default function Header() {
                     marginTop: '4px',
                     animation: 'dropdown-fade-in 0.2s ease-out'
                   }}>
-                    <Link href="/brand-registration" style={{ display: 'flex', gap: '12px', padding: '8px', borderRadius: '8px' }} className="dropdown-item-hover">
+                    <Link href="/brand-registration" style={{ display: 'flex', gap: '12px', padding: '8px', borderRadius: '8px' }} className="dropdown-item-hover" onClick={() => setMobileMenuOpen(false)}>
                       <Building size={18} style={{ color: 'var(--primary)', flexShrink: 0, marginTop: '2px' }} />
                       <div>
                         <h5 style={{ fontSize: '13.5px', fontWeight: '700', color: 'var(--text-dark)' }}>Brand Listing Expansion</h5>
                         <p style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Promote your business concepts to 50k+ investors.</p>
                       </div>
                     </Link>
-                    <Link href="/investor-registration" style={{ display: 'flex', gap: '12px', padding: '8px', borderRadius: '8px' }} className="dropdown-item-hover">
+                    <Link href="/investor-registration" style={{ display: 'flex', gap: '12px', padding: '8px', borderRadius: '8px' }} className="dropdown-item-hover" onClick={() => setMobileMenuOpen(false)}>
                       <Sparkles size={18} style={{ color: 'var(--secondary)', flexShrink: 0, marginTop: '2px' }} />
                       <div>
                         <h5 style={{ fontSize: '13.5px', fontWeight: '700', color: 'var(--text-dark)' }}>Investor Matching Desk</h5>
@@ -420,26 +422,11 @@ export default function Header() {
                   </div>
                 )}
               </li>
-              {/* <li>
-                <Link
-                  href="/brand-registration"
-                  className={`nav-link ${pathname === "/brand-registration" ? "active" : ""}`}
-                >
-                  Register Your Brand
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/investor-registration"
-                  className={`nav-link ${pathname === "/investor-registration" ? "active" : ""}`}
-                >
-                  Start A Business
-                </Link>
-              </li> */}
               <li>
                 <Link
                   href="/brands"
                   className={`nav-link ${pathname === "/brands" ? "active" : ""}`}
+                  onClick={() => setMobileMenuOpen(false)}
                 >
                   Brands
                 </Link>
@@ -448,6 +435,7 @@ export default function Header() {
                 <Link
                   href="/blogs"
                   className={`nav-link ${pathname === "/blogs" || pathname.startsWith("/blogs/") ? "active" : ""}`}
+                  onClick={() => setMobileMenuOpen(false)}
                 >
                   Blogs
                 </Link>
@@ -456,89 +444,16 @@ export default function Header() {
                 <Link
                   href="/contact"
                   className={`nav-link ${pathname === "/contact" ? "active" : ""}`}
+                  onClick={() => setMobileMenuOpen(false)}
                 >
                   Contact
                 </Link>
               </li>
+              {!isAdmin && !isInvestor && !isBrand && null}
             </ul>
 
             {/* Right-side utilities and CTAs */}
             <div className="nav-actions">
-              {/* Search and Notification Utility Icons */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginRight: '4px' }} className="nav-utility-icons">
-                {/* Search Trigger Button */}
-                <button
-                  aria-label="Search opportunities"
-                  className="nav-icon-btn"
-                  onClick={() => setSearchModalOpen(true)}
-                  title="Search (Ctrl + K)"
-                >
-                  <Search size={18} />
-                </button>
-
-                {/* Notifications dropdown trigger */}
-                <div style={{ position: 'relative' }} ref={notificationRef}>
-                  <button
-                    aria-label="Notifications"
-                    className="nav-icon-btn"
-                    onClick={() => setNotificationDropdownOpen(prev => !prev)}
-                  >
-                    <Bell size={18} />
-                    {unreadCount > 0 && (
-                      <span className="notification-badge-red">{unreadCount}</span>
-                    )}
-                  </button>
-
-                  {/* Premium glass notification panel */}
-                  {notificationDropdownOpen && (
-                    <div className="dropdown-panel-premium notification-panel">
-                      <div className="dropdown-panel-header">
-                        <span className="dropdown-panel-title">Notifications</span>
-                        <div style={{ display: "flex", gap: "10px" }}>
-                          {unreadCount > 0 && (
-                            <button className="dropdown-panel-action" onClick={markAllNotificationsRead}>Mark read</button>
-                          )}
-                          {notifications.length > 0 && (
-                            <button className="dropdown-panel-action" style={{ color: "var(--danger)" }} onClick={clearAllNotifications}>Clear</button>
-                          )}
-                        </div>
-                      </div>
-                      <div className="dropdown-panel-body">
-                        {notifications.length === 0 ? (
-                          <div className="panel-empty-state">
-                            <CheckCircle size={32} style={{ color: "var(--success)" }} />
-                            <span className="panel-empty-title">All Caught Up!</span>
-                            <p style={{ fontSize: "11px", marginTop: "4px" }}>No new notifications to display.</p>
-                          </div>
-                        ) : (
-                          notifications.map((notif) => (
-                            <div
-                              key={notif.id}
-                              className={`notification-item-premium ${notif.read ? "" : "unread"}`}
-                              onClick={() => handleNotificationClick(notif)}
-                            >
-                              <div className={`notification-icon-wrapper-premium ${notif.category}`}>
-                                {notif.category === "system" && <Shield size={16} />}
-                                {notif.category === "opportunity" && <Sparkles size={16} />}
-                                {notif.category === "application" && <Building size={16} />}
-                                {notif.category === "profile" && <User size={16} />}
-                              </div>
-                              <div className="notification-info-premium">
-                                <h5>{notif.title}</h5>
-                                <p>{notif.message}</p>
-                                <span className="notification-time-label">
-                                  <Clock size={10} style={{ display: "inline", marginRight: "3px", verticalAlign: "middle" }} />
-                                  {notif.time}
-                                </span>
-                              </div>
-                            </div>
-                          ))
-                        )}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
 
               {/* Login Profile Actions */}
               {isAdmin || isInvestor || isBrand ? (
@@ -616,17 +531,17 @@ export default function Header() {
                   )}
                 </div>
               ) : (
-                <div className="auth-buttons-group" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <div className="auth-buttons-group" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                   <button
                     onClick={() => {
                       setLoadingLogin(true);
                       setTimeout(() => {
                         setLoadingLogin(false);
                         window.dispatchEvent(new CustomEvent("open-auth-modal", { detail: { tab: "login" } }));
-                      }, 400);
+                      }, 300);
                     }}
-                    className="btn btn-outline"
-                    style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '10px 20px' }}
+                    className="btn btn-outline desktop-only-auth"
+                    style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '9px 16px', fontSize: '13.5px', fontWeight: '700' }}
                   >
                     {loadingLogin ? (
                       <div className="spinner" style={{ width: "14px", height: "14px", borderWidth: "2px", borderColor: "rgba(0,0,0,0.1)", borderTopColor: "var(--primary)" }}></div>
@@ -635,26 +550,39 @@ export default function Header() {
                     )}
                     Login
                   </button>
+
+                  <button
+                    onClick={() => {
+                      window.dispatchEvent(new CustomEvent("open-auth-modal", { detail: { tab: "register" } }));
+                    }}
+                    className="btn desktop-only-auth"
+                    style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '9px 16px', fontSize: '13.5px', fontWeight: '700', background: 'rgba(37, 99, 235, 0.1)', color: 'var(--primary)', border: '1px solid rgba(37, 99, 235, 0.2)' }}
+                  >
+                    <User size={15} />
+                    Register
+                  </button>
+
                   <button
                     onClick={() => {
                       setLoadingAddBrand(true);
                       setTimeout(() => {
                         setLoadingAddBrand(false);
                         router.push("/brand-registration");
-                      }, 500);
+                      }, 400);
                     }}
                     className="btn btn-primary add-brand-btn-premium"
-                    style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '10px 20px' }}
+                    style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '9px 18px', fontSize: '13.5px', fontWeight: '700' }}
                   >
                     {loadingAddBrand ? (
                       <div className="spinner" style={{ width: "14px", height: "14px", borderWidth: "2px", borderTopColor: "white" }}></div>
                     ) : (
-                      <PlusCircle size={15} />
+                      <Building size={15} />
                     )}
-                    Add Brand
+                    + Add Brand
                   </button>
                 </div>
               )}
+
             </div>
           </nav>
         </div>
@@ -777,6 +705,61 @@ export default function Header() {
                     </div>
                   )}
                 </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Standalone Notification Modal (Triggered by Alerts on mobile-bottom-nav) */}
+      {notificationDropdownOpen && (
+        <div className="notification-modal-overlay" onClick={() => setNotificationDropdownOpen(false)}>
+          <div
+            ref={notificationRef}
+            className="dropdown-panel-premium notification-panel-modal"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="dropdown-panel-header">
+              <span className="dropdown-panel-title">Notifications</span>
+              <div style={{ display: "flex", gap: "10px" }}>
+                {unreadCount > 0 && (
+                  <button className="dropdown-panel-action" onClick={markAllNotificationsRead}>Mark read</button>
+                )}
+                {notifications.length > 0 && (
+                  <button className="dropdown-panel-action" style={{ color: "var(--danger)" }} onClick={clearAllNotifications}>Clear</button>
+                )}
+              </div>
+            </div>
+            <div className="dropdown-panel-body">
+              {notifications.length === 0 ? (
+                <div className="panel-empty-state">
+                  <CheckCircle size={32} style={{ color: "var(--success)" }} />
+                  <span className="panel-empty-title">All Caught Up!</span>
+                  <p style={{ fontSize: "11px", marginTop: "4px" }}>No new notifications to display.</p>
+                </div>
+              ) : (
+                notifications.map((notif) => (
+                  <div
+                    key={notif.id}
+                    className={`notification-item-premium ${notif.read ? "" : "unread"}`}
+                    onClick={() => handleNotificationClick(notif)}
+                  >
+                    <div className={`notification-icon-wrapper-premium ${notif.category}`}>
+                      {notif.category === "system" && <Shield size={16} />}
+                      {notif.category === "opportunity" && <Sparkles size={16} />}
+                      {notif.category === "application" && <Building size={16} />}
+                      {notif.category === "profile" && <User size={16} />}
+                    </div>
+                    <div className="notification-info-premium">
+                      <h5>{notif.title}</h5>
+                      <p>{notif.message}</p>
+                      <span className="notification-time-label">
+                        <Clock size={10} style={{ display: "inline", marginRight: "3px", verticalAlign: "middle" }} />
+                        {notif.time}
+                      </span>
+                    </div>
+                  </div>
+                ))
               )}
             </div>
           </div>

@@ -43,13 +43,21 @@ export default function Footer() {
       <div className="container">
         <div className="footer-grid">
           <div className="footer-about">
-            <Link href="/" style={{ display: "inline-flex", marginTop: "-62px", marginBottom: "24px" }}>
+            <Link href="/" style={{ display: "inline-flex", marginBottom: "18px", textDecoration: "none" }}>
               <img
                 src="/logo-footer.png"
                 alt="Franchise Roots"
-                style={{ height: '185px', width: 'auto', objectFit: 'contain' }}
+                className="footer-logo-img"
+                style={{
+                  height: '65px',
+                  width: 'auto',
+                  objectFit: 'contain',
+                  filter: 'brightness(1.1) drop-shadow(0 4px 12px rgba(0, 0, 0, 0.4))',
+                  transition: 'all 0.3s ease'
+                }}
               />
             </Link>
+
             <p style={{ fontSize: '14px', lineHeight: '1.7', color: '#94A3B8', maxWidth: '340px', marginTop: '0px' }}>
               Franchise Roots is the premier startup and business matching marketplace. We connect luxury brands with verified investors across the subcontinent.
             </p>
