@@ -19,6 +19,19 @@ const isNew = (dateString) => {
   return diffDays <= 3; // within last 3 days
 };
 
+const stripHtmlTags = (str) => {
+  if (!str) return "No description provided.";
+  return String(str)
+    .replace(/<[^>]*>?/gm, '')
+    .replace(/&nbsp;/gi, ' ')
+    .replace(/&amp;/gi, '&')
+    .replace(/&lt;/gi, '<')
+    .replace(/&gt;/gi, '>')
+    .replace(/&quot;/gi, '"')
+    .replace(/&#39;/gi, "'")
+    .trim();
+};
+
 export default function AdminDashboard() {
   const router = useRouter();
   const [authorized, setAuthorized] = useState(false);
@@ -1075,7 +1088,10 @@ export default function AdminDashboard() {
                           </td>
                           <td>
                             <span style={{ color: "var(--text-muted)", fontSize: "13px" }}>
-                              {blog.content && blog.content.length > 90 ? `${blog.content.substring(0, 90)}...` : blog.content}
+                              {(() => {
+                                const clean = stripHtmlTags(blog.content || "");
+                                return clean.length > 90 ? `${clean.substring(0, 90)}...` : clean;
+                              })()}
                             </span>
                           </td>
                           <td style={{ fontSize: "13px", color: "var(--text-muted)" }}>
@@ -1147,7 +1163,10 @@ export default function AdminDashboard() {
 
               <div style={{ marginBottom: "20px" }}>
                 <h4 style={{ fontSize: "14px", marginBottom: "6px" }}>Overview Description</h4>
-                <p style={{ fontSize: "13px", color: "var(--text-muted)" }}>{selectedItem.description}</p>
+                <div
+                  style={{ fontSize: "13.5px", color: "var(--text-muted)", lineHeight: "1.6" }}
+                  dangerouslySetInnerHTML={{ __html: selectedItem.description || "No description provided." }}
+                />
               </div>
 
               <div style={{ background: "#f8fafc", padding: "16px", borderRadius: "8px" }}>

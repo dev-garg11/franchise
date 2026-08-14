@@ -1,6 +1,10 @@
 import Link from "next/link";
 import { Mail, Phone, MapPin, Globe, ArrowUpRight } from "lucide-react";
 
+const Youtube = ({ size = 16 }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22.54 6.42a2.78 2.78 0 0 0-1.94-2C18.88 4 12 4 12 4s-6.88 0-8.6.46a2.78 2.78 0 0 0-1.94 2A29 29 0 0 0 1 12a29 29 0 0 0 .46 5.58 2.78 2.78 0 0 0 1.94 2C5.12 20 12 20 12 20s6.88 0 8.6-.46a2.78 2.78 0 0 0 1.94-2A29 29 0 0 0 23 12a29 29 0 0 0-.46-5.58z" /><polygon points="9.75 15.02 15.5 12 9.75 8.98 9.75 15.02" /></svg>
+);
+
 const Facebook = ({ size = 16 }) => (
   <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z" /></svg>
 );
@@ -65,10 +69,11 @@ export default function Footer() {
             {/* Social Share / Links */}
             <div style={{ display: 'flex', gap: '14px', marginTop: '28px' }}>
               {[
-                { icon: <Facebook size={16} />, url: 'https://facebook.com' },
-                { icon: <Twitter size={16} />, url: 'https://twitter.com' },
-                { icon: <Linkedin size={16} />, url: 'https://linkedin.com' },
-                { icon: <Instagram size={16} />, url: 'https://instagram.com' }
+                { name: 'Youtube', icon: <Youtube size={16} />, url: 'https://www.youtube.com/channel/UCMhujOUnwsanOXO4TbULxQg' },
+                { name: 'Facebook', icon: <Facebook size={16} />, url: 'https://www.facebook.com/franchiseroot' },
+                { name: 'Twitter', icon: <Twitter size={16} />, url: 'https://x.com/franchiseroots' },
+                { name: 'LinkedIn', icon: <Linkedin size={16} />, url: 'https://www.linkedin.com/company/franchiseroots/' },
+                { name: 'Instagram', icon: <Instagram size={16} />, url: 'https://www.instagram.com/p/DJwrn9Gyj1_/' }
               ].map((soc, idx) => (
                 <a
                   key={idx}
