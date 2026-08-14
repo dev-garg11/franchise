@@ -4,11 +4,12 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
-  Building, Users, FileText, CheckCircle, XCircle, Trash2, LogOut,
+  Building, Users, FileText, CheckCircle, CheckCircle2, XCircle, Trash2, LogOut,
   Home, Search, LayoutDashboard, ShieldCheck, Mail, Phone, MapPin,
-  UploadCloud
+  UploadCloud, Eye, Edit3
 } from "lucide-react";
 import Pagination from "@/components/Pagination";
+import { clearBrandsCache } from "@/lib/brandsCache";
 
 const isNew = (dateString) => {
   if (!dateString) return false;
@@ -156,6 +157,7 @@ export default function AdminDashboard() {
         body: JSON.stringify({ status: "Approved" })
       });
       if (res.ok) {
+        clearBrandsCache();
         fetchData();
       }
     } catch (err) {
@@ -172,6 +174,7 @@ export default function AdminDashboard() {
         body: JSON.stringify({ status: "Declined" })
       });
       if (res.ok) {
+        clearBrandsCache();
         fetchData();
       }
     } catch (err) {
@@ -187,6 +190,7 @@ export default function AdminDashboard() {
         method: "DELETE"
       });
       if (res.ok) {
+        clearBrandsCache();
         fetchData();
         if (selectedItem && selectedItem.id === id) setSelectedItem(null);
       }
@@ -609,7 +613,7 @@ export default function AdminDashboard() {
                             <th>Brand Name</th>
                             <th>Category</th>
                             <th>Investment</th>
-                            <th>Actions</th>
+                            <th style={{ textAlign: "right" }}>Actions</th>
                           </tr>
                         </thead>
                         <tbody>
@@ -618,9 +622,15 @@ export default function AdminDashboard() {
                               <td style={{ fontWeight: "600" }}>{b.name}</td>
                               <td>{b.category}</td>
                               <td>{formatLakhs(b.minInvestment)}</td>
-                              <td>
-                                <button className="action-btn approve" onClick={() => handleApprove(b.id)}>Approve</button>
-                                <button className="action-btn reject" style={{ background: "none", color: "var(--error)", border: "1px solid var(--error)" }} onClick={() => handleDecline(b.id)}>Decline</button>
+                              <td style={{ whiteSpace: "nowrap", textAlign: "right" }}>
+                                <div className="admin-actions-cell" style={{ justifyContent: "flex-end" }}>
+                                  <button className="admin-btn admin-btn-approve" onClick={() => handleApprove(b.id)}>
+                                    <CheckCircle2 size={13} /> Approve
+                                  </button>
+                                  <button className="admin-btn admin-btn-decline" onClick={() => handleDecline(b.id)}>
+                                    <XCircle size={13} /> Decline
+                                  </button>
+                                </div>
                               </td>
                             </tr>
                           ))}
@@ -745,19 +755,25 @@ export default function AdminDashboard() {
                                 {attachedCount} {attachedCount === 1 ? "Investor" : "Investors"}
                               </span>
                             </td>
-                            <td>
-                              <button className="action-btn view" onClick={() => { setSelectedItem(b); setModalType("brand"); }}>
-                                Details
-                              </button>
-                              {b.status === "Pending" && (
-                                <>
-                                  <button className="action-btn approve" onClick={() => handleApprove(b.id)}>Approve</button>
-                                  <button className="action-btn reject" style={{ background: "none", color: "var(--error)", border: "1px solid var(--error)" }} onClick={() => handleDecline(b.id)}>Decline</button>
-                                </>
-                              )}
-                              <button className="action-btn reject" style={{ background: "none", color: "var(--error)", border: "1px solid var(--error)", marginLeft: "4px" }} onClick={() => handleDeleteBrand(b.id)}>
-                                <Trash2 size={14} />
-                              </button>
+                            <td style={{ whiteSpace: "nowrap", textAlign: "right" }}>
+                              <div className="admin-actions-cell" style={{ justifyContent: "flex-end" }}>
+                                <button className="admin-btn admin-btn-details" onClick={() => { setSelectedItem(b); setModalType("brand"); }}>
+                                  <Eye size={13} /> Details
+                                </button>
+                                {b.status === "Pending" && (
+                                  <>
+                                    <button className="admin-btn admin-btn-approve" onClick={() => handleApprove(b.id)}>
+                                      <CheckCircle2 size={13} /> Approve
+                                    </button>
+                                    <button className="admin-btn admin-btn-decline" onClick={() => handleDecline(b.id)}>
+                                      <XCircle size={13} /> Decline
+                                    </button>
+                                  </>
+                                )}
+                                <button className="admin-btn admin-btn-delete" title="Delete Brand" onClick={() => handleDeleteBrand(b.id)}>
+                                  <Trash2 size={13} />
+                                </button>
+                              </div>
                             </td>
                           </tr>
                         );
@@ -969,19 +985,25 @@ export default function AdminDashboard() {
                             <td style={{ fontSize: "13px", color: "var(--text-muted)" }}>
                               {displayDate ? new Date(displayDate).toLocaleDateString("en-IN", { day: 'numeric', month: 'short', year: 'numeric' }) : "N/A"}
                             </td>
-                            <td onClick={(e) => e.stopPropagation()}>
-                              <button className="action-btn view" onClick={() => { setSelectedItem(i); setModalType("investor"); }}>
-                                Details
-                              </button>
-                              {displayStatus === "Pending" && (
-                                <>
-                                  <button className="action-btn approve" onClick={() => handleApproveInvestor(i.id || i._id)}>Approve</button>
-                                  <button className="action-btn reject" style={{ background: "none", color: "var(--error)", border: "1px solid var(--error)" }} onClick={() => handleDeclineInvestor(i.id || i._id)}>Decline</button>
-                                </>
-                              )}
-                              <button className="action-btn reject" style={{ background: "none", color: "var(--error)", border: "1px solid var(--error)", marginLeft: "4px" }} onClick={() => handleDeleteInvestor(i.id || i._id)}>
-                                <Trash2 size={14} />
-                              </button>
+                            <td style={{ whiteSpace: "nowrap", textAlign: "right" }} onClick={(e) => e.stopPropagation()}>
+                              <div className="admin-actions-cell" style={{ justifyContent: "flex-end" }}>
+                                <button className="admin-btn admin-btn-details" onClick={() => { setSelectedItem(i); setModalType("investor"); }}>
+                                  <Eye size={13} /> Details
+                                </button>
+                                {displayStatus === "Pending" && (
+                                  <>
+                                    <button className="admin-btn admin-btn-approve" onClick={() => handleApproveInvestor(i.id || i._id)}>
+                                      <CheckCircle2 size={13} /> Approve
+                                    </button>
+                                    <button className="admin-btn admin-btn-decline" onClick={() => handleDeclineInvestor(i.id || i._id)}>
+                                      <XCircle size={13} /> Decline
+                                    </button>
+                                  </>
+                                )}
+                                <button className="admin-btn admin-btn-delete" title="Delete Lead" onClick={() => handleDeleteInvestor(i.id || i._id)}>
+                                  <Trash2 size={13} />
+                                </button>
+                              </div>
                             </td>
                           </tr>
                         );
@@ -1059,9 +1081,15 @@ export default function AdminDashboard() {
                           <td style={{ fontSize: "13px", color: "var(--text-muted)" }}>
                             {blog.createdAt ? new Date(blog.createdAt).toLocaleDateString("en-IN", { day: 'numeric', month: 'short', year: 'numeric' }) : "N/A"}
                           </td>
-                          <td>
-                            <button className="action-btn view" onClick={() => handleOpenEditBlog(blog)}>Edit</button>
-                            <button className="action-btn reject" style={{ background: "none", color: "var(--error)", border: "1px solid var(--error)", marginLeft: "6px" }} onClick={() => handleDeleteBlog(blog.id || blog._id)}>Delete</button>
+                          <td style={{ whiteSpace: "nowrap", textAlign: "right" }}>
+                            <div className="admin-actions-cell" style={{ justifyContent: "flex-end" }}>
+                              <button className="admin-btn admin-btn-details" onClick={() => handleOpenEditBlog(blog)}>
+                                <Edit3 size={13} /> Edit
+                              </button>
+                              <button className="admin-btn admin-btn-delete" title="Delete Post" onClick={() => handleDeleteBlog(blog.id || blog._id)}>
+                                <Trash2 size={13} />
+                              </button>
+                            </div>
                           </td>
                         </tr>
                       ))
@@ -1175,15 +1203,23 @@ export default function AdminDashboard() {
                 )}
               </div>
             </div>
-            <div className="modal-footer">
+            <div className="modal-footer" style={{ display: "flex", gap: "10px", justifyContent: "flex-end", flexWrap: "wrap" }}>
               {selectedItem.status === "Pending" && (
                 <>
-                  <button className="btn btn-primary" onClick={() => { handleApprove(selectedItem.id); setSelectedItem(null); }}>Approve Brand</button>
-                  <button className="btn btn-outline" style={{ background: "var(--error)", color: "white", borderColor: "transparent" }} onClick={() => { handleDecline(selectedItem.id); setSelectedItem(null); }}>Decline Brand</button>
+                  <button className="admin-btn admin-btn-approve" style={{ padding: "8px 16px", fontSize: "13px" }} onClick={() => { handleApprove(selectedItem.id); setSelectedItem(null); }}>
+                    <CheckCircle2 size={15} /> Approve Brand
+                  </button>
+                  <button className="admin-btn admin-btn-decline" style={{ padding: "8px 16px", fontSize: "13px" }} onClick={() => { handleDecline(selectedItem.id); setSelectedItem(null); }}>
+                    <XCircle size={15} /> Decline Brand
+                  </button>
                 </>
               )}
-              <button className="btn btn-outline" style={{ background: "var(--error)", color: "white", borderColor: "transparent" }} onClick={() => handleDeleteBrand(selectedItem.id)}>Delete Listing</button>
-              <button className="btn btn-outline" onClick={() => setSelectedItem(null)}>Close Window</button>
+              <button className="admin-btn admin-btn-delete" style={{ padding: "8px 16px", fontSize: "13px" }} onClick={() => handleDeleteBrand(selectedItem.id)}>
+                <Trash2 size={15} /> Delete Listing
+              </button>
+              <button className="admin-btn admin-btn-details" style={{ padding: "8px 16px", fontSize: "13px" }} onClick={() => setSelectedItem(null)}>
+                Close Window
+              </button>
             </div>
           </div>
         </div>
@@ -1261,15 +1297,23 @@ export default function AdminDashboard() {
                 </div>
               )}
             </div>
-            <div className="modal-footer">
+            <div className="modal-footer" style={{ display: "flex", gap: "10px", justifyContent: "flex-end", flexWrap: "wrap" }}>
               {(selectedItem.status || "Pending") === "Pending" && (
                 <>
-                  <button className="btn btn-primary" onClick={() => handleApproveInvestor(selectedItem.id || selectedItem._id)}>Approve Lead</button>
-                  <button className="btn btn-outline" style={{ background: "var(--error)", color: "white", borderColor: "transparent" }} onClick={() => handleDeclineInvestor(selectedItem.id || selectedItem._id)}>Decline Lead</button>
+                  <button className="admin-btn admin-btn-approve" style={{ padding: "8px 16px", fontSize: "13px" }} onClick={() => handleApproveInvestor(selectedItem.id || selectedItem._id)}>
+                    <CheckCircle2 size={15} /> Approve Lead
+                  </button>
+                  <button className="admin-btn admin-btn-decline" style={{ padding: "8px 16px", fontSize: "13px" }} onClick={() => handleDeclineInvestor(selectedItem.id || selectedItem._id)}>
+                    <XCircle size={15} /> Decline Lead
+                  </button>
                 </>
               )}
-              <button className="btn btn-outline" style={{ background: "var(--error)", color: "white", borderColor: "transparent" }} onClick={() => handleDeleteInvestor(selectedItem.id || selectedItem._id)}>Delete Lead</button>
-              <button className="btn btn-outline" onClick={() => setSelectedItem(null)}>Close Window</button>
+              <button className="admin-btn admin-btn-delete" style={{ padding: "8px 16px", fontSize: "13px" }} onClick={() => handleDeleteInvestor(selectedItem.id || selectedItem._id)}>
+                <Trash2 size={15} /> Delete Lead
+              </button>
+              <button className="admin-btn admin-btn-details" style={{ padding: "8px 16px", fontSize: "13px" }} onClick={() => setSelectedItem(null)}>
+                Close Window
+              </button>
             </div>
           </div>
         </div>
@@ -1315,7 +1359,7 @@ export default function AdminDashboard() {
                           position: "absolute",
                           top: "10px",
                           right: "10px",
-                          background: "var(--error)",
+                          background: "var(--danger)",
                           color: "white",
                           border: "none",
                           borderRadius: "50%",

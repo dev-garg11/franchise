@@ -8,6 +8,7 @@ import {
   Home, Edit3, Eye, LayoutDashboard, Mail, Phone, MapPin,
   IndianRupee, PlusCircle, Globe, Award, Sparkles, CheckSquare
 } from "lucide-react";
+import { clearBrandsCache } from "@/lib/brandsCache";
 
 const INVESTMENT_OPTIONS = [
   "Rs. 10,000 - 50,000",
@@ -222,6 +223,7 @@ export default function BrandPanel() {
       }
 
       if (res.ok) {
+        clearBrandsCache();
         setUpdateSuccess("Listing updated successfully and submitted for Admin Review! Status changed to Pending.");
         loadBrandData(email);
       } else {

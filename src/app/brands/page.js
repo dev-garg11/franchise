@@ -8,6 +8,7 @@ import {
     CheckCircle, ChevronRight, Mail, Phone, Globe, HelpCircle, Filter, Sparkles, MessageCircle
 } from "lucide-react";
 import { ProductSkeletonGrid } from "@/components/SkeletonLoader";
+import { useApprovedBrands } from "@/lib/brandsCache";
 
 const CATEGORIES = [
     "Food and Beverage",
@@ -24,9 +25,8 @@ const STATES = [
 ];
 
 function BrandsDirectoryPage() {
-    const [brands, setBrands] = useState([]);
+    const { brands, loading } = useApprovedBrands();
     const [filteredBrands, setFilteredBrands] = useState([]);
-    const [loading, setLoading] = useState(true);
 
     // Search Filters State
     const [searchTerm, setSearchTerm] = useState("");
@@ -69,25 +69,6 @@ function BrandsDirectoryPage() {
 
     // Read URL search params
     const searchParams = useSearchParams();
-
-    useEffect(() => {
-        async function fetchBrands() {
-            try {
-                setLoading(true);
-                const res = await fetch("/api/brands?status=Approved");
-                if (res.ok) {
-                    const data = await res.json();
-                    setBrands(data);
-                    setFilteredBrands(data);
-                }
-            } catch (error) {
-                console.error("Error fetching brands:", error);
-            } finally {
-                setLoading(false);
-            }
-        }
-        fetchBrands();
-    }, []);
 
     // Pre-fill enquiry form if investor is logged in
     useEffect(() => {

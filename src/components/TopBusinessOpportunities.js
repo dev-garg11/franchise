@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { Briefcase, Zap, ShieldCheck, ArrowRight, MessageCircle, Percent, DollarSign, ChevronRight, X, CheckCircle, Award, RefreshCw } from "lucide-react";
 import { ProductSkeletonGrid } from "@/components/SkeletonLoader";
+import { getApprovedBrands } from "@/lib/brandsCache";
 
 export default function TopBusinessOpportunities({ brands = [], loading = false, onAskExperts }) {
   const [activeFilter, setActiveFilter] = useState("All");
@@ -23,9 +24,8 @@ export default function TopBusinessOpportunities({ brands = [], loading = false,
   const fetchApprovedBrands = async () => {
     try {
       setFetchingLoading(true);
-      const res = await fetch("/api/brands?status=Approved");
-      if (res.ok) {
-        const data = await res.json();
+      const data = await getApprovedBrands();
+      if (Array.isArray(data) && data.length > 0) {
         setDbBrands(data);
       }
     } catch (err) {

@@ -7,6 +7,7 @@ import {
   UploadCloud, FileImage, ShieldAlert, CheckCircle, RefreshCw, Scissors, 
   RotateCw, ZoomIn, Trash2, Download, AlertCircle, Info, Sparkles, Building
 } from "lucide-react";
+import { clearBrandsCache } from "@/lib/brandsCache";
 
 const INVESTMENT_OPTIONS = [
   "Rs. 10,000 - 50,000",
@@ -327,6 +328,7 @@ export default function BrandRegistration() {
       });
 
       if (res.ok) {
+        clearBrandsCache();
         setSubmitted(true);
       } else {
         const data = await res.json();

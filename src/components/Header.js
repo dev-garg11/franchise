@@ -8,6 +8,7 @@ import {
   Bell, Search, ChevronDown, Sparkles, HelpCircle, Layers, Star,
   Trash2, CheckCircle, ArrowRight, Clock, ArrowUp
 } from "lucide-react";
+import { getApprovedBrands } from "@/lib/brandsCache";
 
 const DEFAULT_NOTIFICATIONS = [
   {
@@ -196,9 +197,8 @@ export default function Header() {
       const fetchBrands = async () => {
         try {
           setLoadingSearch(true);
-          const res = await fetch("/api/brands?status=Approved");
-          if (res.ok) {
-            const data = await res.json();
+          const data = await getApprovedBrands();
+          if (Array.isArray(data)) {
             setAllBrands(data);
           }
         } catch (err) {

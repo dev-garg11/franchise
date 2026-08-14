@@ -1,9 +1,14 @@
 import nodemailer from "nodemailer";
+import fs from "fs";
+import path from "path";
 
 const SMTP_USER = process.env.SMTP_USER;
 const SMTP_PASS = process.env.SMTP_PASS;
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
 
 const isConfigured = SMTP_USER && SMTP_PASS;
+
+const logoPath = path.join(process.cwd(), "public", "logo-footer.png");
 
 const transporter = isConfigured
   ? nodemailer.createTransport({
@@ -26,8 +31,21 @@ const formatLakhs = (val) => {
   return `₹${val.toLocaleString("en-IN")}`;
 };
 
-// Base HTML wrapper template
-const baseTemplate = (title, contentHeader, contentBody) => `
+// Base HTML wrapper template with inline CID & Base64 fallback for logo
+const baseTemplate = (title, contentHeader, contentBody) => {
+  let logoSrc = "cid:logo@franchiseroots";
+  
+  // If in mock mode (no SMTP credentials configured), use inline Base64 data URL for local HTML preview
+  if (!isConfigured && fs.existsSync(logoPath)) {
+    try {
+      const fileBuffer = fs.readFileSync(logoPath);
+      logoSrc = `data:image/png;base64,${fileBuffer.toString("base64")}`;
+    } catch (e) {
+      console.warn("Failed to generate base64 logo for email template preview", e);
+    }
+  }
+
+  return `
 <!DOCTYPE html>
 <html>
 <head>
@@ -37,9 +55,8 @@ const baseTemplate = (title, contentHeader, contentBody) => `
   <style>
     body { font-family: 'Segoe UI', Arial, sans-serif; background-color: #f1f5f9; color: #1e293b; margin: 0; padding: 0; }
     .container { max-width: 600px; margin: 40px auto; background-color: #ffffff; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -2px rgba(0,0,0,0.1); border-top: 6px solid #4f46e5; overflow: hidden; }
-    .header { padding: 30px; background-color: #1e1b4b; text-align: center; color: #ffffff; }
-    .header h1 { margin: 0; font-size: 24px; font-weight: 700; letter-spacing: -0.5px; }
-    .header span { color: #f59e0b; }
+    .header { padding: 24px 30px; background-color: #1e1b4b; text-align: center; color: #ffffff; }
+    .header img { height: 50px; max-width: 240px; object-fit: contain; vertical-align: middle; margin: 0 auto; display: block; }
     .content { padding: 40px 30px; line-height: 1.6; }
     .content h2 { margin-top: 0; font-size: 20px; color: #1e1b4b; }
     .details-table { width: 100%; border-collapse: collapse; margin: 24px 0; background-color: #f8fafc; border-radius: 8px; overflow: hidden; }
@@ -58,20 +75,21 @@ const baseTemplate = (title, contentHeader, contentBody) => `
 <body>
   <div class="container">
     <div class="header">
-      <h1>Franchise<span>Apply</span></h1>
+      <img src="${logoSrc}" alt="Franchise Roots Logo" />
     </div>
     <div class="content">
       ${contentHeader}
       ${contentBody}
     </div>
     <div class="footer">
-      <p>This is an automated notification from Franchise Apply.</p>
-      <p>&copy; ${new Date().getFullYear()} Franchise Apply India. All rights reserved.</p>
+      <p>This is an automated notification from Franchise Roots.</p>
+      <p>&copy; ${new Date().getFullYear()} Franchise Roots India. All rights reserved.</p>
     </div>
   </div>
 </body>
 </html>
 `;
+};
 
 async function sendMail({ to, subject, html }) {
   if (!isConfigured) {
@@ -79,18 +97,26 @@ async function sendMail({ to, subject, html }) {
     console.log(`To: ${to}`);
     console.log(`Subject: ${subject}`);
     console.log("Email Transporter not fully configured in .env (SMTP_USER/SMTP_PASS missing).");
-    console.log("Email HTML Content:");
-    console.log(html);
     console.log("------------------------------------------------------------\n");
     return { mock: true, messageId: `mock-${Date.now()}` };
   }
 
+  const attachments = [];
+  if (fs.existsSync(logoPath)) {
+    attachments.push({
+      filename: "franchise-roots-logo.png",
+      path: logoPath,
+      cid: "logo@franchiseroots",
+    });
+  }
+
   try {
     const info = await transporter.sendMail({
-      from: `"Franchise Apply" <${SMTP_USER}>`,
+      from: `"Franchise Roots" <${SMTP_USER}>`,
       to,
       subject,
       html,
+      attachments,
     });
     console.log(`Email sent successfully: ${info.messageId}`);
     return info;
@@ -102,11 +128,11 @@ async function sendMail({ to, subject, html }) {
 
 // 1. Send Brand Registration Email
 export async function sendBrandRegistrationEmail(brand) {
-  const title = "Brand Registration Received - Franchise Apply";
+  const title = "Brand Registration Received - Franchise Roots";
   const contentHeader = `
     <span class="badge badge-pending">Pending Review</span>
     <h2>Hello ${brand.name},</h2>
-    <p>Thank you for registering your brand on Franchise Apply! Your listing has been received and is currently under review by our moderation team. You will receive an email once it is approved and live on the platform.</p>
+    <p>Thank you for registering your brand on Franchise Roots! Your listing has been received and is currently under review by our moderation team. You will receive an email once it is approved and live on the platform.</p>
   `;
   const contentBody = `
     <table class="details-table">
@@ -143,7 +169,7 @@ export async function sendBrandRegistrationEmail(brand) {
 
 // 2. Send Investor Registration Email
 export async function sendInvestorRegistrationEmail(investor) {
-  const title = "Thank you for your Enquiry - Franchise Apply";
+  const title = "Thank you for your Enquiry - Franchise Roots";
   const contentHeader = `
     <h2>Hello ${investor.name},</h2>
     <p>Thank you for submitting your franchise investment enquiry! We have received your parameters and target budget. Our team and matching franchise brands will get in touch with you shortly.</p>
@@ -184,7 +210,7 @@ export async function sendInvestorRegistrationEmail(investor) {
 
 // 3. Send Brand Approval Email
 export async function sendBrandApprovalEmail(brand) {
-  const title = "Listing Approved! Your Brand is Live - Franchise Apply";
+  const title = "Listing Approved! Your Brand is Live - Franchise Roots";
   const contentHeader = `
     <span class="badge badge-approved">Approved & Live</span>
     <h2>Congratulations ${brand.name}!</h2>
@@ -202,11 +228,11 @@ export async function sendBrandApprovalEmail(brand) {
       </tr>
       <tr>
         <td class="label">Live URL</td>
-        <td class="value"><a href="http://localhost:3000" target="_blank" style="color: #4f46e5; text-decoration: underline;">franchiseapply.com</a></td>
+        <td class="value"><a href="${APP_URL}" target="_blank" style="color: #4f46e5; text-decoration: underline;">franchiseroots.com</a></td>
       </tr>
     </table>
     <p>You can now log in to the Brand Owner Panel using your registered email and password to view incoming investor leads.</p>
-    <a href="http://localhost:3000/login" class="btn" style="color: white;">Log In to Brand Panel</a>
+    <a href="${APP_URL}/login" class="btn" style="color: white;">Log In to Brand Panel</a>
   `;
 
   return await sendMail({
@@ -218,15 +244,15 @@ export async function sendBrandApprovalEmail(brand) {
 
 // 4. Send Brand Decline Email
 export async function sendBrandDeclineEmail(brand) {
-  const title = "Update on your Brand Submission - Franchise Apply";
+  const title = "Update on your Brand Submission - Franchise Roots";
   const contentHeader = `
     <span class="badge badge-declined">Declined</span>
     <h2>Hello ${brand.name},</h2>
-    <p>Thank you for submitting your brand details to Franchise Apply. Unfortunately, after review, our administration team has declined your brand listing request at this time.</p>
+    <p>Thank you for submitting your brand details to Franchise Roots. Unfortunately, after review, our administration team has declined your brand listing request at this time.</p>
   `;
   const contentBody = `
     <p>This decision might be due to missing company details, verification issues, or mismatch with our current listing guidelines.</p>
-    <p>If you believe this was an error or would like to request feedback, please reply directly to this email or contact support at <strong>support@franchiseapply.com</strong>.</p>
+    <p>If you believe this was an error or would like to request feedback, please reply directly to this email or contact support at <strong>support@franchiseroots.com</strong>.</p>
   `;
 
   return await sendMail({
@@ -238,7 +264,7 @@ export async function sendBrandDeclineEmail(brand) {
 
 // 5. Send Brand Assigned to Investors Email
 export async function sendBrandAssignedToInvestorsEmail(brand, investorsList) {
-  const title = "New Investor Leads Linked to your Brand - Franchise Apply";
+  const title = "New Investor Leads Linked to your Brand - Franchise Roots";
   const contentHeader = `
     <h2>Hello ${brand.name} Team,</h2>
     <p>Good news! Our administration team has linked your brand <strong>${brand.name}</strong> to new prospective investor leads that match your investment profile.</p>
@@ -272,7 +298,7 @@ export async function sendBrandAssignedToInvestorsEmail(brand, investorsList) {
       </tbody>
     </table>
     <p style="margin-top: 20px;">You can log in to your Brand Owner Panel to manage these leads and coordinate agreements.</p>
-    <a href="http://localhost:3000/login" class="btn" style="color: white;">Go to Brand Panel</a>
+    <a href="${APP_URL}/login" class="btn" style="color: white;">Go to Brand Panel</a>
   `;
 
   return await sendMail({
@@ -284,7 +310,7 @@ export async function sendBrandAssignedToInvestorsEmail(brand, investorsList) {
 
 // 6. Send Investor Assigned Brand Email
 export async function sendInvestorAssignedBrandEmail(investor, brand) {
-  const title = "New Hand-Picked Franchise Opportunity Matched to You - Franchise Apply";
+  const title = "New Hand-Picked Franchise Opportunity Matched to You - Franchise Roots";
   const contentHeader = `
     <h2>Hello ${investor.name},</h2>
     <p>Our administrator has hand-picked and assigned a premium franchise opportunity that matches your investment preferences!</p>
@@ -318,7 +344,7 @@ export async function sendInvestorAssignedBrandEmail(investor, brand) {
       </tr>
     </table>
     <p>Log in to your Investor Dashboard to see full details of this brand proposal and coordinate next steps.</p>
-    <a href="http://localhost:3000/login" class="btn" style="color: white;">Open My Dashboard</a>
+    <a href="${APP_URL}/login" class="btn" style="color: white;">Open My Dashboard</a>
   `;
 
   return await sendMail({
@@ -330,12 +356,12 @@ export async function sendInvestorAssignedBrandEmail(investor, brand) {
 
 // 7. Send Admin Notification for New Brand
 export async function sendAdminNewBrandNotification(brand) {
-  const adminEmail = process.env.ADMIN_EMAIL || SMTP_USER || "admin@franchiseapply.com";
+  const adminEmail = process.env.ADMIN_EMAIL || SMTP_USER || "admin@franchiseroots.com";
   const title = "New Brand Registration Pending Review - Admin Alert";
   const contentHeader = `
     <span class="badge badge-pending">Action Required</span>
     <h2>Hello Admin,</h2>
-    <p>A new brand has registered on Franchise Apply and is pending review and approval.</p>
+    <p>A new brand has registered on Franchise Roots and is pending review and approval.</p>
   `;
   const contentBody = `
     <table class="details-table">
@@ -369,7 +395,7 @@ export async function sendAdminNewBrandNotification(brand) {
       </tr>
     </table>
     <p>Please log in to the Admin Dashboard to approve or reject this brand listing.</p>
-    <a href="http://localhost:3000/admin" class="btn" style="color: white;">Go to Admin Panel</a>
+    <a href="${APP_URL}/admin" class="btn" style="color: white;">Go to Admin Panel</a>
   `;
 
   return await sendMail({
@@ -381,11 +407,11 @@ export async function sendAdminNewBrandNotification(brand) {
 
 // 8. Send Admin Notification for New Investor
 export async function sendAdminNewInvestorNotification(investor) {
-  const adminEmail = process.env.ADMIN_EMAIL || SMTP_USER || "admin@franchiseapply.com";
+  const adminEmail = process.env.ADMIN_EMAIL || SMTP_USER || "admin@franchiseroots.com";
   const title = "New Investor Registered - Admin Alert";
   const contentHeader = `
     <h2>Hello Admin,</h2>
-    <p>A new investor has registered on Franchise Apply and submitted their matching preferences.</p>
+    <p>A new investor has registered on Franchise Roots and submitted their matching preferences.</p>
   `;
   const contentBody = `
     <table class="details-table">
@@ -415,7 +441,7 @@ export async function sendAdminNewInvestorNotification(investor) {
       </tr>
     </table>
     <p>Please log in to the Admin Dashboard to manage and assign suitable franchise opportunities to this investor.</p>
-    <a href="http://localhost:3000/admin" class="btn" style="color: white;">Go to Admin Panel</a>
+    <a href="${APP_URL}/admin" class="btn" style="color: white;">Go to Admin Panel</a>
   `;
 
   return await sendMail({

@@ -13,6 +13,7 @@ import {
 import TopFranchiseOpportunities from "@/components/TopFranchiseOpportunities";
 import TopBusinessOpportunities from "@/components/TopBusinessOpportunities";
 import { ProductSkeletonSlider } from "@/components/SkeletonLoader";
+import { useApprovedBrands } from "@/lib/brandsCache";
 
 
 // Mock Categories with Icons
@@ -182,8 +183,7 @@ export default function Home() {
   const sliderRef = useRef(null);
   const leadingCarouselRef = useRef(null);
   const router = useRouter();
-  const [brands, setBrands] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const { brands, loading } = useApprovedBrands();
   const pathname = usePathname();
 
   // Franchise India Search Form & Multi-Criteria States
@@ -220,26 +220,6 @@ export default function Home() {
   const [openFaqIndex, setOpenFaqIndex] = useState(null);
   const [newsletterEmail, setNewsletterEmail] = useState("");
   const [newsletterSuccess, setNewsletterSuccess] = useState(false);
-
-  // Fetch approved brands
-  const fetchBrands = async () => {
-    try {
-      setLoading(true);
-      const res = await fetch("/api/brands?status=Approved");
-      if (res.ok) {
-        const data = await res.json();
-        setBrands(data);
-      }
-    } catch (error) {
-      console.error("Error fetching brands:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchBrands();
-  }, []);
 
   // Pre-fill enquiry form if investor is logged in
   useEffect(() => {
