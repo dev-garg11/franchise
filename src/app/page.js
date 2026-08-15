@@ -460,11 +460,11 @@ export default function Home() {
                           <option value="">All Sectors</option>
                           {fiIndustry && FI_SECTORS_MAP[fiIndustry]
                             ? FI_SECTORS_MAP[fiIndustry].map((sec, i) => (
-                                <option key={i} value={sec}>{sec}</option>
-                              ))
+                              <option key={i} value={sec}>{sec}</option>
+                            ))
                             : ["QSR", "Preschool", "Salon", "Retail", "Services"].map((sec, i) => (
-                                <option key={i} value={sec}>{sec}</option>
-                              ))}
+                              <option key={i} value={sec}>{sec}</option>
+                            ))}
                         </select>
                       </div>
 
@@ -708,20 +708,20 @@ export default function Home() {
             ) : (
               (brands.length > 0
                 ? brands.map((b, idx) => ({
-                    ...b,
-                    id: b.id || b._id || `db-${idx}`,
-                    name: b.name || b.brandName || "Luxury Franchise",
-                    company: b.company || b.name || "",
-                    category: b.category || "Franchise Opportunity",
-                    minInvestment: b.minInvestment || 500000,
-                    maxInvestment: b.maxInvestment || 2000000,
-                    hq: b.hq || b.location || "India",
-                    roi: b.roi || "12-18 Mos",
-                    image: b.image || b.logo || b.bannerImage || LEADING_FRANCHISES[idx % LEADING_FRANCHISES.length].image,
-                    badge: b.featured ? "Featured" : "#1 Pick"
-                  })).concat(
-                    LEADING_FRANCHISES.filter(fb => !brands.some(b => (b.name || b.brandName || "").toLowerCase() === fb.name.toLowerCase()))
-                  )
+                  ...b,
+                  id: b.id || b._id || `db-${idx}`,
+                  name: b.name || b.brandName || "Luxury Franchise",
+                  company: b.company || b.name || "",
+                  category: b.category || "Franchise Opportunity",
+                  minInvestment: b.minInvestment || 500000,
+                  maxInvestment: b.maxInvestment || 2000000,
+                  hq: b.hq || b.location || "India",
+                  roi: b.roi || "12-18 Mos",
+                  image: b.image || b.logo || b.bannerImage || LEADING_FRANCHISES[idx % LEADING_FRANCHISES.length].image,
+                  badge: b.featured ? "Featured" : "#1 Pick"
+                })).concat(
+                  LEADING_FRANCHISES.filter(fb => !brands.some(b => (b.name || b.brandName || "").toLowerCase() === fb.name.toLowerCase()))
+                )
                 : LEADING_FRANCHISES
               ).map((b) => (
                 <div key={b.id} className="fi-brand-card-item">
@@ -1311,7 +1311,7 @@ export default function Home() {
                 </div>
                 <button
                   onClick={() => {
-                    const phone = (process.env.NEXT_PUBLIC_ADMIN_WHATSAPP || "919876543210").replace(/[^0-9]/g, "");
+                    const phone = (process.env.NEXT_PUBLIC_ADMIN_WHATSAPP || "919815489999").replace(/[^0-9]/g, "");
                     const text = encodeURIComponent(`Hello Admin, I want detailed catalog & investment structure for franchise brand: *${selectedBrand.name}*.`);
                     window.open(`https://api.whatsapp.com/send?phone=${phone}&text=${text}`, "_blank");
                   }}
