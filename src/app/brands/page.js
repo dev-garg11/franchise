@@ -5,24 +5,224 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import {
     Search, MapPin, IndianRupee, RotateCcw, Building, Users, Star,
-    CheckCircle, ChevronRight, Mail, Phone, Globe, HelpCircle, Filter, Sparkles, MessageCircle
+    CheckCircle, ChevronRight, Mail, Phone, Globe, HelpCircle, Filter, Sparkles, MessageCircle, X
 } from "lucide-react";
 import { ProductSkeletonGrid } from "@/components/SkeletonLoader";
 import { useApprovedBrands } from "@/lib/brandsCache";
 
 const CATEGORIES = [
-    "Food and Beverage",
-    "Retail",
-    "Education",
-    "Automobiles",
-    "Health and Wellness",
-    "Business Services"
+    "Automotive", "Beauty & Health", "Business Services", "Dealers & Distributors",
+    "Education", "Fashion", "Food and Beverage", "Home Based Business",
+    "Hotel, Travel & Tourism", "Retail", "Sports, Fitness & Entertainment"
 ];
 
 const STATES = [
-    "New Delhi", "Maharashtra", "Gujarat", "Karnataka", "Tamil Nadu", "Haryana",
-    "Punjab", "Rajasthan", "Uttar Pradesh", "Kerala", "West Bengal", "Andhra Pradesh"
+    "Andaman and Nicobar", "Andhra Pradesh", "Arunachal Pradesh", "Assam", "Bihar",
+    "Chandigarh", "Chhattisgarh", "Delhi NCR", "Goa", "Gujarat", "Haryana",
+    "Himachal Pradesh", "Jammu and Kashmir", "Jharkhand", "Karnataka", "Kerala",
+    "Ladakh", "Madhya Pradesh", "Maharashtra", "Manipur", "Meghalaya", "Mizoram",
+    "Nagaland", "Odisha", "Puducherry", "Punjab", "Rajasthan", "Sikkim", "Tamil Nadu",
+    "Telangana", "Tripura", "Uttar Pradesh", "Uttarakhand", "West Bengal"
 ];
+
+const FI_CITIES_BY_STATE = {
+    "Andaman and Nicobar": ["Port Blair"],
+    "Andhra Pradesh": ["Visakhapatnam", "Vijayawada", "Guntur", "Nellore", "Kurnool", "Rajahmundry", "Tirupati", "Kakinada", "Anantapur", "Eluru"],
+    "Arunachal Pradesh": ["Itanagar", "Naharlagun", "Pasighat", "Tawang"],
+    "Assam": ["Guwahati", "Silchar", "Dibrugarh", "Jorhat", "Nagaon", "Tinsukia", "Tezpur"],
+    "Bihar": ["Patna", "Gaya", "Bhagalpur", "Muzaffarpur", "Purnia", "Darbhanga", "Bihar Sharif", "Arrah"],
+    "Chandigarh": ["Chandigarh", "Mohali", "Panchkula"],
+    "Chhattisgarh": ["Raipur", "Bhilai", "Bilaspur", "Korba", "Rajnandgaon", "Raigarh"],
+    "Delhi NCR": ["Delhi", "New Delhi", "Noida", "Gurgaon", "Ghaziabad", "Faridabad", "Greater Noida"],
+    "Goa": ["Panaji", "Margao", "Vasco da Gama", "Mapusa", "Ponda"],
+    "Gujarat": ["Ahmedabad", "Surat", "Vadodara", "Rajkot", "Bhavnagar", "Jamnagar", "Gandhinagar", "Junagadh", "Anand", "Navsari", "Morbi"],
+    "Haryana": ["Gurgaon", "Faridabad", "Panipat", "Ambala", "Karnal", "Hisar", "Rohtak", "Sonipat", "Yamunanagar", "Panchkula"],
+    "Himachal Pradesh": ["Shimla", "Dharamshala", "Mandi", "Solan", "Kullu", "Manali", "Baddi"],
+    "Jammu and Kashmir": ["Srinagar", "Jammu", "Anantnag", "Baramulla", "Udhampur"],
+    "Jharkhand": ["Ranchi", "Jamshedpur", "Dhanbad", "Bokaro", "Hazaribagh", "Deoghar"],
+    "Karnataka": ["Bengaluru", "Mysore", "Hubli-Dharwad", "Mangalore", "Belgaum", "Gulbarga", "Davangere", "Bellary", "Shimoga", "Tumkur"],
+    "Kerala": ["Kochi", "Thiruvananthapuram", "Kozhikode", "Thrissur", "Kollam", "Palakkad", "Kannur", "Alappuzha", "Kottayam"],
+    "Ladakh": ["Leh", "Kargil"],
+    "Madhya Pradesh": ["Indore", "Bhopal", "Jabalpur", "Gwalior", "Ujjain", "Sagar", "Dewas", "Satna", "Ratlam"],
+    "Maharashtra": ["Mumbai", "Pune", "Nagpur", "Nashik", "Thane", "Aurangabad", "Solapur", "Amravati", "Kolhapur", "Navi Mumbai", "Sangli", "Jalgaon", "Nanded"],
+    "Manipur": ["Imphal", "Churachandpur", "Thoubal"],
+    "Meghalaya": ["Shillong", "Tura", "Jowai"],
+    "Mizoram": ["Aizawl", "Lunglei"],
+    "Nagaland": ["Dimapur", "Kohima", "Mokokchung"],
+    "Odisha": ["Bhubaneswar", "Cuttack", "Rourkela", "Berhampur", "Sambalpur", "Puri", "Balasore"],
+    "Puducherry": ["Pondicherry", "Karaikal", "Mahe", "Yanam"],
+    "Punjab": ["Ludhiana", "Amritsar", "Jalandhar", "Patiala", "Bhatinda", "Mohali", "Pathankot", "Hoshiarpur", "Moga"],
+    "Rajasthan": ["Jaipur", "Jodhpur", "Udaipur", "Kota", "Bikaner", "Ajmer", "Alwar", "Bhilwara", "Sikar", "Sri Ganganagar"],
+    "Sikkim": ["Gangtok", "Namchi", "Gyalshing"],
+    "Tamil Nadu": ["Chennai", "Coimbatore", "Madurai", "Tiruchirappalli", "Salem", "Tirupur", "Erode", "Vellore", "Tirunelveli", "Thanjavur"],
+    "Telangana": ["Hyderabad", "Warangal", "Nizamabad", "Karimnagar", "Ramagundam", "Khammam", "Mahbubnagar"],
+    "Tripura": ["Agartala", "Udaipur", "Dharmanagar"],
+    "Uttar Pradesh": ["Lucknow", "Kanpur", "Varanasi", "Agra", "Meerut", "Prayagraj", "Noida", "Ghaziabad", "Bareilly", "Aligarh", "Moradabad", "Gorakhpur", "Jhansi"],
+    "Uttarakhand": ["Dehradun", "Haridwar", "Roorkee", "Haldwani", "Rishikesh", "Nainital"],
+    "West Bengal": ["Kolkata", "Howrah", "Durgapur", "Siliguri", "Asansol", "Bardhaman", "Kharagpur", "Malda"]
+};
+
+const FI_ALL_MAJOR_CITIES = [
+    "Mumbai", "Delhi", "Bengaluru", "Ahmedabad", "Pune", "Chandigarh",
+    "Jaipur", "Hyderabad", "Chennai", "Kolkata", "Ludhiana", "Surat", "Indore", "Lucknow", "Kochi", "Patna", "Bhopal", "Visakhapatnam", "Guwahati", "Dehradun"
+];
+
+const STATE_ALIAS_MAP = {
+    "andaman and nicobar": ["port blair", "andaman"],
+    "andhra pradesh": ["ap", "visakhapatnam", "vijayawada", "guntur", "nellore", "kurnool", "tirupati", "andhra pradesh"],
+    "arunachal pradesh": ["itanagar", "arunachal"],
+    "assam": ["guwahati", "silchar", "dibrugarh", "assam"],
+    "bihar": ["patna", "gaya", "bhagalpur", "muzaffarpur", "bihar"],
+    "chandigarh": ["chandigarh", "mohali", "panchkula"],
+    "chhattisgarh": ["raipur", "bhilai", "bilaspur", "chhattisgarh"],
+    "delhi ncr": ["dl", "delhi", "new delhi", "noida", "gurgaon", "gurugram", "ncr", "faridabad", "ghaziabad"],
+    "new delhi": ["dl", "delhi", "new delhi", "noida", "gurgaon", "gurugram", "ncr", "faridabad", "ghaziabad"],
+    "goa": ["panaji", "margao", "goa"],
+    "gujarat": ["gj", "ahmedabad", "surat", "vadodara", "rajkot", "gujarat"],
+    "haryana": ["hr", "gurgaon", "gurugram", "faridabad", "panipat", "haryana"],
+    "himachal pradesh": ["hp", "shimla", "dharamshala", "himachal pradesh"],
+    "jammu and kashmir": ["jk", "srinagar", "jammu", "kashmir"],
+    "jharkhand": ["ranchi", "jamshedpur", "dhanbad", "jharkhand"],
+    "karnataka": ["ka", "bengaluru", "bangalore", "mysore", "karnataka"],
+    "kerala": ["kl", "kochi", "trivandrum", "thiruvananthapuram", "kerala"],
+    "madhya pradesh": ["mp", "indore", "bhopal", "jabalpur", "gwalior", "madhya pradesh"],
+    "maharashtra": ["mh", "mumbai", "pune", "nagpur", "nashik", "maharashtra"],
+    "manipur": ["imphal", "manipur"],
+    "meghalaya": ["shillong", "meghalaya"],
+    "mizoram": ["aizawl", "mizoram"],
+    "nagaland": ["dimapur", "kohima", "nagaland"],
+    "odisha": ["bhubaneswar", "cuttack", "rourkela", "odisha", "orissa"],
+    "puducherry": ["pondicherry", "puducherry"],
+    "punjab": ["pb", "ludhiana", "amritsar", "jalandhar", "chandigarh", "punjab"],
+    "rajasthan": ["rj", "jaipur", "jodhpur", "udaipur", "rajasthan"],
+    "sikkim": ["gangtok", "sikkim"],
+    "tamil nadu": ["tn", "chennai", "coimbatore", "madurai", "tamil nadu"],
+    "telangana": ["ts", "hyderabad", "secunderabad", "warangal", "telangana"],
+    "tripura": ["agartala", "tripura"],
+    "uttar pradesh": ["up", "lucknow", "kanpur", "noida", "ghaziabad", "uttar pradesh"],
+    "uttarakhand": ["uk", "dehradun", "haridwar", "rishikesh", "uttarakhand"],
+    "west bengal": ["wb", "kolkata", "howrah", "durgapur", "west bengal"]
+};
+
+// Parse rupee string to number
+const parseRupeeString = (str) => {
+    if (!str || typeof str !== "string") return null;
+    const cleanStr = str.toLowerCase().replace(/,/g, "").trim();
+    if (cleanStr === "" || cleanStr === "no min limit" || cleanStr === "no max limit") return null;
+
+    if (cleanStr.includes("crore") || cleanStr.includes("cr")) {
+        const num = parseFloat(cleanStr.match(/[\d.]+/)?.[0] || "0");
+        return num * 10000000;
+    }
+    if (cleanStr.includes("lakh") || cleanStr.includes("l")) {
+        const num = parseFloat(cleanStr.match(/[\d.]+/)?.[0] || "0");
+        return num * 100000;
+    }
+    if (cleanStr.includes("thousand") || cleanStr.includes("k")) {
+        const num = parseFloat(cleanStr.match(/[\d.]+/)?.[0] || "0");
+        return num * 1000;
+    }
+    const num = parseFloat(cleanStr.match(/[\d.]+/)?.[0] || "0");
+    return isNaN(num) || num === 0 ? null : num;
+};
+
+// Flexible Category Matcher
+const matchCategory = (brandCategory, targetCategory) => {
+    if (!targetCategory || targetCategory === "" || targetCategory === "All Industries" || targetCategory === "All Segments") return true;
+    if (!brandCategory) return false;
+
+    const bc = brandCategory.toLowerCase().trim();
+    const tc = targetCategory.toLowerCase().trim();
+
+    if (bc === tc || bc.includes(tc) || tc.includes(bc)) return true;
+
+    const synonyms = {
+        "automotive": ["automobiles", "auto", "ev", "car"],
+        "automobiles": ["automotive", "auto", "ev", "car"],
+        "beauty & health": ["beauty and wellness", "health and wellness", "wellness", "salon", "spa", "cosmetics"],
+        "health and wellness": ["beauty & health", "beauty and wellness", "wellness", "fitness", "gym", "health"],
+        "food and beverage": ["food & beverage", "food", "café", "restaurant", "qsr", "dessert", "bakery"],
+        "retail": ["retail apparel", "fashion", "gifting", "bathware", "supermarket", "store"],
+        "education": ["stem", "preschool", "coaching", "academy", "learning", "school"],
+        "business services": ["dealers & distributors", "financial", "logistics", "co-working", "marketing", "services"],
+        "dealers & distributors": ["business services", "distribution", "fmcg", "solar", "equipment"],
+        "sports, fitness & entertainment": ["health & wellness", "fitness", "gym", "sports"]
+    };
+
+    const tcSynonyms = synonyms[tc] || [];
+    return tcSynonyms.some(syn => bc.includes(syn));
+};
+
+// Flexible Location and State Matcher
+const matchLocationAndState = (brandHq, targetState, targetLocation) => {
+    if (!brandHq) return (!targetState && !targetLocation);
+    const hqLower = brandHq.toLowerCase().trim();
+
+    if (targetState && targetState !== "" && targetState !== "All States" && targetState !== "All Regions") {
+        const tsLower = targetState.toLowerCase().trim();
+        const aliases = STATE_ALIAS_MAP[tsLower] || [tsLower];
+        const matchesState = aliases.some(alias => hqLower.includes(alias)) || hqLower.includes(tsLower);
+        if (!matchesState) return false;
+    }
+
+    if (targetLocation && targetLocation !== "" && targetLocation !== "All Cities" && targetLocation !== "All Regions") {
+        const locLower = targetLocation.toLowerCase().trim();
+        const aliases = STATE_ALIAS_MAP[locLower] || [locLower];
+        const matchesCity = aliases.some(alias => hqLower.includes(alias)) || hqLower.includes(locLower) || locLower.includes(hqLower);
+        if (!matchesCity) return false;
+    }
+
+    return true;
+};
+
+// Sector & Concept Keyword Matcher
+const matchSectorAndKeyword = (brand, targetSector, targetSearch) => {
+    const brandText = `${brand.name} ${brand.company || ""} ${brand.category || ""} ${brand.description || ""} ${brand.hq || ""} ${brand.areaRequired || ""}`.toLowerCase();
+
+    if (targetSector && targetSector !== "" && targetSector !== "All Sectors") {
+        const sectorLower = targetSector.toLowerCase().trim();
+        const sectorWords = sectorLower.split(/[\s&,/]+/).filter(w => w.length > 2);
+        const matchesSector = sectorWords.some(w => brandText.includes(w)) || brandText.includes(sectorLower);
+        if (!matchesSector) return false;
+    }
+
+    if (targetSearch && targetSearch !== "" && targetSearch.trim() !== "") {
+        const searchLower = targetSearch.toLowerCase().trim();
+        const searchWords = searchLower.split(/\s+/).filter(w => w.length > 1);
+        const matchesSearch = searchWords.every(w => brandText.includes(w)) || brandText.includes(searchLower);
+        if (!matchesSearch) return false;
+    }
+
+    return true;
+};
+
+// Investment Range Matcher
+const matchBudgetRange = (brand, selectedBudget, minBudgetParam, maxBudgetParam) => {
+    const minInv = brand.minInvestment || 0;
+    const maxInv = brand.maxInvestment || minInv;
+
+    const targetMin = parseRupeeString(minBudgetParam);
+    const targetMax = parseRupeeString(maxBudgetParam);
+
+    if (targetMin !== null && maxInv < targetMin && minInv < targetMin) {
+        return false;
+    }
+    if (targetMax !== null && minInv > targetMax) {
+        return false;
+    }
+
+    if (selectedBudget) {
+        if (selectedBudget === "under-2l") return minInv < 200000;
+        if (selectedBudget === "2l-5l") return minInv < 500000 && maxInv >= 200000;
+        if (selectedBudget === "5l-10l") return minInv < 1000000 && maxInv >= 500000;
+        if (selectedBudget === "10l-15l") return minInv < 1500000 && maxInv >= 1000000;
+        if (selectedBudget === "15l-20l") return minInv < 2000000 && maxInv >= 1500000;
+        if (selectedBudget === "20l-30l") return minInv < 3000000 && maxInv >= 2000000;
+        if (selectedBudget === "above-30l") return maxInv >= 3000000 || minInv >= 3000000;
+    }
+
+    return true;
+};
 
 function BrandsDirectoryPage() {
     const { brands, loading } = useApprovedBrands();
@@ -31,8 +231,12 @@ function BrandsDirectoryPage() {
     // Search Filters State
     const [searchTerm, setSearchTerm] = useState("");
     const [selectedCategory, setSelectedCategory] = useState("");
-    const [selectedBudget, setSelectedBudget] = useState("");
+    const [selectedSector, setSelectedSector] = useState("");
+    const [selectedState, setSelectedState] = useState("");
     const [selectedLocation, setSelectedLocation] = useState("");
+    const [selectedBudget, setSelectedBudget] = useState("");
+    const [minBudget, setMinBudget] = useState("");
+    const [maxBudget, setMaxBudget] = useState("");
 
     // Pagination State
     const [visibleCount, setVisibleCount] = useState(6);
@@ -40,7 +244,7 @@ function BrandsDirectoryPage() {
     // Reset pagination when active filters change
     useEffect(() => {
         setVisibleCount(6);
-    }, [searchTerm, selectedCategory, selectedBudget, selectedLocation]);
+    }, [searchTerm, selectedCategory, selectedSector, selectedState, selectedLocation, selectedBudget, minBudget, maxBudget]);
 
     // Handle scroll pagination
     useEffect(() => {
@@ -85,61 +289,53 @@ function BrandsDirectoryPage() {
         }
     }, [selectedBrand]);
 
-    // Sync URL search params
+    // Sync URL search params from Homepage or Header Search
     useEffect(() => {
         if (brands.length > 0) {
             const categoryParam = searchParams.get("category");
+            const sectorParam = searchParams.get("sector");
+            const stateParam = searchParams.get("state");
             const locationParam = searchParams.get("location");
             const searchParam = searchParams.get("search");
+            const minBudgetParam = searchParams.get("minBudget");
+            const maxBudgetParam = searchParams.get("maxBudget");
+            const budgetParam = searchParams.get("budget");
+
             if (categoryParam) setSelectedCategory(categoryParam);
+            if (sectorParam) setSelectedSector(sectorParam);
+            if (stateParam) setSelectedState(stateParam);
             if (locationParam) setSelectedLocation(locationParam);
             if (searchParam) setSearchTerm(searchParam);
+            if (minBudgetParam) setMinBudget(minBudgetParam);
+            if (maxBudgetParam) setMaxBudget(maxBudgetParam);
+            if (budgetParam) setSelectedBudget(budgetParam);
         }
     }, [searchParams, brands]);
 
-    // Handle Filtering
+    // Handle Multi-Criteria Filtering
     useEffect(() => {
         let result = [...brands];
 
-        if (searchTerm) {
-            const keyword = searchTerm.toLowerCase();
-            result = result.filter(
-                b => b.name.toLowerCase().includes(keyword) ||
-                    b.company.toLowerCase().includes(keyword) ||
-                    b.description.toLowerCase().includes(keyword)
-            );
-        }
-
-        if (selectedCategory) {
-            result = result.filter(b => b.category === selectedCategory);
-        }
-
-        if (selectedLocation) {
-            result = result.filter(b => b.hq === selectedLocation);
-        }
-
-        if (selectedBudget) {
-            result = result.filter(b => {
-                const min = b.minInvestment;
-                if (selectedBudget === "under-2l") return min < 200000;
-                if (selectedBudget === "2l-5l") return min >= 200000 && min <= 500000;
-                if (selectedBudget === "5l-10l") return min >= 500000 && min <= 1000000;
-                if (selectedBudget === "10l-15l") return min >= 1000000 && min <= 1500000;
-                if (selectedBudget === "15l-20l") return min >= 1500000 && min <= 2000000;
-                if (selectedBudget === "20l-30l") return min >= 2000000 && min <= 3000000;
-                if (selectedBudget === "above-30l") return min > 3000000;
-                return true;
-            });
-        }
+        result = result.filter(b => {
+            if (!matchCategory(b.category, selectedCategory)) return false;
+            if (!matchLocationAndState(b.hq, selectedState, selectedLocation)) return false;
+            if (!matchSectorAndKeyword(b, selectedSector, searchTerm)) return false;
+            if (!matchBudgetRange(b, selectedBudget, minBudget, maxBudget)) return false;
+            return true;
+        });
 
         setFilteredBrands(result);
-    }, [searchTerm, selectedCategory, selectedBudget, selectedLocation, brands]);
+    }, [searchTerm, selectedCategory, selectedSector, selectedState, selectedLocation, selectedBudget, minBudget, maxBudget, brands]);
 
     const handleReset = () => {
         setSearchTerm("");
         setSelectedCategory("");
-        setSelectedBudget("");
+        setSelectedSector("");
+        setSelectedState("");
         setSelectedLocation("");
+        setSelectedBudget("");
+        setMinBudget("");
+        setMaxBudget("");
     };
 
     const formatLakhs = (val) => {
@@ -282,12 +478,33 @@ function BrandsDirectoryPage() {
                             <select
                                 className="form-input"
                                 style={{ fontSize: "13.5px" }}
+                                value={selectedState}
+                                onChange={(e) => {
+                                    setSelectedState(e.target.value);
+                                    setSelectedLocation("");
+                                }}
+                            >
+                                <option value="">All States</option>
+                                {STATES.map(state => (
+                                    <option key={state} value={state}>{state}</option>
+                                ))}
+                            </select>
+                        </div>
+
+                        {/* City / Location Select */}
+                        <div className="form-group" style={{ marginBottom: "18px" }}>
+                            <label style={{ fontSize: "12.5px", fontWeight: "700", color: "var(--text-dark)", marginBottom: "6px", display: "block" }}>City / Location</label>
+                            <select
+                                className="form-input"
+                                style={{ fontSize: "13.5px" }}
                                 value={selectedLocation}
                                 onChange={(e) => setSelectedLocation(e.target.value)}
                             >
-                                <option value="">All Regions</option>
-                                {STATES.map(state => (
-                                    <option key={state} value={state}>{state}</option>
+                                <option value="">All Cities</option>
+                                {(selectedState && FI_CITIES_BY_STATE[selectedState]
+                                    ? FI_CITIES_BY_STATE[selectedState]
+                                    : FI_ALL_MAJOR_CITIES).map(c => (
+                                    <option key={c} value={c}>{c}</option>
                                 ))}
                             </select>
                         </div>

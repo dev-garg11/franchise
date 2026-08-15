@@ -39,32 +39,77 @@ const FI_INDUSTRIES = [
 ];
 
 const FI_SECTORS_MAP = {
+  "Automotive": ["EV Service Station", "2-Wheeler Workshop", "Car Washing & Detailing", "Spare Parts & Tires", "Auto Dealership"],
+  "Beauty & Health": ["Unisex Salon & Spa", "Fitness Gym & Wellness", "Cosmetics & Skincare", "Ayurveda & Pharmacy", "Slimming & Nutrition"],
+  "Business Services": ["Financial & Accounting", "Digital Marketing", "Co-Working Space", "Logistics & Courier", "Consulting & IT"],
+  "Dealers & Distributors": ["FMCG Distribution", "Solar & Energy Solutions", "Construction Materials", "Industrial Equipment", "Consumer Durables"],
+  "Education": ["Preschool & Daycare", "STEM & Robotics Labs", "Coaching Institute", "Skill Training Academy", "Language & Vocational"],
+  "Fashion": ["Fashion Apparel", "Footwear & Accessories", "Luxury Goods & Jewellery", "Kids Wear", "Innerwear & Activewear"],
   "Food and Beverage": ["Café & Kulhad Tea", "QSR & Fast Food", "Fine Dining & Restobar", "Ice Cream & Desserts", "Bakery & Confectionery"],
-  "Retail": ["Fashion Apparel", "Footwear & Accessories", "Luxury Goods", "Supermarket & Grocery", "Eyewear"],
-  "Education": ["Preschool & Daycare", "STEM & Robotics Labs", "Coaching Institute", "Skill Training Academy"],
-  "Beauty & Health": ["Unisex Salon & Spa", "Fitness Gym & Wellness", "Cosmetics & Skincare", "Ayurveda & Pharmacy"],
-  "Automobiles": ["EV Service Station", "2-Wheeler Workshop", "Car Washing & Detailing", "Spare Parts & Tires"],
-  "Business Services": ["Financial & Accounting", "Digital Marketing", "Co-Working Space", "Logistics & Courier"],
-  "Dealers & Distributors": ["FMCG Distribution", "Solar & Energy Solutions", "Construction Materials", "Industrial Equipment"]
+  "Home Based Business": ["Online Consulting", "Handmade & Crafts", "Tutoring & E-Learning", "Digital Reselling"],
+  "Hotel, Travel & Tourism": ["Boutique Resort & Hotel", "Travel Agency & Tour Operator", "Homestay & Villa", "Car Rental Services"],
+  "Retail": ["Supermarket & Grocery", "Eyewear & Optics", "Bathware & Home Decor", "Electronics & Appliances", "Gifting & Stationery"],
+  "Sports, Fitness & Entertainment": ["Fitness Gym & Studio", "Sports Academy", "Indoor Play Zone", "Gaming & AR/VR Arena"]
 };
 
 const FI_STATES = [
-  "Delhi NCR", "Maharashtra", "Gujarat", "Karnataka", "Tamil Nadu",
-  "Punjab", "Haryana", "Rajasthan", "Uttar Pradesh", "West Bengal", "Kerala", "Telangana"
+  "Andaman and Nicobar", "Andhra Pradesh", "Arunachal Pradesh", "Assam", "Bihar",
+  "Chandigarh", "Chhattisgarh", "Delhi NCR", "Goa", "Gujarat", "Haryana",
+  "Himachal Pradesh", "Jammu and Kashmir", "Jharkhand", "Karnataka", "Kerala",
+  "Ladakh", "Madhya Pradesh", "Maharashtra", "Manipur", "Meghalaya", "Mizoram",
+  "Nagaland", "Odisha", "Puducherry", "Punjab", "Rajasthan", "Sikkim", "Tamil Nadu",
+  "Telangana", "Tripura", "Uttar Pradesh", "Uttarakhand", "West Bengal"
 ];
 
-const FI_CITIES = [
+const FI_CITIES_BY_STATE = {
+  "Andaman and Nicobar": ["Port Blair"],
+  "Andhra Pradesh": ["Visakhapatnam", "Vijayawada", "Guntur", "Nellore", "Kurnool", "Rajahmundry", "Tirupati", "Kakinada", "Anantapur", "Eluru"],
+  "Arunachal Pradesh": ["Itanagar", "Naharlagun", "Pasighat", "Tawang"],
+  "Assam": ["Guwahati", "Silchar", "Dibrugarh", "Jorhat", "Nagaon", "Tinsukia", "Tezpur"],
+  "Bihar": ["Patna", "Gaya", "Bhagalpur", "Muzaffarpur", "Purnia", "Darbhanga", "Bihar Sharif", "Arrah"],
+  "Chandigarh": ["Chandigarh", "Mohali", "Panchkula"],
+  "Chhattisgarh": ["Raipur", "Bhilai", "Bilaspur", "Korba", "Rajnandgaon", "Raigarh"],
+  "Delhi NCR": ["Delhi", "New Delhi", "Noida", "Gurgaon", "Ghaziabad", "Faridabad", "Greater Noida"],
+  "Goa": ["Panaji", "Margao", "Vasco da Gama", "Mapusa", "Ponda"],
+  "Gujarat": ["Ahmedabad", "Surat", "Vadodara", "Rajkot", "Bhavnagar", "Jamnagar", "Gandhinagar", "Junagadh", "Anand", "Navsari", "Morbi"],
+  "Haryana": ["Gurgaon", "Faridabad", "Panipat", "Ambala", "Karnal", "Hisar", "Rohtak", "Sonipat", "Yamunanagar", "Panchkula"],
+  "Himachal Pradesh": ["Shimla", "Dharamshala", "Mandi", "Solan", "Kullu", "Manali", "Baddi"],
+  "Jammu and Kashmir": ["Srinagar", "Jammu", "Anantnag", "Baramulla", "Udhampur"],
+  "Jharkhand": ["Ranchi", "Jamshedpur", "Dhanbad", "Bokaro", "Hazaribagh", "Deoghar"],
+  "Karnataka": ["Bengaluru", "Mysore", "Hubli-Dharwad", "Mangalore", "Belgaum", "Gulbarga", "Davangere", "Bellary", "Shimoga", "Tumkur"],
+  "Kerala": ["Kochi", "Thiruvananthapuram", "Kozhikode", "Thrissur", "Kollam", "Palakkad", "Kannur", "Alappuzha", "Kottayam"],
+  "Ladakh": ["Leh", "Kargil"],
+  "Madhya Pradesh": ["Indore", "Bhopal", "Jabalpur", "Gwalior", "Ujjain", "Sagar", "Dewas", "Satna", "Ratlam"],
+  "Maharashtra": ["Mumbai", "Pune", "Nagpur", "Nashik", "Thane", "Aurangabad", "Solapur", "Amravati", "Kolhapur", "Navi Mumbai", "Sangli", "Jalgaon", "Nanded"],
+  "Manipur": ["Imphal", "Churachandpur", "Thoubal"],
+  "Meghalaya": ["Shillong", "Tura", "Jowai"],
+  "Mizoram": ["Aizawl", "Lunglei"],
+  "Nagaland": ["Dimapur", "Kohima", "Mokokchung"],
+  "Odisha": ["Bhubaneswar", "Cuttack", "Rourkela", "Berhampur", "Sambalpur", "Puri", "Balasore"],
+  "Puducherry": ["Pondicherry", "Karaikal", "Mahe", "Yanam"],
+  "Punjab": ["Ludhiana", "Amritsar", "Jalandhar", "Patiala", "Bhatinda", "Mohali", "Pathankot", "Hoshiarpur", "Moga"],
+  "Rajasthan": ["Jaipur", "Jodhpur", "Udaipur", "Kota", "Bikaner", "Ajmer", "Alwar", "Bhilwara", "Sikar", "Sri Ganganagar"],
+  "Sikkim": ["Gangtok", "Namchi", "Gyalshing"],
+  "Tamil Nadu": ["Chennai", "Coimbatore", "Madurai", "Tiruchirappalli", "Salem", "Tirupur", "Erode", "Vellore", "Tirunelveli", "Thanjavur"],
+  "Telangana": ["Hyderabad", "Warangal", "Nizamabad", "Karimnagar", "Ramagundam", "Khammam", "Mahbubnagar"],
+  "Tripura": ["Agartala", "Udaipur", "Dharmanagar"],
+  "Uttar Pradesh": ["Lucknow", "Kanpur", "Varanasi", "Agra", "Meerut", "Prayagraj", "Noida", "Ghaziabad", "Bareilly", "Aligarh", "Moradabad", "Gorakhpur", "Jhansi"],
+  "Uttarakhand": ["Dehradun", "Haridwar", "Roorkee", "Haldwani", "Rishikesh", "Nainital"],
+  "West Bengal": ["Kolkata", "Howrah", "Durgapur", "Siliguri", "Asansol", "Bardhaman", "Kharagpur", "Malda"]
+};
+
+const FI_ALL_MAJOR_CITIES = [
   "Mumbai", "Delhi", "Bengaluru", "Ahmedabad", "Pune", "Chandigarh",
-  "Jaipur", "Hyderabad", "Chennai", "Kolkata", "Ludhiana", "Surat", "Indore", "Lucknow"
+  "Jaipur", "Hyderabad", "Chennai", "Kolkata", "Ludhiana", "Surat", "Indore", "Lucknow", "Kochi", "Patna", "Bhopal", "Visakhapatnam", "Guwahati", "Dehradun"
 ];
 
 const FI_MIN_BUDGETS = [
-  "Rs. 50,000", "Rs. 2 Lakhs", "Rs. 5 Lakhs", "Rs. 10 Lakhs",
-  "Rs. 20 Lakhs", "Rs. 30 Lakhs", "Rs. 50 Lakhs", "Rs. 1 Crore"
+  "Rs. 10,000", "Rs. 50,000", "Rs. 2 Lakhs", "Rs. 5 Lakhs", "Rs. 10 Lakhs",
+  "Rs. 20 Lakhs", "Rs. 30 Lakhs", "Rs. 50 Lakhs", "Rs. 1 Crore", "Rs. 2 Crores"
 ];
 
 const FI_MAX_BUDGETS = [
-  "Rs. 2 Lakhs", "Rs. 5 Lakhs", "Rs. 10 Lakhs", "Rs. 20 Lakhs",
+  "Rs. 50,000", "Rs. 2 Lakhs", "Rs. 5 Lakhs", "Rs. 10 Lakhs", "Rs. 20 Lakhs",
   "Rs. 30 Lakhs", "Rs. 50 Lakhs", "Rs. 1 Crore", "Rs. 2 Crores", "Rs. 5 Crores+"
 ];
 
@@ -502,7 +547,10 @@ export default function Home() {
                         <select
                           className="fi-select-control"
                           value={fiState}
-                          onChange={(e) => setFiState(e.target.value)}
+                          onChange={(e) => {
+                            setFiState(e.target.value);
+                            setFiCity("");
+                          }}
                         >
                           <option value="">All States</option>
                           {FI_STATES.map((st, i) => (
@@ -519,7 +567,9 @@ export default function Home() {
                           onChange={(e) => setFiCity(e.target.value)}
                         >
                           <option value="">All Cities</option>
-                          {FI_CITIES.map((c, i) => (
+                          {(fiState && FI_CITIES_BY_STATE[fiState]
+                            ? FI_CITIES_BY_STATE[fiState]
+                            : FI_ALL_MAJOR_CITIES).map((c, i) => (
                             <option key={i} value={c}>{c}</option>
                           ))}
                         </select>

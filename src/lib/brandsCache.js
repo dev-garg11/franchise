@@ -8,6 +8,29 @@ let fetchPromise = null;
 const CACHE_KEY = "cached_approved_brands";
 
 /**
+ * Safely saves brand data to sessionStorage by stripping heavy payload fields and catching quota limits.
+ */
+function saveToSessionStorage(data) {
+    if (typeof window === "undefined" || !Array.isArray(data)) return;
+    try {
+        // Sanitize brand items (omit ultra-large base64 strings and non-essential fields to fit storage quota)
+        const cleanData = data.map(b => {
+            const { user, password, ...rest } = b;
+            if (typeof rest.image === "string" && rest.image.length > 1000 && rest.image.startsWith("data:")) {
+                return { ...rest, image: "" };
+            }
+            return rest;
+        });
+        sessionStorage.setItem(CACHE_KEY, JSON.stringify(cleanData));
+    } catch (e) {
+        // If quota exceeded, silently clear item to prevent browser error logs
+        try {
+            sessionStorage.removeItem(CACHE_KEY);
+        } catch (ignored) {}
+    }
+}
+
+/**
  * Synchronously retrieves cached approved brands from memory or sessionStorage if available.
  */
 export function getCachedApprovedBrandsSync() {
@@ -25,7 +48,7 @@ export function getCachedApprovedBrandsSync() {
                 }
             }
         } catch (e) {
-            console.warn("Failed reading brands cache from sessionStorage", e);
+            // Ignore sessionStorage read errors
         }
     }
     return null;
@@ -54,13 +77,7 @@ export async function getApprovedBrands(options = {}) {
             if (res.ok) {
                 const data = await res.json();
                 memoryBrandsCache = data;
-                if (typeof window !== "undefined") {
-                    try {
-                        sessionStorage.setItem(CACHE_KEY, JSON.stringify(data));
-                    } catch (e) {
-                        console.warn("Failed saving brands cache to sessionStorage", e);
-                    }
-                }
+                saveToSessionStorage(data);
                 return data;
             }
         } catch (error) {
