@@ -557,7 +557,7 @@ export default function AskExpertsModal({ isOpen, onClose, initialMode = "buy" }
 
                 <div>
                   <label style={{ fontSize: "12px", fontWeight: "700", color: "#334155", display: "block", marginBottom: "6px" }}>
-                    Preferred Location / City
+                    Preferred Location / District
                   </label>
                   <div style={{ position: "relative" }}>
                     <MapPin size={16} style={{ position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)", color: "#94a3b8" }} />

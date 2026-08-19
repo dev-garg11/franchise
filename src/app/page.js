@@ -14,6 +14,7 @@ import TopFranchiseOpportunities from "@/components/TopFranchiseOpportunities";
 import TopBusinessOpportunities from "@/components/TopBusinessOpportunities";
 import { ProductSkeletonSlider } from "@/components/SkeletonLoader";
 import { useApprovedBrands } from "@/lib/brandsCache";
+import { DISTRICTS_BY_STATE, ALL_DISTRICTS } from "@/lib/districtsData";
 
 
 // Mock Categories with Icons
@@ -61,47 +62,7 @@ const FI_STATES = [
   "Telangana", "Tripura", "Uttar Pradesh", "Uttarakhand", "West Bengal"
 ];
 
-const FI_CITIES_BY_STATE = {
-  "Andaman and Nicobar": ["Port Blair"],
-  "Andhra Pradesh": ["Visakhapatnam", "Vijayawada", "Guntur", "Nellore", "Kurnool", "Rajahmundry", "Tirupati", "Kakinada", "Anantapur", "Eluru"],
-  "Arunachal Pradesh": ["Itanagar", "Naharlagun", "Pasighat", "Tawang"],
-  "Assam": ["Guwahati", "Silchar", "Dibrugarh", "Jorhat", "Nagaon", "Tinsukia", "Tezpur"],
-  "Bihar": ["Patna", "Gaya", "Bhagalpur", "Muzaffarpur", "Purnia", "Darbhanga", "Bihar Sharif", "Arrah"],
-  "Chandigarh": ["Chandigarh", "Mohali", "Panchkula"],
-  "Chhattisgarh": ["Raipur", "Bhilai", "Bilaspur", "Korba", "Rajnandgaon", "Raigarh"],
-  "Delhi NCR": ["Delhi", "New Delhi", "Noida", "Gurgaon", "Ghaziabad", "Faridabad", "Greater Noida"],
-  "Goa": ["Panaji", "Margao", "Vasco da Gama", "Mapusa", "Ponda"],
-  "Gujarat": ["Ahmedabad", "Surat", "Vadodara", "Rajkot", "Bhavnagar", "Jamnagar", "Gandhinagar", "Junagadh", "Anand", "Navsari", "Morbi"],
-  "Haryana": ["Gurgaon", "Faridabad", "Panipat", "Ambala", "Karnal", "Hisar", "Rohtak", "Sonipat", "Yamunanagar", "Panchkula"],
-  "Himachal Pradesh": ["Shimla", "Dharamshala", "Mandi", "Solan", "Kullu", "Manali", "Baddi"],
-  "Jammu and Kashmir": ["Srinagar", "Jammu", "Anantnag", "Baramulla", "Udhampur"],
-  "Jharkhand": ["Ranchi", "Jamshedpur", "Dhanbad", "Bokaro", "Hazaribagh", "Deoghar"],
-  "Karnataka": ["Bengaluru", "Mysore", "Hubli-Dharwad", "Mangalore", "Belgaum", "Gulbarga", "Davangere", "Bellary", "Shimoga", "Tumkur"],
-  "Kerala": ["Kochi", "Thiruvananthapuram", "Kozhikode", "Thrissur", "Kollam", "Palakkad", "Kannur", "Alappuzha", "Kottayam"],
-  "Ladakh": ["Leh", "Kargil"],
-  "Madhya Pradesh": ["Indore", "Bhopal", "Jabalpur", "Gwalior", "Ujjain", "Sagar", "Dewas", "Satna", "Ratlam"],
-  "Maharashtra": ["Mumbai", "Pune", "Nagpur", "Nashik", "Thane", "Aurangabad", "Solapur", "Amravati", "Kolhapur", "Navi Mumbai", "Sangli", "Jalgaon", "Nanded"],
-  "Manipur": ["Imphal", "Churachandpur", "Thoubal"],
-  "Meghalaya": ["Shillong", "Tura", "Jowai"],
-  "Mizoram": ["Aizawl", "Lunglei"],
-  "Nagaland": ["Dimapur", "Kohima", "Mokokchung"],
-  "Odisha": ["Bhubaneswar", "Cuttack", "Rourkela", "Berhampur", "Sambalpur", "Puri", "Balasore"],
-  "Puducherry": ["Pondicherry", "Karaikal", "Mahe", "Yanam"],
-  "Punjab": ["Ludhiana", "Amritsar", "Jalandhar", "Patiala", "Bhatinda", "Mohali", "Pathankot", "Hoshiarpur", "Moga"],
-  "Rajasthan": ["Jaipur", "Jodhpur", "Udaipur", "Kota", "Bikaner", "Ajmer", "Alwar", "Bhilwara", "Sikar", "Sri Ganganagar"],
-  "Sikkim": ["Gangtok", "Namchi", "Gyalshing"],
-  "Tamil Nadu": ["Chennai", "Coimbatore", "Madurai", "Tiruchirappalli", "Salem", "Tirupur", "Erode", "Vellore", "Tirunelveli", "Thanjavur"],
-  "Telangana": ["Hyderabad", "Warangal", "Nizamabad", "Karimnagar", "Ramagundam", "Khammam", "Mahbubnagar"],
-  "Tripura": ["Agartala", "Udaipur", "Dharmanagar"],
-  "Uttar Pradesh": ["Lucknow", "Kanpur", "Varanasi", "Agra", "Meerut", "Prayagraj", "Noida", "Ghaziabad", "Bareilly", "Aligarh", "Moradabad", "Gorakhpur", "Jhansi"],
-  "Uttarakhand": ["Dehradun", "Haridwar", "Roorkee", "Haldwani", "Rishikesh", "Nainital"],
-  "West Bengal": ["Kolkata", "Howrah", "Durgapur", "Siliguri", "Asansol", "Bardhaman", "Kharagpur", "Malda"]
-};
 
-const FI_ALL_MAJOR_CITIES = [
-  "Mumbai", "Delhi", "Bengaluru", "Ahmedabad", "Pune", "Chandigarh",
-  "Jaipur", "Hyderabad", "Chennai", "Kolkata", "Ludhiana", "Surat", "Indore", "Lucknow", "Kochi", "Patna", "Bhopal", "Visakhapatnam", "Guwahati", "Dehradun"
-];
 
 const FI_MIN_BUDGETS = [
   "Rs. 10,000", "Rs. 50,000", "Rs. 2 Lakhs", "Rs. 5 Lakhs", "Rs. 10 Lakhs",
@@ -560,17 +521,17 @@ export default function Home() {
                       </div>
 
                       <div className="fi-input-group">
-                        <label>Select City</label>
+                        <label>Select District</label>
                         <select
                           className="fi-select-control"
                           value={fiCity}
                           onChange={(e) => setFiCity(e.target.value)}
                         >
-                          <option value="">All Cities</option>
-                          {(fiState && FI_CITIES_BY_STATE[fiState]
-                            ? FI_CITIES_BY_STATE[fiState]
-                            : FI_ALL_MAJOR_CITIES).map((c, i) => (
-                            <option key={i} value={c}>{c}</option>
+                          <option value="">All Districts</option>
+                          {(fiState && DISTRICTS_BY_STATE[fiState]
+                            ? DISTRICTS_BY_STATE[fiState]
+                            : ALL_DISTRICTS).map((d, i) => (
+                            <option key={i} value={d}>{d}</option>
                           ))}
                         </select>
                       </div>

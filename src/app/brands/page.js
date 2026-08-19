@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import { ProductSkeletonGrid } from "@/components/SkeletonLoader";
 import { useApprovedBrands } from "@/lib/brandsCache";
+import { DISTRICTS_BY_STATE, ALL_DISTRICTS } from "@/lib/districtsData";
 
 const CATEGORIES = [
     "Automotive", "Beauty & Health", "Business Services", "Dealers & Distributors",
@@ -25,47 +26,7 @@ const STATES = [
     "Telangana", "Tripura", "Uttar Pradesh", "Uttarakhand", "West Bengal"
 ];
 
-const FI_CITIES_BY_STATE = {
-    "Andaman and Nicobar": ["Port Blair"],
-    "Andhra Pradesh": ["Visakhapatnam", "Vijayawada", "Guntur", "Nellore", "Kurnool", "Rajahmundry", "Tirupati", "Kakinada", "Anantapur", "Eluru"],
-    "Arunachal Pradesh": ["Itanagar", "Naharlagun", "Pasighat", "Tawang"],
-    "Assam": ["Guwahati", "Silchar", "Dibrugarh", "Jorhat", "Nagaon", "Tinsukia", "Tezpur"],
-    "Bihar": ["Patna", "Gaya", "Bhagalpur", "Muzaffarpur", "Purnia", "Darbhanga", "Bihar Sharif", "Arrah"],
-    "Chandigarh": ["Chandigarh", "Mohali", "Panchkula"],
-    "Chhattisgarh": ["Raipur", "Bhilai", "Bilaspur", "Korba", "Rajnandgaon", "Raigarh"],
-    "Delhi NCR": ["Delhi", "New Delhi", "Noida", "Gurgaon", "Ghaziabad", "Faridabad", "Greater Noida"],
-    "Goa": ["Panaji", "Margao", "Vasco da Gama", "Mapusa", "Ponda"],
-    "Gujarat": ["Ahmedabad", "Surat", "Vadodara", "Rajkot", "Bhavnagar", "Jamnagar", "Gandhinagar", "Junagadh", "Anand", "Navsari", "Morbi"],
-    "Haryana": ["Gurgaon", "Faridabad", "Panipat", "Ambala", "Karnal", "Hisar", "Rohtak", "Sonipat", "Yamunanagar", "Panchkula"],
-    "Himachal Pradesh": ["Shimla", "Dharamshala", "Mandi", "Solan", "Kullu", "Manali", "Baddi"],
-    "Jammu and Kashmir": ["Srinagar", "Jammu", "Anantnag", "Baramulla", "Udhampur"],
-    "Jharkhand": ["Ranchi", "Jamshedpur", "Dhanbad", "Bokaro", "Hazaribagh", "Deoghar"],
-    "Karnataka": ["Bengaluru", "Mysore", "Hubli-Dharwad", "Mangalore", "Belgaum", "Gulbarga", "Davangere", "Bellary", "Shimoga", "Tumkur"],
-    "Kerala": ["Kochi", "Thiruvananthapuram", "Kozhikode", "Thrissur", "Kollam", "Palakkad", "Kannur", "Alappuzha", "Kottayam"],
-    "Ladakh": ["Leh", "Kargil"],
-    "Madhya Pradesh": ["Indore", "Bhopal", "Jabalpur", "Gwalior", "Ujjain", "Sagar", "Dewas", "Satna", "Ratlam"],
-    "Maharashtra": ["Mumbai", "Pune", "Nagpur", "Nashik", "Thane", "Aurangabad", "Solapur", "Amravati", "Kolhapur", "Navi Mumbai", "Sangli", "Jalgaon", "Nanded"],
-    "Manipur": ["Imphal", "Churachandpur", "Thoubal"],
-    "Meghalaya": ["Shillong", "Tura", "Jowai"],
-    "Mizoram": ["Aizawl", "Lunglei"],
-    "Nagaland": ["Dimapur", "Kohima", "Mokokchung"],
-    "Odisha": ["Bhubaneswar", "Cuttack", "Rourkela", "Berhampur", "Sambalpur", "Puri", "Balasore"],
-    "Puducherry": ["Pondicherry", "Karaikal", "Mahe", "Yanam"],
-    "Punjab": ["Ludhiana", "Amritsar", "Jalandhar", "Patiala", "Bhatinda", "Mohali", "Pathankot", "Hoshiarpur", "Moga"],
-    "Rajasthan": ["Jaipur", "Jodhpur", "Udaipur", "Kota", "Bikaner", "Ajmer", "Alwar", "Bhilwara", "Sikar", "Sri Ganganagar"],
-    "Sikkim": ["Gangtok", "Namchi", "Gyalshing"],
-    "Tamil Nadu": ["Chennai", "Coimbatore", "Madurai", "Tiruchirappalli", "Salem", "Tirupur", "Erode", "Vellore", "Tirunelveli", "Thanjavur"],
-    "Telangana": ["Hyderabad", "Warangal", "Nizamabad", "Karimnagar", "Ramagundam", "Khammam", "Mahbubnagar"],
-    "Tripura": ["Agartala", "Udaipur", "Dharmanagar"],
-    "Uttar Pradesh": ["Lucknow", "Kanpur", "Varanasi", "Agra", "Meerut", "Prayagraj", "Noida", "Ghaziabad", "Bareilly", "Aligarh", "Moradabad", "Gorakhpur", "Jhansi"],
-    "Uttarakhand": ["Dehradun", "Haridwar", "Roorkee", "Haldwani", "Rishikesh", "Nainital"],
-    "West Bengal": ["Kolkata", "Howrah", "Durgapur", "Siliguri", "Asansol", "Bardhaman", "Kharagpur", "Malda"]
-};
 
-const FI_ALL_MAJOR_CITIES = [
-    "Mumbai", "Delhi", "Bengaluru", "Ahmedabad", "Pune", "Chandigarh",
-    "Jaipur", "Hyderabad", "Chennai", "Kolkata", "Ludhiana", "Surat", "Indore", "Lucknow", "Kochi", "Patna", "Bhopal", "Visakhapatnam", "Guwahati", "Dehradun"
-];
 
 const STATE_ALIAS_MAP = {
     "andaman and nicobar": ["port blair", "andaman"],
@@ -165,7 +126,7 @@ const matchLocationAndState = (brandHq, targetState, targetLocation) => {
         if (!matchesState) return false;
     }
 
-    if (targetLocation && targetLocation !== "" && targetLocation !== "All Cities" && targetLocation !== "All Regions") {
+    if (targetLocation && targetLocation !== "" && targetLocation !== "All Cities" && targetLocation !== "All Districts" && targetLocation !== "All Regions") {
         const locLower = targetLocation.toLowerCase().trim();
         const aliases = STATE_ALIAS_MAP[locLower] || [locLower];
         const matchesCity = aliases.some(alias => hqLower.includes(alias)) || hqLower.includes(locLower) || locLower.includes(hqLower);
@@ -491,20 +452,20 @@ function BrandsDirectoryPage() {
                             </select>
                         </div>
 
-                        {/* City / Location Select */}
+                        {/* District / Location Select */}
                         <div className="form-group" style={{ marginBottom: "18px" }}>
-                            <label style={{ fontSize: "12.5px", fontWeight: "700", color: "var(--text-dark)", marginBottom: "6px", display: "block" }}>City / Location</label>
+                            <label style={{ fontSize: "12.5px", fontWeight: "700", color: "var(--text-dark)", marginBottom: "6px", display: "block" }}>Select District</label>
                             <select
                                 className="form-input"
                                 style={{ fontSize: "13.5px" }}
                                 value={selectedLocation}
                                 onChange={(e) => setSelectedLocation(e.target.value)}
                             >
-                                <option value="">All Cities</option>
-                                {(selectedState && FI_CITIES_BY_STATE[selectedState]
-                                    ? FI_CITIES_BY_STATE[selectedState]
-                                    : FI_ALL_MAJOR_CITIES).map(c => (
-                                    <option key={c} value={c}>{c}</option>
+                                <option value="">All Districts</option>
+                                {(selectedState && DISTRICTS_BY_STATE[selectedState]
+                                    ? DISTRICTS_BY_STATE[selectedState]
+                                    : ALL_DISTRICTS).map(d => (
+                                    <option key={d} value={d}>{d}</option>
                                 ))}
                             </select>
                         </div>
