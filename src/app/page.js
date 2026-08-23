@@ -15,6 +15,7 @@ import TopBusinessOpportunities from "@/components/TopBusinessOpportunities";
 import { ProductSkeletonSlider } from "@/components/SkeletonLoader";
 import { useApprovedBrands } from "@/lib/brandsCache";
 import { DISTRICTS_BY_STATE, ALL_DISTRICTS } from "@/lib/districtsData";
+import { BUDGET_OPTIONS, getFilteredMinBudgets, getFilteredMaxBudgets, parseRupeeValue } from "@/lib/investmentData";
 
 
 // Mock Categories with Icons
@@ -205,6 +206,27 @@ export default function Home() {
   const [fiInvIndustry, setFiInvIndustry] = useState("");
   const [fiMinInv, setFiMinInv] = useState("");
   const [fiMaxInv, setFiMaxInv] = useState("");
+
+  const handleMinInvChange = (val) => {
+    setFiMinInv(val);
+    const minVal = parseRupeeValue(val);
+    const maxVal = parseRupeeValue(fiMaxInv);
+    if (minVal !== null && maxVal !== null && maxVal <= minVal) {
+      setFiMaxInv("");
+    }
+  };
+
+  const handleMaxInvChange = (val) => {
+    setFiMaxInv(val);
+    const maxVal = parseRupeeValue(val);
+    const minVal = parseRupeeValue(fiMinInv);
+    if (maxVal !== null && minVal !== null && minVal >= maxVal) {
+      setFiMinInv("");
+    }
+  };
+
+  const availableMinBudgets = getFilteredMinBudgets(fiMaxInv);
+  const availableMaxBudgets = getFilteredMaxBudgets(fiMinInv);
 
   const [expertMode, setExpertMode] = useState("buy"); // "buy" | "expand"
 
@@ -531,8 +553,8 @@ export default function Home() {
                           {(fiState && DISTRICTS_BY_STATE[fiState]
                             ? DISTRICTS_BY_STATE[fiState]
                             : ALL_DISTRICTS).map((d, i) => (
-                            <option key={i} value={d}>{d}</option>
-                          ))}
+                              <option key={i} value={d}>{d}</option>
+                            ))}
                         </select>
                       </div>
                     </div>
@@ -559,25 +581,32 @@ export default function Home() {
                         <select
                           className="fi-select-control"
                           value={fiMinInv}
-                          onChange={(e) => setFiMinInv(e.target.value)}
+                          onChange={(e) => handleMinInvChange(e.target.value)}
                         >
                           <option value="">No Min Limit</option>
-                          {FI_MIN_BUDGETS.map((b, i) => (
-                            <option key={i} value={b}>{b}</option>
+                          {availableMinBudgets.map((b, i) => (
+                            <option key={i} value={b.label}>{b.label}</option>
                           ))}
                         </select>
                       </div>
 
                       <div className="fi-input-group">
-                        <label>Max Investment</label>
+                        <label>
+                          Max Investment
+                          {fiMinInv && (
+                            <span style={{ fontSize: "9.5px", color: "#16a34a", fontWeight: "700", marginLeft: "6px" }}>
+                              (&gt; {fiMinInv})
+                            </span>
+                          )}
+                        </label>
                         <select
                           className="fi-select-control"
                           value={fiMaxInv}
-                          onChange={(e) => setFiMaxInv(e.target.value)}
+                          onChange={(e) => handleMaxInvChange(e.target.value)}
                         >
                           <option value="">No Max Limit</option>
-                          {FI_MAX_BUDGETS.map((b, i) => (
-                            <option key={i} value={b}>{b}</option>
+                          {availableMaxBudgets.map((b, i) => (
+                            <option key={i} value={b.label}>{b.label}</option>
                           ))}
                         </select>
                       </div>

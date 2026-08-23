@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { CheckCircle2, ShieldCheck, Mail, MapPin, IndianRupee, Lock } from "lucide-react";
+import { REGISTRATION_INVESTMENT_OPTIONS, getFilteredMaxLimits } from "@/lib/investmentData";
 
 const INVESTMENT_OPTIONS = [
   "Rs. 10,000 - 50,000",
@@ -57,10 +58,25 @@ export default function InvestorRegistration() {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
+    if (name === "investment_range") {
+      const validMaxOptions = getFilteredMaxLimits(value);
+      setFormData((prev) => {
+        let maxVal = prev.max_investment_limit;
+        if (maxVal && !validMaxOptions.includes(maxVal)) {
+          maxVal = value;
+        }
+        return {
+          ...prev,
+          investment_range: value,
+          max_investment_limit: maxVal,
+        };
+      });
+    } else {
+      setFormData((prev) => ({
+        ...prev,
+        [name]: value,
+      }));
+    }
   };
 
   const handleIndustryChange = (industry) => {
@@ -275,7 +291,14 @@ export default function InvestorRegistration() {
               </div>
 
               <div className="form-group">
-                <label>Max Investment Limit <span>*</span></label>
+                <label>
+                  Max Investment Limit <span>*</span>
+                  {formData.investment_range && (
+                    <span style={{ fontSize: "11px", color: "var(--success)", fontWeight: "700", marginLeft: "6px" }}>
+                      (≥ {formData.investment_range})
+                    </span>
+                  )}
+                </label>
                 <select
                   name="max_investment_limit"
                   required
@@ -284,7 +307,7 @@ export default function InvestorRegistration() {
                   className="form-input"
                 >
                   <option value="" disabled>Select Max Investment Limit</option>
-                  {INVESTMENT_OPTIONS.map((opt) => (
+                  {getFilteredMaxLimits(formData.investment_range).map((opt) => (
                     <option key={opt} value={opt}>{opt}</option>
                   ))}
                 </select>

@@ -10,6 +10,7 @@ import {
 import { ProductSkeletonGrid } from "@/components/SkeletonLoader";
 import { useApprovedBrands } from "@/lib/brandsCache";
 import { DISTRICTS_BY_STATE, ALL_DISTRICTS } from "@/lib/districtsData";
+import { getFilteredMinBudgets, getFilteredMaxBudgets, parseRupeeValue } from "@/lib/investmentData";
 
 const CATEGORIES = [
     "Automotive", "Beauty & Health", "Business Services", "Dealers & Distributors",
@@ -198,6 +199,29 @@ function BrandsDirectoryPage() {
     const [selectedBudget, setSelectedBudget] = useState("");
     const [minBudget, setMinBudget] = useState("");
     const [maxBudget, setMaxBudget] = useState("");
+
+    const handleMinBudgetChange = (val) => {
+        setMinBudget(val);
+        setSelectedBudget("");
+        const minVal = parseRupeeValue(val);
+        const maxVal = parseRupeeValue(maxBudget);
+        if (minVal !== null && maxVal !== null && maxVal <= minVal) {
+            setMaxBudget("");
+        }
+    };
+
+    const handleMaxBudgetChange = (val) => {
+        setMaxBudget(val);
+        setSelectedBudget("");
+        const maxVal = parseRupeeValue(val);
+        const minVal = parseRupeeValue(minBudget);
+        if (maxVal !== null && minVal !== null && minVal >= maxVal) {
+            setMinBudget("");
+        }
+    };
+
+    const availableMinBudgets = getFilteredMinBudgets(maxBudget);
+    const availableMaxBudgets = getFilteredMaxBudgets(minBudget);
 
     // Pagination State
     const [visibleCount, setVisibleCount] = useState(6);
@@ -465,21 +489,66 @@ function BrandsDirectoryPage() {
                                 {(selectedState && DISTRICTS_BY_STATE[selectedState]
                                     ? DISTRICTS_BY_STATE[selectedState]
                                     : ALL_DISTRICTS).map(d => (
-                                    <option key={d} value={d}>{d}</option>
+                                        <option key={d} value={d}>{d}</option>
+                                    ))}
+                            </select>
+                        </div>
+
+                        {/* Min Investment Select */}
+                        <div className="form-group" style={{ marginBottom: "18px" }}>
+                            <label style={{ fontSize: "12.5px", fontWeight: "700", color: "var(--text-dark)", marginBottom: "6px", display: "block" }}>Min Investment</label>
+                            <select
+                                className="form-input"
+                                style={{ fontSize: "13.5px" }}
+                                value={minBudget}
+                                onChange={(e) => handleMinBudgetChange(e.target.value)}
+                            >
+                                <option value="">No Min Limit</option>
+                                {availableMinBudgets.map(b => (
+                                    <option key={b.label} value={b.label}>{b.label}</option>
                                 ))}
                             </select>
                         </div>
 
-                        {/* Budget Limit Select */}
+                        {/* Max Investment Select */}
+                        <div className="form-group" style={{ marginBottom: "18px" }}>
+                            <label style={{ fontSize: "12.5px", fontWeight: "700", color: "var(--text-dark)", marginBottom: "6px", display: "block" }}>
+                                Max Investment
+                                {minBudget && (
+                                    <span style={{ fontSize: "9.5px", color: "#16a34a", fontWeight: "700", marginLeft: "6px" }}>
+                                        (&gt; {minBudget})
+                                    </span>
+                                )}
+                            </label>
+                            <select
+                                className="form-input"
+                                style={{ fontSize: "13.5px" }}
+                                value={maxBudget}
+                                onChange={(e) => handleMaxBudgetChange(e.target.value)}
+                            >
+                                <option value="">No Max Limit</option>
+                                {availableMaxBudgets.map(b => (
+                                    <option key={b.label} value={b.label}>{b.label}</option>
+                                ))}
+                            </select>
+                        </div>
+
+                        {/* Quick Preset Budget Select */}
                         <div className="form-group" style={{ marginBottom: "24px" }}>
-                            <label style={{ fontSize: "12.5px", fontWeight: "700", color: "var(--text-dark)", marginBottom: "6px", display: "block" }}>Investment Range</label>
+                            <label style={{ fontSize: "12.5px", fontWeight: "700", color: "var(--text-dark)", marginBottom: "6px", display: "block" }}>Quick Budget Presets</label>
                             <select
                                 className="form-input"
                                 style={{ fontSize: "13.5px" }}
                                 value={selectedBudget}
-                                onChange={(e) => setSelectedBudget(e.target.value)}
+                                onChange={(e) => {
+                                    setSelectedBudget(e.target.value);
+                                    if (e.target.value) {
+                                        setMinBudget("");
+                                        setMaxBudget("");
+                                    }
+                                }}
                             >
-                                <option value="">Any Budget</option>
+                                <option value="">Any Preset</option>
                                 <option value="under-2l">Under ₹2 Lakhs</option>
                                 <option value="2l-5l">₹2L - ₹5 Lakhs</option>
                                 <option value="5l-10l">₹5L - ₹10 Lakhs</option>
@@ -491,7 +560,7 @@ function BrandsDirectoryPage() {
                         </div>
 
                         {/* Reset Button */}
-                        {(searchTerm || selectedCategory || selectedLocation || selectedBudget) && (
+                        {(searchTerm || selectedCategory || selectedState || selectedLocation || selectedBudget || minBudget || maxBudget) && (
                             <button
                                 className="btn btn-outline"
                                 onClick={handleReset}
