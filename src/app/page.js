@@ -249,6 +249,21 @@ export default function Home() {
   const [newsletterEmail, setNewsletterEmail] = useState("");
   const [newsletterSuccess, setNewsletterSuccess] = useState(false);
 
+  // Services State
+  const [services, setServices] = useState([]);
+  const [loadingServices, setLoadingServices] = useState(true);
+  const [selectedService, setSelectedService] = useState(null);
+
+  useEffect(() => {
+    fetch("/api/services")
+      .then((res) => res.json())
+      .then((data) => {
+        if (Array.isArray(data)) setServices(data);
+      })
+      .catch((err) => console.error("Error loading services on homepage:", err))
+      .finally(() => setLoadingServices(false));
+  }, []);
+
   // Pre-fill enquiry form if investor is logged in
   useEffect(() => {
     if (selectedBrand && typeof window !== "undefined") {
@@ -1043,6 +1058,77 @@ export default function Home() {
         </div>
       </section>
 
+      {/* Dynamic Managed Services Section */}
+      <section className="container" style={{ margin: "80px auto" }}>
+        <div className="section-title-wrapper" style={{ marginBottom: "40px" }}>
+          <div className="section-title">
+            <span className="hero-tag" style={{ marginBottom: "8px", display: "inline-block" }}>Empowering Growth</span>
+            <h2>Our Specialised Services</h2>
+            <p>Managed solutions for investors seeking franchise ownership and brands looking to scale nationwide.</p>
+          </div>
+          <Link href="/services" className="btn btn-outline" style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}>
+            View All Services <ArrowRight size={16} />
+          </Link>
+        </div>
+
+        <div style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))",
+          gap: "24px"
+        }}>
+          {services.slice(0, 4).map((service) => (
+            <div
+              key={service.id || service._id}
+              style={{
+                background: "#ffffff",
+                borderRadius: "16px",
+                overflow: "hidden",
+                border: "1px solid var(--border-color)",
+                boxShadow: "0 4px 20px rgba(0,0,0,0.04)",
+                transition: "transform 0.3s ease, box-shadow 0.3s ease",
+                display: "flex",
+                flexDirection: "column"
+              }}
+              className="card-hover-effect"
+            >
+              <div style={{ position: "relative", height: "180px", overflow: "hidden" }}>
+                <img
+                  src={service.image || "https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?auto=format&fit=crop&q=80&w=600"}
+                  alt={service.title}
+                  style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                />
+              </div>
+              <div style={{ padding: "20px", display: "flex", flexDirection: "column", flex: 1, justifyContent: "space-between" }}>
+                <div>
+                  <h3 style={{ fontSize: "18px", fontWeight: "800", color: "var(--text-dark)", marginBottom: "10px", lineHeight: "1.3" }}>
+                    {service.title}
+                  </h3>
+                  <p style={{
+                    fontSize: "13.5px",
+                    color: "var(--text-muted)",
+                    lineHeight: "1.6",
+                    display: "-webkit-box",
+                    WebkitLineClamp: 3,
+                    WebkitBoxOrient: "vertical",
+                    overflow: "hidden",
+                    marginBottom: "16px"
+                  }}>
+                    {service.content}
+                  </p>
+                </div>
+                <button
+                  onClick={() => setSelectedService(service)}
+                  className="btn btn-outline"
+                  style={{ width: "100%", padding: "10px", fontSize: "13px", fontWeight: "700" }}
+                >
+                  Explore Details
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+
 
       {/* 8. Process Section (Timeline) */}
 
@@ -1481,6 +1567,80 @@ export default function Home() {
                     </button>
                   </form>
                 )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Service Details Modal */}
+      {selectedService && (
+        <div className="modal-overlay" onClick={() => setSelectedService(null)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: "560px", padding: 0, overflow: "hidden", borderRadius: "16px" }}>
+            <div style={{ position: "relative", height: "220px" }}>
+              <img
+                src={selectedService.image || "https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?auto=format&fit=crop&q=80&w=600"}
+                alt={selectedService.title}
+                style={{ width: "100%", height: "100%", objectFit: "cover" }}
+              />
+              <button
+                className="close-btn"
+                onClick={() => setSelectedService(null)}
+                style={{
+                  position: "absolute",
+                  top: "16px",
+                  right: "16px",
+                  background: "rgba(0,0,0,0.6)",
+                  color: "white",
+                  border: "none",
+                  borderRadius: "50%",
+                  width: "36px",
+                  height: "36px",
+                  cursor: "pointer",
+                  fontSize: "18px"
+                }}
+              >
+                ×
+              </button>
+            </div>
+
+            <div style={{ padding: "24px" }}>
+              <h3 style={{ fontSize: "22px", fontWeight: "800", color: "var(--text-dark)", marginBottom: "12px" }}>
+                {selectedService.title}
+              </h3>
+              <p style={{ fontSize: "14px", color: "#475569", lineHeight: "1.7", marginBottom: "24px", whiteSpace: "pre-line" }}>
+                {selectedService.content}
+              </p>
+
+              <div style={{ display: "flex", gap: "12px" }}>
+                <a
+                  href={`https://wa.me/919876543210?text=${encodeURIComponent(`Hi Franchise Roots team, I am interested in learning more about your service: ${selectedService.title}`)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="btn"
+                  style={{
+                    flex: 1,
+                    background: "#25D366",
+                    color: "white",
+                    fontWeight: "700",
+                    textAlign: "center",
+                    padding: "12px",
+                    borderRadius: "10px",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: "8px"
+                  }}
+                >
+                  <MessageCircle size={18} /> Inquire via WhatsApp
+                </a>
+                <button
+                  className="btn btn-outline"
+                  onClick={() => setSelectedService(null)}
+                  style={{ padding: "12px 20px" }}
+                >
+                  Close
+                </button>
               </div>
             </div>
           </div>

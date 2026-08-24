@@ -6,7 +6,7 @@ import Link from "next/link";
 import {
   Building, Users, FileText, CheckCircle, CheckCircle2, XCircle, Trash2, LogOut,
   Home, Search, LayoutDashboard, ShieldCheck, Mail, Phone, MapPin,
-  UploadCloud, Eye, Edit3
+  UploadCloud, Eye, Edit3, Wrench
 } from "lucide-react";
 import Pagination from "@/components/Pagination";
 import { clearBrandsCache } from "@/lib/brandsCache";
@@ -41,6 +41,7 @@ export default function AdminDashboard() {
   const [brands, setBrands] = useState([]);
   const [investors, setInvestors] = useState([]);
   const [blogs, setBlogs] = useState([]);
+  const [services, setServices] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
 
@@ -49,6 +50,12 @@ export default function AdminDashboard() {
   const [blogForm, setBlogForm] = useState({ title: "", content: "", image: "" });
   const [editingBlogId, setEditingBlogId] = useState(null);
   const [isSavingBlog, setIsSavingBlog] = useState(false);
+
+  // Services Management State
+  const [serviceModalOpen, setServiceModalOpen] = useState(false);
+  const [serviceForm, setServiceForm] = useState({ title: "", content: "", image: "" });
+  const [editingServiceId, setEditingServiceId] = useState(null);
+  const [isSavingService, setIsSavingService] = useState(false);
 
   // Investor Leads Filters State
   const [filterBrand, setFilterBrand] = useState("");
@@ -68,6 +75,8 @@ export default function AdminDashboard() {
   const [investorsPerPage, setInvestorsPerPage] = useState(10);
   const [blogsPage, setBlogsPage] = useState(1);
   const [blogsPerPage, setBlogsPerPage] = useState(10);
+  const [servicesPage, setServicesPage] = useState(1);
+  const [servicesPerPage, setServicesPerPage] = useState(10);
 
   // Reset pagination when search or filters change
   useEffect(() => {
@@ -127,14 +136,15 @@ export default function AdminDashboard() {
     }
   }, [router]);
 
-  // Fetch all brands, investors, and blogs
+  // Fetch all brands, investors, blogs, and services
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [brandsRes, investorsRes, blogsRes] = await Promise.all([
+      const [brandsRes, investorsRes, blogsRes, servicesRes] = await Promise.all([
         fetch("/api/brands"),
         fetch("/api/investors"),
-        fetch("/api/blogs")
+        fetch("/api/blogs"),
+        fetch("/api/services")
       ]);
 
       if (brandsRes.ok) {
@@ -148,6 +158,10 @@ export default function AdminDashboard() {
       if (blogsRes.ok) {
         const blogsData = await blogsRes.json();
         setBlogs(blogsData);
+      }
+      if (servicesRes.ok) {
+        const servicesData = await servicesRes.json();
+        setServices(servicesData);
       }
     } catch (error) {
       console.error("Error loading data:", error);
@@ -384,6 +398,125 @@ export default function AdminDashboard() {
     }));
   };
 
+  // Open modal to create a new service
+  const handleOpenCreateService = () => {
+    setServiceForm({ title: "", content: "", image: "" });
+    setEditingServiceId(null);
+    setServiceModalOpen(true);
+  };
+
+  // Open modal to edit an existing service
+  const handleOpenEditService = (service) => {
+    setServiceForm({
+      title: service.title || "",
+      content: service.content || "",
+      image: service.image || ""
+    });
+    setEditingServiceId(service.id || service._id);
+    setServiceModalOpen(true);
+  };
+
+  // Create or Update service DB record
+  const handleSaveService = async (e) => {
+    e.preventDefault();
+    if (!serviceForm.title || !serviceForm.content) {
+      alert("Title and content are required.");
+      return;
+    }
+    setIsSavingService(true);
+    try {
+      const url = editingServiceId ? `/api/services/${editingServiceId}` : "/api/services";
+      const method = editingServiceId ? "PATCH" : "POST";
+      const res = await fetch(url, {
+        method,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(serviceForm)
+      });
+      if (res.ok) {
+        alert(editingServiceId ? "Service updated successfully!" : "Service created successfully!");
+        setServiceModalOpen(false);
+        fetchData();
+      } else {
+        const errorData = await res.json();
+        alert(errorData.error || "Failed to save service.");
+      }
+    } catch (err) {
+      console.error("Failed to save service:", err);
+      alert("An error occurred while saving the service.");
+    } finally {
+      setIsSavingService(false);
+    }
+  };
+
+  // Delete Service record
+  const handleDeleteService = async (id) => {
+    if (!confirm("Are you sure you want to permanently delete this service?")) return;
+    try {
+      const res = await fetch(`/api/services/${id}`, {
+        method: "DELETE"
+      });
+      if (res.ok) {
+        fetchData();
+      } else {
+        alert("Failed to delete service.");
+      }
+    } catch (err) {
+      console.error("Failed to delete service:", err);
+    }
+  };
+
+  const handleServiceImageUpload = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const maxSize = 5 * 1024 * 1024;
+    if (file.size > maxSize) {
+      alert("File is too large. Maximum size allowed is 5 MB.");
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        const ctx = canvas.getContext("2d");
+
+        const maxDim = 800;
+        let width = img.width;
+        let height = img.height;
+        if (width > maxDim || height > maxDim) {
+          if (width > height) {
+            height = Math.round((height * maxDim) / width);
+            width = maxDim;
+          } else {
+            width = Math.round((width * maxDim) / height);
+            height = maxDim;
+          }
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+        ctx.drawImage(img, 0, 0, width, height);
+
+        const base64 = canvas.toDataURL("image/jpeg", 0.85);
+        setServiceForm(prev => ({
+          ...prev,
+          image: base64
+        }));
+      };
+      img.src = event.target.result;
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleRemoveServiceImage = () => {
+    setServiceForm(prev => ({
+      ...prev,
+      image: ""
+    }));
+  };
+
   // Formatting helpers
   const formatLakhs = (val) => {
     if (!val) return "N/A";
@@ -449,6 +582,9 @@ export default function AdminDashboard() {
 
   const filteredBlogs = blogs.filter(blog => blog.title.toLowerCase().includes(searchTerm.toLowerCase()));
   const paginatedBlogs = filteredBlogs.slice((blogsPage - 1) * blogsPerPage, blogsPage * blogsPerPage);
+
+  const filteredServices = services.filter(service => service.title.toLowerCase().includes(searchTerm.toLowerCase()));
+  const paginatedServices = filteredServices.slice((servicesPage - 1) * servicesPerPage, servicesPage * servicesPerPage);
 
   return (
     <div className="admin-layout">
@@ -517,6 +653,15 @@ export default function AdminDashboard() {
                   Manage Blogs ({blogs.length})
                 </div>
               </li>
+              <li className="admin-nav-item">
+                <div
+                  className={`admin-nav-link ${activeTab === "services" ? "active" : ""}`}
+                  onClick={() => { setActiveTab("services"); setSearchTerm(""); }}
+                >
+                  <Wrench size={18} />
+                  Manage Services ({services.length})
+                </div>
+              </li>
             </ul>
           </div>
         </div>
@@ -539,9 +684,10 @@ export default function AdminDashboard() {
               {activeTab === "brands" && "Manage Franchise Brands"}
               {activeTab === "investors" && "Investor Registration Leads"}
               {activeTab === "blogs" && "Manage Blog Articles"}
+              {activeTab === "services" && "Manage Company Services"}
             </h1>
             <p style={{ color: "var(--text-muted)", fontSize: "14px", marginTop: "4px" }}>
-              {activeTab === "blogs" ? "Create, publish, edit, and delete informational blog posts." : "Welcome back, Administrator. Review pending listings submitted by brand owners."}
+              {activeTab === "blogs" ? "Create, publish, edit, and delete informational blog posts." : activeTab === "services" ? "Create, publish, edit, and delete managed company services." : "Welcome back, Administrator. Review pending listings submitted by brand owners."}
             </p>
           </div>
 
@@ -598,6 +744,16 @@ export default function AdminDashboard() {
                     <div className="stat-info">
                       <h3>{blogs.length}</h3>
                       <p>Total Blog Posts</p>
+                    </div>
+                  </div>
+
+                  <div className="stat-card" style={{ cursor: "pointer" }} onClick={() => setActiveTab("services")}>
+                    <div className="stat-icon flex-center" style={{ background: "rgba(14, 165, 233, 0.1)", color: "#0ea5e9" }}>
+                      <Wrench size={24} />
+                    </div>
+                    <div className="stat-info">
+                      <h3>{services.length}</h3>
+                      <p>Managed Services</p>
                     </div>
                   </div>
                 </section>
@@ -1122,6 +1278,94 @@ export default function AdminDashboard() {
                 />
               </div>
             )}
+
+            {/* Services Tab */}
+            {activeTab === "services" && (
+              <div className="table-container">
+                <div className="table-header">
+                  <h3 style={{ fontSize: "18px" }}>Managed Company Services</h3>
+                  <div style={{ display: "flex", gap: "16px", alignItems: "center" }}>
+                    <div className="table-search">
+                      <Search size={16} color="var(--text-muted)" />
+                      <input
+                        type="text"
+                        placeholder="Search services by title..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                      />
+                    </div>
+                    <button className="btn btn-primary" onClick={handleOpenCreateService} style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                      <Wrench size={16} /> Create New Service
+                    </button>
+                  </div>
+                </div>
+
+                <table className="admin-table">
+                  <thead>
+                    <tr>
+                      <th style={{ width: "120px" }}>Cover</th>
+                      <th>Title</th>
+                      <th>Description</th>
+                      <th>Date Created</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredServices.length === 0 ? (
+                      <tr>
+                        <td colSpan="5" style={{ textAlign: "center", padding: "30px", color: "var(--text-muted)" }}>
+                          No services found. Click "Create New Service" to add one.
+                        </td>
+                      </tr>
+                    ) : (
+                      paginatedServices.map((service) => (
+                        <tr key={service.id || service._id}>
+                          <td>
+                            <img
+                              src={service.image || "https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?auto=format&fit=crop&q=80&w=150"}
+                              alt={service.title}
+                              style={{ width: "80px", height: "50px", borderRadius: "6px", objectFit: "cover", border: "1px solid var(--border-color)" }}
+                            />
+                          </td>
+                          <td>
+                            <span style={{ fontWeight: "700" }}>{service.title}</span>
+                          </td>
+                          <td>
+                            <span style={{ color: "var(--text-muted)", fontSize: "13px" }}>
+                              {(() => {
+                                const clean = stripHtmlTags(service.content || "");
+                                return clean.length > 90 ? `${clean.substring(0, 90)}...` : clean;
+                              })()}
+                            </span>
+                          </td>
+                          <td style={{ fontSize: "13px", color: "var(--text-muted)" }}>
+                            {service.createdAt ? new Date(service.createdAt).toLocaleDateString("en-IN", { day: 'numeric', month: 'short', year: 'numeric' }) : "N/A"}
+                          </td>
+                          <td style={{ whiteSpace: "nowrap", textAlign: "right" }}>
+                            <div className="admin-actions-cell" style={{ justifyContent: "flex-end" }}>
+                              <button className="admin-btn admin-btn-details" onClick={() => handleOpenEditService(service)}>
+                                <Edit3 size={13} /> Edit
+                              </button>
+                              <button className="admin-btn admin-btn-delete" title="Delete Service" onClick={() => handleDeleteService(service.id || service._id)}>
+                                <Trash2 size={13} />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+
+                <Pagination
+                  totalItems={filteredServices.length}
+                  itemsPerPage={servicesPerPage}
+                  currentPage={servicesPage}
+                  onPageChange={(p) => setServicesPage(p)}
+                  onItemsPerPageChange={(size) => { setServicesPerPage(size); setServicesPage(1); }}
+                />
+              </div>
+            )}
           </>
         )}
       </main>
@@ -1444,6 +1688,119 @@ export default function AdminDashboard() {
                 </button>
                 <button type="submit" className="btn btn-primary" disabled={isSavingBlog}>
                   {isSavingBlog ? "Saving Post..." : (editingBlogId ? "Save Changes" : "Publish Post")}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Create/Edit Service Modal */}
+      {serviceModalOpen && (
+        <div className="modal-overlay" onClick={() => setServiceModalOpen(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: "600px" }}>
+            <div className="modal-header">
+              <h3>{editingServiceId ? "Edit Service" : "Create New Service"}</h3>
+              <button className="close-btn" onClick={() => setServiceModalOpen(false)}>×</button>
+            </div>
+            <form onSubmit={handleSaveService}>
+              <div className="modal-body" style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+                <div className="form-group">
+                  <label htmlFor="service-title" style={{ fontWeight: 700, color: "var(--text-dark)", fontSize: "13.5px" }}>Service Title <span style={{ color: "var(--danger)" }}>*</span></label>
+                  <input
+                    id="service-title"
+                    type="text"
+                    className="form-input"
+                    placeholder="Enter service title (e.g. Franchise Consulting)..."
+                    value={serviceForm.title}
+                    onChange={(e) => setServiceForm({ ...serviceForm, title: e.target.value })}
+                    required
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label style={{ fontWeight: 700, color: "var(--text-dark)", fontSize: "13.5px" }}>Cover Image</label>
+
+                  {serviceForm.image ? (
+                    <div style={{ position: "relative", border: "1px solid var(--border-color)", borderRadius: "8px", overflow: "hidden", background: "#f8fafc" }}>
+                      <img
+                        src={serviceForm.image}
+                        alt="Preview"
+                        style={{ width: "100%", maxHeight: "200px", objectFit: "cover" }}
+                      />
+                      <button
+                        type="button"
+                        onClick={handleRemoveServiceImage}
+                        style={{
+                          position: "absolute",
+                          top: "10px",
+                          right: "10px",
+                          background: "var(--danger)",
+                          color: "white",
+                          border: "none",
+                          borderRadius: "50%",
+                          width: "32px",
+                          height: "32px",
+                          cursor: "pointer",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          boxShadow: "0 2px 6px rgba(0,0,0,0.15)",
+                          fontSize: "12px",
+                          fontWeight: "800"
+                        }}
+                        title="Remove Image"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  ) : (
+                    <label style={{
+                      display: "flex",
+                      flexDirection: "column",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      border: "2px dashed var(--border-color)",
+                      borderRadius: "8px",
+                      padding: "30px",
+                      cursor: "pointer",
+                      background: "#f8fafc",
+                      textAlign: "center",
+                      transition: "all 0.2s ease"
+                    }} className="blog-upload-dropzone">
+                      <UploadCloud size={32} style={{ color: "var(--text-muted)", marginBottom: "8px" }} />
+                      <span style={{ fontSize: "14px", fontWeight: "700", color: "var(--text-dark)" }}>Click to upload cover image</span>
+                      <span style={{ fontSize: "11px", color: "var(--text-muted)", marginTop: "2px" }}>PNG, JPG, JPEG, WEBP or SVG up to 5 MB</span>
+                      <input
+                        type="file"
+                        onChange={handleServiceImageUpload}
+                        accept=".png,.jpg,.jpeg,.webp,.svg"
+                        style={{ display: "none" }}
+                      />
+                    </label>
+                  )}
+                </div>
+
+                <div className="form-group">
+                  <label htmlFor="service-content" style={{ fontWeight: 700, color: "var(--text-dark)", fontSize: "13.5px" }}>Service Description / Details <span style={{ color: "var(--danger)" }}>*</span></label>
+                  <textarea
+                    id="service-content"
+                    className="form-input"
+                    placeholder="Describe what this service offers..."
+                    rows={6}
+                    value={serviceForm.content}
+                    onChange={(e) => setServiceForm({ ...serviceForm, content: e.target.value })}
+                    style={{ resize: "vertical", minHeight: "140px", fontFamily: "inherit" }}
+                    required
+                  />
+                </div>
+              </div>
+              <div className="modal-footer">
+                <button type="button" className="btn btn-outline" onClick={() => setServiceModalOpen(false)}>
+                  Cancel
+                </button>
+                <button type="submit" className="btn btn-primary" disabled={isSavingService}>
+                  {isSavingService ? "Saving Service..." : (editingServiceId ? "Save Changes" : "Create Service")}
                 </button>
               </div>
             </form>

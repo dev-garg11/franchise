@@ -21,11 +21,13 @@ const investorRoutes = require('./routes/investorRoutes');
 const adminRoutes = require('./routes/adminRoutes');
 const authRoutes = require('./routes/authRoutes');
 const blogRoutes = require('./routes/blogRoutes');
+const serviceRoutes = require('./routes/serviceRoutes');
 
 app.use('/api/brands', brandRoutes);
 app.use('/api/investors', investorRoutes);
 app.use('/api/admins', adminRoutes);
 app.use('/api/blogs', blogRoutes);
+app.use('/api/services', serviceRoutes);
 app.use('/api', authRoutes);
 
 // 4. Default API Root Route

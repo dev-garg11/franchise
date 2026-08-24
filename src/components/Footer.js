@@ -132,6 +132,7 @@ export default function Footer() {
               {[
                 { name: 'Homepage Directory', url: '/' },
                 { name: 'Franchise Brands Catalog', url: '/brands' },
+                { name: 'Our Specialised Services', url: '/services' },
                 { name: 'Latest Blog Articles', url: '/blogs' },
                 { name: 'Register Your Brand', url: '/brand-registration' },
                 { name: 'Start New Business', url: '/investor-registration' },

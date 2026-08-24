@@ -433,6 +433,15 @@ export default function Header() {
               </li>
               <li>
                 <Link
+                  href="/services"
+                  className={`nav-link ${pathname === "/services" || pathname.startsWith("/services/") ? "active" : ""}`}
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  Services
+                </Link>
+              </li>
+              <li>
+                <Link
                   href="/blogs"
                   className={`nav-link ${pathname === "/blogs" || pathname.startsWith("/blogs/") ? "active" : ""}`}
                   onClick={() => setMobileMenuOpen(false)}

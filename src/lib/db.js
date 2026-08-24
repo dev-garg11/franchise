@@ -6,6 +6,7 @@ import Investor from "@/models/Investor";
 import Admin from "@/models/Admin";
 import User from "@/models/User";
 import Blog from "@/models/Blog";
+import Service from "@/models/Service";
 import bcrypt from "bcryptjs";
 import {
   sendBrandRegistrationEmail,
@@ -200,6 +201,39 @@ async function seedDatabase() {
         inv.user = existing._id;
         await inv.save();
       }
+    }
+
+    // Seed Services Collection if empty
+    const serviceCount = await Service.countDocuments();
+    if (serviceCount === 0) {
+      const defaultServices = [
+        {
+          title: "Franchise Advisory & Business Consulting",
+          content: "End-to-end guidance for selecting high ROI franchise models, unit metrics evaluation, legal documentation, and financial planning tailored to your investment budget.",
+          image: "https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?auto=format&fit=crop&q=80&w=600",
+          createdAt: new Date()
+        },
+        {
+          title: "Investor & Brand Matching Desk",
+          content: "Connect pre-qualified investors with top-tier brands across 15+ industry verticals. We analyze budget, territory preferences, and operational capability to ensure optimal partnership.",
+          image: "https://images.unsplash.com/photo-1521737711867-e3b97375f902?auto=format&fit=crop&q=80&w=600",
+          createdAt: new Date()
+        },
+        {
+          title: "Legal, Trademark & Compliance Assistance",
+          content: "Comprehensive legal assistance for drafting franchise agreements, NDA documentation, trademark registration, local municipal licensing, and dispute resolution.",
+          image: "https://images.unsplash.com/photo-1450133064473-71024230f91b?auto=format&fit=crop&q=80&w=600",
+          createdAt: new Date()
+        },
+        {
+          title: "Brand Expansion & Marketing Support",
+          content: "360-degree brand scaling solutions including digital investor lead generation, regional broker networking, franchise expos, and localized market launch campaigns.",
+          image: "https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&q=80&w=600",
+          createdAt: new Date()
+        }
+      ];
+      await Service.insertMany(defaultServices);
+      console.log(`Seeded ${defaultServices.length} default services to MongoDB.`);
     }
   } catch (error) {
     console.error("Error during Next.js DB seeding:", error);
@@ -683,6 +717,93 @@ export async function getBlogById(id) {
     };
   } catch (error) {
     console.error("Error reading blog by ID from MongoDB:", error);
+    return null;
+  }
+}
+
+export async function getServices() {
+  await dbConnect();
+  try {
+    const services = await Service.find({}).sort({ createdAt: -1 }).lean();
+    return services.map(s => ({
+      ...s,
+      id: s._id.toString()
+    }));
+  } catch (error) {
+    console.error("Error reading services from MongoDB:", error);
+    return [];
+  }
+}
+
+export async function saveService(serviceData) {
+  await dbConnect();
+  try {
+    const service = new Service(serviceData);
+    const saved = await service.save();
+    const obj = saved.toObject();
+    return {
+      ...obj,
+      id: obj._id.toString()
+    };
+  } catch (error) {
+    console.error("Error saving service to MongoDB:", error);
+    throw error;
+  }
+}
+
+export async function updateService(id, updatedFields) {
+  await dbConnect();
+  try {
+    const query = mongoose.Types.ObjectId.isValid(id) ? { _id: id } : null;
+    if (!query) throw new Error("Invalid Service ID");
+
+    const updated = await Service.findOneAndUpdate(
+      query,
+      { $set: updatedFields },
+      { new: true }
+    ).lean();
+
+    if (!updated) return null;
+
+    return {
+      ...updated,
+      id: updated._id.toString()
+    };
+  } catch (error) {
+    console.error("Error updating service in MongoDB:", error);
+    throw error;
+  }
+}
+
+export async function deleteService(id) {
+  await dbConnect();
+  try {
+    const query = mongoose.Types.ObjectId.isValid(id) ? { _id: id } : null;
+    if (!query) throw new Error("Invalid Service ID");
+
+    const result = await Service.deleteOne(query);
+    return result.deletedCount > 0;
+  } catch (error) {
+    console.error("Error deleting service from MongoDB:", error);
+    throw error;
+  }
+}
+
+export async function getServiceById(id) {
+  await dbConnect();
+  try {
+    const query = mongoose.Types.ObjectId.isValid(id) ? { _id: id } : null;
+    if (!query) return null;
+
+    const service = await Service.findOne(query).lean();
+    if (!service) return null;
+
+    return {
+      ...service,
+      id: service._id.toString()
+    };
+  } catch (error) {
+    console.error("Error reading service by ID from MongoDB:", error);
     return null;
   }
 }
