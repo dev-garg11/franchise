@@ -7,6 +7,7 @@ import Admin from "@/models/Admin";
 import User from "@/models/User";
 import Blog from "@/models/Blog";
 import Service from "@/models/Service";
+import Advertisement from "@/models/Advertisement";
 import bcrypt from "bcryptjs";
 import {
   sendBrandRegistrationEmail,
@@ -234,6 +235,35 @@ async function seedDatabase() {
       ];
       await Service.insertMany(defaultServices);
       console.log(`Seeded ${defaultServices.length} default services to MongoDB.`);
+    }
+
+    // Seed Advertisement Collection if empty
+    const adCount = await Advertisement.countDocuments();
+    if (adCount === 0) {
+      const defaultAds = [
+        {
+          title: "Promote Your Brand to 50,000+ Verified Investors",
+          subtitle: "Expand your franchise network nationwide with premium advertising placement.",
+          image: "https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&q=80&w=1200",
+          link: "/brand-registration",
+          badge: "SPONSORED",
+          position: "homepage_banner",
+          isActive: true,
+          createdAt: new Date()
+        },
+        {
+          title: "Exclusive Franchise Expo & Advisory Desk",
+          subtitle: "Get 1-on-1 guidance from top-tier franchise consultants and master brokers.",
+          image: "https://images.unsplash.com/photo-1540575467063-178a50c2df87?auto=format&fit=crop&q=80&w=1200",
+          link: "/investor-registration",
+          badge: "FEATURED AD",
+          position: "homepage_banner",
+          isActive: true,
+          createdAt: new Date()
+        }
+      ];
+      await Advertisement.insertMany(defaultAds);
+      console.log(`Seeded ${defaultAds.length} default advertisements to MongoDB.`);
     }
   } catch (error) {
     console.error("Error during Next.js DB seeding:", error);
@@ -804,6 +834,93 @@ export async function getServiceById(id) {
     };
   } catch (error) {
     console.error("Error reading service by ID from MongoDB:", error);
+    return null;
+  }
+}
+
+export async function getAdvertisements() {
+  await dbConnect();
+  try {
+    const ads = await Advertisement.find({}).sort({ createdAt: -1 }).lean();
+    return ads.map(a => ({
+      ...a,
+      id: a._id.toString()
+    }));
+  } catch (error) {
+    console.error("Error reading advertisements from MongoDB:", error);
+    return [];
+  }
+}
+
+export async function saveAdvertisement(adData) {
+  await dbConnect();
+  try {
+    const ad = new Advertisement(adData);
+    const saved = await ad.save();
+    const obj = saved.toObject();
+    return {
+      ...obj,
+      id: obj._id.toString()
+    };
+  } catch (error) {
+    console.error("Error saving advertisement to MongoDB:", error);
+    throw error;
+  }
+}
+
+export async function updateAdvertisement(id, updatedFields) {
+  await dbConnect();
+  try {
+    const query = mongoose.Types.ObjectId.isValid(id) ? { _id: id } : null;
+    if (!query) throw new Error("Invalid Advertisement ID");
+
+    const updated = await Advertisement.findOneAndUpdate(
+      query,
+      { $set: updatedFields },
+      { new: true }
+    ).lean();
+
+    if (!updated) return null;
+
+    return {
+      ...updated,
+      id: updated._id.toString()
+    };
+  } catch (error) {
+    console.error("Error updating advertisement in MongoDB:", error);
+    throw error;
+  }
+}
+
+export async function deleteAdvertisement(id) {
+  await dbConnect();
+  try {
+    const query = mongoose.Types.ObjectId.isValid(id) ? { _id: id } : null;
+    if (!query) throw new Error("Invalid Advertisement ID");
+
+    const result = await Advertisement.deleteOne(query);
+    return result.deletedCount > 0;
+  } catch (error) {
+    console.error("Error deleting advertisement from MongoDB:", error);
+    throw error;
+  }
+}
+
+export async function getAdvertisementById(id) {
+  await dbConnect();
+  try {
+    const query = mongoose.Types.ObjectId.isValid(id) ? { _id: id } : null;
+    if (!query) return null;
+
+    const ad = await Advertisement.findOne(query).lean();
+    if (!ad) return null;
+
+    return {
+      ...ad,
+      id: ad._id.toString()
+    };
+  } catch (error) {
+    console.error("Error reading advertisement by ID from MongoDB:", error);
     return null;
   }
 }

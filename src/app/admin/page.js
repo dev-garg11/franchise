@@ -6,7 +6,7 @@ import Link from "next/link";
 import {
   Building, Users, FileText, CheckCircle, CheckCircle2, XCircle, Trash2, LogOut,
   Home, Search, LayoutDashboard, ShieldCheck, Mail, Phone, MapPin,
-  UploadCloud, Eye, Edit3, Wrench
+  UploadCloud, Eye, Edit3, Wrench, Megaphone, Image as ImageIcon
 } from "lucide-react";
 import Pagination from "@/components/Pagination";
 import { clearBrandsCache } from "@/lib/brandsCache";
@@ -42,6 +42,7 @@ export default function AdminDashboard() {
   const [investors, setInvestors] = useState([]);
   const [blogs, setBlogs] = useState([]);
   const [services, setServices] = useState([]);
+  const [ads, setAds] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
 
@@ -56,6 +57,20 @@ export default function AdminDashboard() {
   const [serviceForm, setServiceForm] = useState({ title: "", content: "", image: "" });
   const [editingServiceId, setEditingServiceId] = useState(null);
   const [isSavingService, setIsSavingService] = useState(false);
+
+  // Advertisements Management State
+  const [adModalOpen, setAdModalOpen] = useState(false);
+  const [adForm, setAdForm] = useState({
+    title: "",
+    subtitle: "",
+    image: "",
+    link: "/brand-registration",
+    badge: "SPONSORED",
+    position: "homepage_banner",
+    isActive: true
+  });
+  const [editingAdId, setEditingAdId] = useState(null);
+  const [isSavingAd, setIsSavingAd] = useState(false);
 
   // Investor Leads Filters State
   const [filterBrand, setFilterBrand] = useState("");
@@ -77,6 +92,8 @@ export default function AdminDashboard() {
   const [blogsPerPage, setBlogsPerPage] = useState(10);
   const [servicesPage, setServicesPage] = useState(1);
   const [servicesPerPage, setServicesPerPage] = useState(10);
+  const [adsPage, setAdsPage] = useState(1);
+  const [adsPerPage, setAdsPerPage] = useState(10);
 
   // Reset pagination when search or filters change
   useEffect(() => {
@@ -136,15 +153,16 @@ export default function AdminDashboard() {
     }
   }, [router]);
 
-  // Fetch all brands, investors, blogs, and services
+  // Fetch all brands, investors, blogs, services, and advertisements
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [brandsRes, investorsRes, blogsRes, servicesRes] = await Promise.all([
+      const [brandsRes, investorsRes, blogsRes, servicesRes, adsRes] = await Promise.all([
         fetch("/api/brands"),
         fetch("/api/investors"),
         fetch("/api/blogs"),
-        fetch("/api/services")
+        fetch("/api/services"),
+        fetch("/api/advertisements")
       ]);
 
       if (brandsRes.ok) {
@@ -162,6 +180,10 @@ export default function AdminDashboard() {
       if (servicesRes.ok) {
         const servicesData = await servicesRes.json();
         setServices(servicesData);
+      }
+      if (adsRes.ok) {
+        const adsData = await adsRes.json();
+        setAds(adsData);
       }
     } catch (error) {
       console.error("Error loading data:", error);
@@ -517,6 +539,154 @@ export default function AdminDashboard() {
     }));
   };
 
+  // Open modal to create a new ad banner
+  const handleOpenCreateAd = () => {
+    setAdForm({
+      title: "",
+      subtitle: "",
+      image: "",
+      link: "/brand-registration",
+      badge: "SPONSORED",
+      position: "homepage_banner",
+      isActive: true
+    });
+    setEditingAdId(null);
+    setAdModalOpen(true);
+  };
+
+  // Open modal to edit an existing ad banner
+  const handleOpenEditAd = (ad) => {
+    setAdForm({
+      title: ad.title || "",
+      subtitle: ad.subtitle || "",
+      image: ad.image || "",
+      link: ad.link || "/brand-registration",
+      badge: ad.badge || "SPONSORED",
+      position: ad.position || "homepage_banner",
+      isActive: ad.isActive !== undefined ? ad.isActive : true
+    });
+    setEditingAdId(ad.id || ad._id);
+    setAdModalOpen(true);
+  };
+
+  // Create or Update ad banner DB record
+  const handleSaveAd = async (e) => {
+    e.preventDefault();
+    if (!adForm.title || !adForm.image) {
+      alert("Title and Image are required.");
+      return;
+    }
+    setIsSavingAd(true);
+    try {
+      const url = editingAdId ? `/api/advertisements/${editingAdId}` : "/api/advertisements";
+      const method = editingAdId ? "PATCH" : "POST";
+      const res = await fetch(url, {
+        method,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(adForm)
+      });
+      if (res.ok) {
+        alert(editingAdId ? "Ad Banner updated successfully!" : "Ad Banner created successfully!");
+        setAdModalOpen(false);
+        fetchData();
+      } else {
+        const errorData = await res.json();
+        alert(errorData.error || "Failed to save ad banner.");
+      }
+    } catch (err) {
+      console.error("Failed to save ad banner:", err);
+      alert("An error occurred while saving the ad banner.");
+    } finally {
+      setIsSavingAd(false);
+    }
+  };
+
+  // Toggle active status of an ad banner
+  const handleToggleAdActive = async (ad) => {
+    try {
+      const id = ad.id || ad._id;
+      const res = await fetch(`/api/advertisements/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ isActive: !ad.isActive })
+      });
+      if (res.ok) {
+        fetchData();
+      }
+    } catch (err) {
+      console.error("Failed to toggle ad status:", err);
+    }
+  };
+
+  // Delete Ad record
+  const handleDeleteAd = async (id) => {
+    if (!confirm("Are you sure you want to permanently delete this ad banner?")) return;
+    try {
+      const res = await fetch(`/api/advertisements/${id}`, {
+        method: "DELETE"
+      });
+      if (res.ok) {
+        fetchData();
+      } else {
+        alert("Failed to delete ad banner.");
+      }
+    } catch (err) {
+      console.error("Failed to delete ad banner:", err);
+    }
+  };
+
+  const handleAdImageUpload = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const maxSize = 5 * 1024 * 1024;
+    if (file.size > maxSize) {
+      alert("File is too large. Maximum size allowed is 5 MB.");
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        const ctx = canvas.getContext("2d");
+
+        const maxDim = 1200;
+        let width = img.width;
+        let height = img.height;
+        if (width > maxDim || height > maxDim) {
+          if (width > height) {
+            height = Math.round((height * maxDim) / width);
+            width = maxDim;
+          } else {
+            width = Math.round((width * maxDim) / height);
+            height = maxDim;
+          }
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+        ctx.drawImage(img, 0, 0, width, height);
+
+        const base64 = canvas.toDataURL("image/jpeg", 0.85);
+        setAdForm(prev => ({
+          ...prev,
+          image: base64
+        }));
+      };
+      img.src = event.target.result;
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleRemoveAdImage = () => {
+    setAdForm(prev => ({
+      ...prev,
+      image: ""
+    }));
+  };
+
   // Formatting helpers
   const formatLakhs = (val) => {
     if (!val) return "N/A";
@@ -585,6 +755,9 @@ export default function AdminDashboard() {
 
   const filteredServices = services.filter(service => service.title.toLowerCase().includes(searchTerm.toLowerCase()));
   const paginatedServices = filteredServices.slice((servicesPage - 1) * servicesPerPage, servicesPage * servicesPerPage);
+
+  const filteredAds = ads.filter(ad => ad.title.toLowerCase().includes(searchTerm.toLowerCase()));
+  const paginatedAds = filteredAds.slice((adsPage - 1) * adsPerPage, adsPage * adsPerPage);
 
   return (
     <div className="admin-layout">
@@ -662,6 +835,15 @@ export default function AdminDashboard() {
                   Manage Services ({services.length})
                 </div>
               </li>
+              <li className="admin-nav-item">
+                <div
+                  className={`admin-nav-link ${activeTab === "ads" ? "active" : ""}`}
+                  onClick={() => { setActiveTab("ads"); setSearchTerm(""); }}
+                >
+                  <Megaphone size={18} />
+                  Manage Ads ({ads.length})
+                </div>
+              </li>
             </ul>
           </div>
         </div>
@@ -685,9 +867,10 @@ export default function AdminDashboard() {
               {activeTab === "investors" && "Investor Registration Leads"}
               {activeTab === "blogs" && "Manage Blog Articles"}
               {activeTab === "services" && "Manage Company Services"}
+              {activeTab === "ads" && "Manage Advertising Space"}
             </h1>
             <p style={{ color: "var(--text-muted)", fontSize: "14px", marginTop: "4px" }}>
-              {activeTab === "blogs" ? "Create, publish, edit, and delete informational blog posts." : activeTab === "services" ? "Create, publish, edit, and delete managed company services." : "Welcome back, Administrator. Review pending listings submitted by brand owners."}
+              {activeTab === "blogs" ? "Create, publish, edit, and delete informational blog posts." : activeTab === "services" ? "Create, publish, edit, and delete managed company services." : activeTab === "ads" ? "Create, publish, toggle, and delete promotional ad banners." : "Welcome back, Administrator. Review pending listings submitted by brand owners."}
             </p>
           </div>
 
@@ -754,6 +937,16 @@ export default function AdminDashboard() {
                     <div className="stat-info">
                       <h3>{services.length}</h3>
                       <p>Managed Services</p>
+                    </div>
+                  </div>
+
+                  <div className="stat-card" style={{ cursor: "pointer" }} onClick={() => setActiveTab("ads")}>
+                    <div className="stat-icon flex-center" style={{ background: "rgba(245, 158, 11, 0.1)", color: "#f59e0b" }}>
+                      <Megaphone size={24} />
+                    </div>
+                    <div className="stat-info">
+                      <h3>{ads.filter(a => a.isActive).length}</h3>
+                      <p>Active Ad Banners</p>
                     </div>
                   </div>
                 </section>
@@ -1366,6 +1559,118 @@ export default function AdminDashboard() {
                 />
               </div>
             )}
+
+            {/* Advertisements Tab */}
+            {activeTab === "ads" && (
+              <div className="table-container">
+                <div className="table-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <div>
+                    <h3 style={{ fontSize: "18px" }}>Advertising Space Banners</h3>
+                    <p style={{ color: "var(--text-muted)", fontSize: "13px", margin: "2px 0 0 0" }}>
+                      Manage promotional ad banners displayed on homepage and brand listings.
+                    </p>
+                  </div>
+                  <button className="btn btn-primary" onClick={handleOpenCreateAd} style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                    <Megaphone size={16} /> Create New Ad Banner
+                  </button>
+                </div>
+
+                <div className="table-search" style={{ margin: "16px 20px" }}>
+                  <Search size={16} color="var(--text-muted)" />
+                  <input
+                    type="text"
+                    placeholder="Search ad banners by title..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                  />
+                </div>
+
+                <table className="admin-table">
+                  <thead>
+                    <tr>
+                      <th>Banner Image</th>
+                      <th>Title & Subtitle</th>
+                      <th>Badge</th>
+                      <th>Position</th>
+                      <th>Status</th>
+                      <th>Destination Link</th>
+                      <th style={{ textAlign: "right" }}>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredAds.length === 0 ? (
+                      <tr>
+                        <td colSpan="7" style={{ textAlign: "center", padding: "30px", color: "var(--text-muted)" }}>
+                          No ad banners found. Click "Create New Ad Banner" to add one.
+                        </td>
+                      </tr>
+                    ) : (
+                      paginatedAds.map((ad) => (
+                        <tr key={ad.id || ad._id}>
+                          <td>
+                            <img
+                              src={ad.image || "https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&q=80&w=150"}
+                              alt={ad.title}
+                              style={{ width: "100px", height: "55px", borderRadius: "8px", objectFit: "cover", border: "1px solid var(--border-color)" }}
+                            />
+                          </td>
+                          <td>
+                            <span style={{ fontWeight: "700", display: "block" }}>{ad.title}</span>
+                            {ad.subtitle && <span style={{ color: "var(--text-muted)", fontSize: "12px" }}>{ad.subtitle}</span>}
+                          </td>
+                          <td>
+                            <span style={{ background: "#fef3c7", color: "#d97706", fontSize: "11px", fontWeight: "800", padding: "3px 8px", borderRadius: "12px", textTransform: "uppercase" }}>
+                              {ad.badge || "SPONSORED"}
+                            </span>
+                          </td>
+                          <td>
+                            <span style={{ fontSize: "12px", color: "var(--text-muted)" }}>{ad.position || "homepage_banner"}</span>
+                          </td>
+                          <td>
+                            <button
+                              onClick={() => handleToggleAdActive(ad)}
+                              style={{
+                                border: "none",
+                                background: ad.isActive ? "#dcfce7" : "#fee2e2",
+                                color: ad.isActive ? "#16a34a" : "#dc2626",
+                                fontSize: "11px",
+                                fontWeight: "700",
+                                padding: "4px 10px",
+                                borderRadius: "20px",
+                                cursor: "pointer"
+                              }}
+                            >
+                              {ad.isActive ? "ACTIVE" : "INACTIVE"}
+                            </button>
+                          </td>
+                          <td style={{ fontSize: "13px", color: "var(--primary)", fontWeight: "600" }}>
+                            {ad.link}
+                          </td>
+                          <td style={{ whiteSpace: "nowrap", textAlign: "right" }}>
+                            <div className="admin-actions-cell" style={{ justifyContent: "flex-end" }}>
+                              <button className="admin-btn admin-btn-details" onClick={() => handleOpenEditAd(ad)}>
+                                <Edit3 size={13} /> Edit
+                              </button>
+                              <button className="admin-btn admin-btn-delete" title="Delete Ad Banner" onClick={() => handleDeleteAd(ad.id || ad._id)}>
+                                <Trash2 size={13} />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+
+                <Pagination
+                  totalItems={filteredAds.length}
+                  itemsPerPage={adsPerPage}
+                  currentPage={adsPage}
+                  onPageChange={(p) => setAdsPage(p)}
+                  onItemsPerPageChange={(size) => { setAdsPerPage(size); setAdsPage(1); }}
+                />
+              </div>
+            )}
           </>
         )}
       </main>
@@ -1801,6 +2106,139 @@ export default function AdminDashboard() {
                 </button>
                 <button type="submit" className="btn btn-primary" disabled={isSavingService}>
                   {isSavingService ? "Saving Service..." : (editingServiceId ? "Save Changes" : "Create Service")}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Create / Edit Advertisement Modal */}
+      {adModalOpen && (
+        <div className="modal-overlay" onClick={() => setAdModalOpen(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: "650px", width: "90%" }}>
+            <div className="modal-header">
+              <h3>{editingAdId ? "Edit Advertising Banner" : "Create New Ad Banner"}</h3>
+              <button className="close-btn" onClick={() => setAdModalOpen(false)}>×</button>
+            </div>
+            <form onSubmit={handleSaveAd}>
+              <div className="modal-body" style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+                <div className="form-group">
+                  <label htmlFor="ad-title" style={{ fontWeight: 700, color: "var(--text-dark)", fontSize: "13.5px" }}>Banner Main Title <span style={{ color: "var(--danger)" }}>*</span></label>
+                  <input
+                    id="ad-title"
+                    type="text"
+                    className="form-input"
+                    placeholder="e.g. Promote Your Brand to 50,000+ Verified Investors"
+                    value={adForm.title}
+                    onChange={(e) => setAdForm({ ...adForm, title: e.target.value })}
+                    required
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label htmlFor="ad-subtitle" style={{ fontWeight: 700, color: "var(--text-dark)", fontSize: "13.5px" }}>Subtitle / Tagline</label>
+                  <input
+                    id="ad-subtitle"
+                    type="text"
+                    className="form-input"
+                    placeholder="e.g. Expand your franchise presence nationwide with premium advertising."
+                    value={adForm.subtitle}
+                    onChange={(e) => setAdForm({ ...adForm, subtitle: e.target.value })}
+                  />
+                </div>
+
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
+                  <div className="form-group">
+                    <label htmlFor="ad-badge" style={{ fontWeight: 700, color: "var(--text-dark)", fontSize: "13.5px" }}>Badge Text</label>
+                    <input
+                      id="ad-badge"
+                      type="text"
+                      className="form-input"
+                      placeholder="e.g. SPONSORED, EXCLUSIVE OFFER"
+                      value={adForm.badge}
+                      onChange={(e) => setAdForm({ ...adForm, badge: e.target.value })}
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label htmlFor="ad-link" style={{ fontWeight: 700, color: "var(--text-dark)", fontSize: "13.5px" }}>Destination URL / Link</label>
+                    <input
+                      id="ad-link"
+                      type="text"
+                      className="form-input"
+                      placeholder="e.g. /brand-registration or https://..."
+                      value={adForm.link}
+                      onChange={(e) => setAdForm({ ...adForm, link: e.target.value })}
+                    />
+                  </div>
+                </div>
+
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
+                  <div className="form-group">
+                    <label htmlFor="ad-position" style={{ fontWeight: 700, color: "var(--text-dark)", fontSize: "13.5px" }}>Placement Position</label>
+                    <select
+                      id="ad-position"
+                      className="form-input"
+                      value={adForm.position}
+                      onChange={(e) => setAdForm({ ...adForm, position: e.target.value })}
+                    >
+                      <option value="homepage_banner">Homepage Main Banner</option>
+                      <option value="homepage_middle">Homepage Middle Section</option>
+                      <option value="brands_sidebar">Brands Page Sidebar</option>
+                    </select>
+                  </div>
+                  <div className="form-group" style={{ display: "flex", alignItems: "center", paddingTop: "24px" }}>
+                    <label style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer", fontWeight: "700", color: "var(--text-dark)" }}>
+                      <input
+                        type="checkbox"
+                        checked={adForm.isActive}
+                        onChange={(e) => setAdForm({ ...adForm, isActive: e.target.checked })}
+                        style={{ width: "18px", height: "18px", accentColor: "var(--primary)" }}
+                      />
+                      Active & Displaying
+                    </label>
+                  </div>
+                </div>
+
+                {/* Banner Image Upload & Preview */}
+                <div className="form-group">
+                  <label style={{ fontWeight: 700, color: "var(--text-dark)", fontSize: "13.5px", marginBottom: "8px", display: "block" }}>
+                    Ad Banner Image <span style={{ color: "var(--danger)" }}>*</span>
+                  </label>
+                  {adForm.image ? (
+                    <div style={{ position: "relative", width: "100%", height: "160px", borderRadius: "10px", overflow: "hidden", border: "1px solid var(--border-color)" }}>
+                      <img src={adForm.image} alt="Ad Preview" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                      <button
+                        type="button"
+                        onClick={handleRemoveAdImage}
+                        style={{
+                          position: "absolute", top: "10px", right: "10px",
+                          background: "rgba(0,0,0,0.7)", color: "white",
+                          border: "none", borderRadius: "50%", width: "32px", height: "32px",
+                          cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center"
+                        }}
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
+                  ) : (
+                    <label style={{
+                      display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
+                      padding: "24px", border: "2px dashed var(--border-color)", borderRadius: "10px", cursor: "pointer",
+                      background: "#f8fafc", textAlign: "center"
+                    }}>
+                      <UploadCloud size={32} style={{ color: "var(--text-muted)", marginBottom: "8px" }} />
+                      <span style={{ fontSize: "14px", fontWeight: "700", color: "var(--text-dark)" }}>Click to upload ad banner image</span>
+                      <span style={{ fontSize: "11px", color: "var(--text-muted)", marginTop: "2px" }}>PNG, JPG, WEBP up to 5 MB</span>
+                      <input type="file" onChange={handleAdImageUpload} accept=".png,.jpg,.jpeg,.webp" style={{ display: "none" }} />
+                    </label>
+                  )}
+                </div>
+              </div>
+              <div className="modal-footer">
+                <button type="button" className="btn btn-outline" onClick={() => setAdModalOpen(false)}>Cancel</button>
+                <button type="submit" className="btn btn-primary" disabled={isSavingAd}>
+                  {isSavingAd ? "Saving Ad..." : (editingAdId ? "Save Changes" : "Create Ad Banner")}
                 </button>
               </div>
             </form>

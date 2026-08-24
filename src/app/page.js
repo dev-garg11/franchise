@@ -254,6 +254,9 @@ export default function Home() {
   const [loadingServices, setLoadingServices] = useState(true);
   const [selectedService, setSelectedService] = useState(null);
 
+  // Advertisements State
+  const [ads, setAds] = useState([]);
+
   useEffect(() => {
     fetch("/api/services")
       .then((res) => res.json())
@@ -262,6 +265,13 @@ export default function Home() {
       })
       .catch((err) => console.error("Error loading services on homepage:", err))
       .finally(() => setLoadingServices(false));
+
+    fetch("/api/advertisements")
+      .then((res) => res.json())
+      .then((data) => {
+        if (Array.isArray(data)) setAds(data.filter(a => a.isActive));
+      })
+      .catch((err) => console.error("Error loading advertisements on homepage:", err));
   }, []);
 
   // Pre-fill enquiry form if investor is logged in
@@ -817,6 +827,60 @@ export default function Home() {
           </div>
         </div>
       </section>
+
+      {/* 2.5 Managed Advertising Space Section */}
+      {ads.length > 0 && (
+        <section className="fi-ad-space-section" style={{ padding: "44px 0", background: "linear-gradient(135deg, #0f172a 0%, #1e293b 100%)", color: "#ffffff", borderTop: "1px solid rgba(255,255,255,0.08)", borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
+          <div className="container">
+            <div style={{ display: "grid", gridTemplateColumns: ads.length > 1 ? "repeat(auto-fit, minmax(320px, 1fr))" : "1fr", gap: "24px" }}>
+              {ads.map((ad) => (
+                <div
+                  key={ad.id || ad._id}
+                  style={{
+                    position: "relative",
+                    borderRadius: "20px",
+                    overflow: "hidden",
+                    minHeight: "220px",
+                    display: "flex",
+                    alignItems: "flex-end",
+                    boxShadow: "0 12px 30px rgba(0,0,0,0.3)",
+                    border: "1px solid rgba(255,255,255,0.12)",
+                    background: "#0f172a"
+                  }}
+                >
+                  <img
+                    src={ad.image || "https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&q=80&w=1200"}
+                    alt={ad.title}
+                    style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }}
+                  />
+                  <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, rgba(15,23,42,0.95) 0%, rgba(15,23,42,0.4) 60%, transparent 100%)" }} />
+
+                  <div style={{ position: "relative", zIndex: 2, padding: "28px", width: "100%" }}>
+                    <span style={{ background: "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)", color: "#ffffff", fontSize: "11px", fontWeight: "800", letterSpacing: "0.5px", padding: "4px 12px", borderRadius: "20px", textTransform: "uppercase", display: "inline-block", marginBottom: "12px" }}>
+                      {ad.badge || "SPONSORED"}
+                    </span>
+                    <h3 style={{ fontSize: "22px", fontWeight: "800", color: "#ffffff", marginBottom: "8px", lineHeight: "1.3" }}>
+                      {ad.title}
+                    </h3>
+                    {ad.subtitle && (
+                      <p style={{ color: "#cbd5e1", fontSize: "14px", marginBottom: "16px", lineHeight: "1.5" }}>
+                        {ad.subtitle}
+                      </p>
+                    )}
+                    <Link
+                      href={ad.link || "/brand-registration"}
+                      className="btn"
+                      style={{ background: "#7cb02c", color: "#ffffff", fontWeight: "800", padding: "10px 20px", borderRadius: "12px", display: "inline-flex", alignItems: "center", gap: "8px", fontSize: "13px" }}
+                    >
+                      Learn More <ArrowRight size={16} />
+                    </Link>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* 3. Trust Section (Auto Scrolling verified logos) */}
       <section className="trust-section">
