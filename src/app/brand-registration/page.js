@@ -60,6 +60,9 @@ export default function BrandRegistration() {
     areaRequired: "",
     trainingSupport: "Yes",
     agreement: "Yes",
+    masterFranchiseAvailable: true,
+    masterInvestmentRange: "Rs. 25 Lakhs - 50 Lakhs",
+    territoryOffered: "State Level Exclusivity",
     description: "",
     email: "",
     password: "",
@@ -854,6 +857,57 @@ export default function BrandRegistration() {
                   onChange={handleChange}
                   className="form-input"
                 />
+              </div>
+
+              <div className="form-group form-grid-full" style={{ background: "rgba(99, 102, 241, 0.04)", border: "1px solid rgba(99, 102, 241, 0.15)", borderRadius: "12px", padding: "16px", marginTop: "10px" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "12px" }}>
+                  <input
+                    type="checkbox"
+                    id="masterFranchiseAvailable"
+                    name="masterFranchiseAvailable"
+                    checked={formData.masterFranchiseAvailable}
+                    onChange={(e) => setFormData({ ...formData, masterFranchiseAvailable: e.target.checked })}
+                    style={{ width: "18px", height: "18px", accentColor: "var(--primary)" }}
+                  />
+                  <label htmlFor="masterFranchiseAvailable" style={{ fontSize: "14.5px", fontWeight: "800", color: "var(--text-dark)", cursor: "pointer", margin: 0 }}>
+                    👑 Offer Master Franchise / Regional Exclusivity Rights?
+                  </label>
+                </div>
+
+                {formData.masterFranchiseAvailable && (
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px", marginTop: "12px" }}>
+                    <div>
+                      <label style={{ fontSize: "12px", fontWeight: "700", display: "block", marginBottom: "4px" }}>Est. Master Investment Range</label>
+                      <select
+                        name="masterInvestmentRange"
+                        value={formData.masterInvestmentRange}
+                        onChange={handleChange}
+                        className="form-input"
+                      >
+                        <option value="Rs. 15 Lakhs - 25 Lakhs">Rs. 15 Lakhs - 25 Lakhs</option>
+                        <option value="Rs. 25 Lakhs - 50 Lakhs">Rs. 25 Lakhs - 50 Lakhs</option>
+                        <option value="Rs. 50 Lakhs - 1 Crore">Rs. 50 Lakhs - 1 Crore</option>
+                        <option value="Rs. 1 Crore - 2 Crores">Rs. 1 Crore - 2 Crores</option>
+                        <option value="Above Rs. 2 Crores">Above Rs. 2 Crores</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label style={{ fontSize: "12px", fontWeight: "700", display: "block", marginBottom: "4px" }}>Territory Rights Offered</label>
+                      <select
+                        name="territoryOffered"
+                        value={formData.territoryOffered}
+                        onChange={handleChange}
+                        className="form-input"
+                      >
+                        <option value="State Level Exclusivity">State Level Exclusivity</option>
+                        <option value="Multi-District Zone">Multi-District Zone</option>
+                        <option value="Metropolitan Area">Metropolitan Area</option>
+                        <option value="Pan India Rights">Pan India Rights</option>
+                      </select>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
 

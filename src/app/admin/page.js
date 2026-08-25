@@ -1707,6 +1707,8 @@ export default function AdminDashboard() {
                   <div>Franchise Fee: <strong>{selectedItem.franchiseFee ? formatLakhs(selectedItem.franchiseFee) : "N/A"}</strong></div>
                   <div>Royalty: <strong>{selectedItem.royaltyFee || "0%"}</strong></div>
                   <div>Space Required: <strong>{selectedItem.areaRequired || "Any Area"}</strong></div>
+                  <div>Master Model: <strong>{selectedItem.masterFranchiseAvailable ? `Yes (${selectedItem.territoryOffered || "State Level"})` : "Unit Only"}</strong></div>
+                  {selectedItem.masterInvestmentRange && <div>Master Budget: <strong>{selectedItem.masterInvestmentRange}</strong></div>}
                 </div>
               </div>
 

@@ -29,6 +29,20 @@ const BrandSchema = new mongoose.Schema({
         trim: true,
         default: ''
     },
+    masterFranchiseAvailable: {
+        type: Boolean,
+        default: false
+    },
+    masterInvestmentRange: {
+        type: String,
+        trim: true,
+        default: ''
+    },
+    territoryOffered: {
+        type: String,
+        trim: true,
+        default: 'State Level Exclusivity'
+    },
     minInvestment: {
         type: Number,
         default: 0

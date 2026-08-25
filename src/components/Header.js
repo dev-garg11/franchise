@@ -6,7 +6,7 @@ import { usePathname, useRouter } from "next/navigation";
 import {
   LogIn, PlusCircle, Shield, User, LogOut, Building, Menu, X,
   Bell, Search, ChevronDown, Sparkles, HelpCircle, Layers, Star,
-  Trash2, CheckCircle, ArrowRight, Clock, ArrowUp
+  Trash2, CheckCircle, ArrowRight, Clock, ArrowUp, Crown
 } from "lucide-react";
 import { getApprovedBrands } from "@/lib/brandsCache";
 
@@ -429,6 +429,16 @@ export default function Header() {
                   onClick={() => setMobileMenuOpen(false)}
                 >
                   Brands
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/master-franchising"
+                  className={`nav-link ${pathname === "/master-franchising" ? "active" : ""}`}
+                  onClick={() => setMobileMenuOpen(false)}
+                  style={{ display: "inline-flex", alignItems: "center", gap: "4px" }}
+                >
+                  <Crown size={13} style={{ color: "#f59e0b" }} /> Master Franchise
                 </Link>
               </li>
               <li>

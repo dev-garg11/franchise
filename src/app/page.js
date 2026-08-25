@@ -8,7 +8,7 @@ import {
   GraduationCap, Utensils, Store, Car, HeartPulse, Building2, HelpCircle,
   CheckCircle, ShieldCheck, Award, ThumbsUp, ChevronRight, MessageSquare, Mail,
   Phone, Globe, Eye, ChevronLeft, Send, Sparkles, ShieldAlert, MessageCircle,
-  Filter, Layers, Briefcase
+  Filter, Layers, Briefcase, Crown
 } from "lucide-react";
 import TopFranchiseOpportunities from "@/components/TopFranchiseOpportunities";
 import TopBusinessOpportunities from "@/components/TopBusinessOpportunities";
@@ -1229,6 +1229,92 @@ export default function Home() {
               <div className="timeline-num flex-center">4</div>
               <h3>Finalize Launch</h3>
               <p>Receive local lease analysis, site audits, and complete training guides to open.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Master Franchise Spotlight Banner */}
+      <section style={{ padding: "0 0 80px 0" }}>
+        <div className="container">
+          <div style={{
+            background: "linear-gradient(135deg, #0f172a 0%, #1e1b4b 60%, #312e81 100%)",
+            borderRadius: "24px",
+            padding: "48px 40px",
+            color: "white",
+            boxShadow: "0 20px 40px rgba(0,0,0,0.15)",
+            position: "relative",
+            overflow: "hidden",
+            display: "grid",
+            gridTemplateColumns: "1.3fr 1fr",
+            gap: "40px",
+            alignItems: "center"
+          }}>
+            <div style={{ position: "relative", zIndex: 2 }}>
+              <span style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "6px",
+                padding: "6px 14px",
+                borderRadius: "50px",
+                background: "rgba(255, 255, 255, 0.1)",
+                border: "1px solid rgba(255, 255, 255, 0.2)",
+                color: "#c7d2fe",
+                fontSize: "12.5px",
+                fontWeight: "700",
+                marginBottom: "16px"
+              }}>
+                <Crown size={14} style={{ color: "#fbbf24" }} /> State & Territory Rights
+              </span>
+              <h2 style={{ fontSize: "32px", fontWeight: "800", color: "white", marginBottom: "12px", lineHeight: "1.25" }}>
+                Exclusive Master Franchise Opportunities
+              </h2>
+              <p style={{ color: "#c7d2fe", fontSize: "15px", lineHeight: "1.6", marginBottom: "24px" }}>
+                Secure 100% exclusive master rights for your state. Earn sub-franchisee sign-up fees and recurring monthly royalty shares across leading brand networks.
+              </p>
+              <Link 
+                href="/master-franchising" 
+                className="btn btn-primary"
+                style={{ padding: "14px 28px", fontSize: "15px", fontWeight: "700", display: "inline-flex", alignItems: "center", gap: "8px" }}
+              >
+                Explore Master Rights <ArrowRight size={16} />
+              </Link>
+            </div>
+
+            <div style={{
+              background: "rgba(255, 255, 255, 0.05)",
+              border: "1px solid rgba(255, 255, 255, 0.1)",
+              borderRadius: "20px",
+              padding: "24px",
+              backdropFilter: "blur(10px)",
+              position: "relative",
+              zIndex: 2
+            }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                  <ShieldCheck size={24} style={{ color: "#10b981", flexShrink: 0 }} />
+                  <div>
+                    <strong style={{ color: "white", fontSize: "14px", display: "block" }}>Territorial Lockout Guarantee</strong>
+                    <span style={{ color: "#94a3b8", fontSize: "12px" }}>Zero unit competition in your state</span>
+                  </div>
+                </div>
+
+                <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                  <IndianRupee size={24} style={{ color: "#fbbf24", flexShrink: 0 }} />
+                  <div>
+                    <strong style={{ color: "white", fontSize: "14px", display: "block" }}>Up to 50% Sub-Franchise Royalty Share</strong>
+                    <span style={{ color: "#94a3b8", fontSize: "12px" }}>Recurring passive cashflow model</span>
+                  </div>
+                </div>
+
+                <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                  <Award size={24} style={{ color: "#6366f1", flexShrink: 0 }} />
+                  <div>
+                    <strong style={{ color: "white", fontSize: "14px", display: "block" }}>Full SOP & Ops Support</strong>
+                    <span style={{ color: "#94a3b8", fontSize: "12px" }}>Complete brand expansion training</span>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
