@@ -9,6 +9,8 @@ import {
 } from "lucide-react";
 import { clearBrandsCache } from "@/lib/brandsCache";
 import { REGISTRATION_INVESTMENT_OPTIONS, getFilteredMaxLimits } from "@/lib/investmentData";
+import { BRAND_CATEGORIES, BRAND_SECTORS_MAP, ALL_INDIAN_STATES } from "@/lib/brandConstants";
+import { DISTRICTS_BY_STATE } from "@/lib/districtsData";
 
 const INVESTMENT_OPTIONS = [
   "Rs. 10,000 - 50,000",
@@ -45,7 +47,9 @@ export default function BrandRegistration() {
     name: "",
     company: "",
     category: "Food and Beverage",
-    hq: "New Delhi",
+    sector: "QSR & Fast Food",
+    hq: "Delhi NCR",
+    location: "New Delhi",
     pincode: "",
     investment_range: "",
     max_investment_limit: "",
@@ -104,6 +108,20 @@ export default function BrandRegistration() {
           max_investment_limit: maxVal,
         };
       });
+    } else if (name === "category") {
+      const availableSectors = BRAND_SECTORS_MAP[value] || [];
+      setFormData((prev) => ({
+        ...prev,
+        category: value,
+        sector: availableSectors[0] || "",
+      }));
+    } else if (name === "hq") {
+      const availableDistricts = DISTRICTS_BY_STATE[value] || [];
+      setFormData((prev) => ({
+        ...prev,
+        hq: value,
+        location: availableDistricts[0] || "",
+      }));
     } else {
       setFormData((prev) => ({
         ...prev,
@@ -442,35 +460,63 @@ export default function BrandRegistration() {
                   onChange={handleChange}
                   className="form-input"
                 >
-                  <option value="Food and Beverage">Food and Beverage</option>
-                  <option value="Retail">Retail</option>
-                  <option value="Education">Education</option>
-                  <option value="Automobiles">Automobiles</option>
-                  <option value="Health and Wellness">Health and Wellness</option>
-                  <option value="Business Services">Business Services</option>
+                  {BRAND_CATEGORIES.map((cat) => (
+                    <option key={cat} value={cat}>{cat}</option>
+                  ))}
                 </select>
               </div>
 
               <div className="form-group">
-                <label>Headquarters Location <span>*</span></label>
+                <label>Brand Sector / Sub-Category <span>*</span></label>
+                <select
+                  name="sector"
+                  value={formData.sector}
+                  onChange={handleChange}
+                  className="form-input"
+                >
+                  {(BRAND_SECTORS_MAP[formData.category] || ["General"]).map((sec) => (
+                    <option key={sec} value={sec}>{sec}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="form-group">
+                <label>Headquarters State / Region <span>*</span></label>
                 <select
                   name="hq"
                   value={formData.hq}
                   onChange={handleChange}
                   className="form-input"
                 >
-                  <option value="New Delhi">New Delhi</option>
-                  <option value="Maharashtra">Maharashtra</option>
-                  <option value="Gujarat">Gujarat</option>
-                  <option value="Karnataka">Karnataka</option>
-                  <option value="Tamil Nadu">Tamil Nadu</option>
-                  <option value="Haryana">Haryana</option>
-                  <option value="Punjab">Punjab</option>
-                  <option value="Rajasthan">Rajasthan</option>
-                  <option value="Uttar Pradesh">Uttar Pradesh</option>
-                  <option value="Kerala">Kerala</option>
-                  <option value="West Bengal">West Bengal</option>
+                  {ALL_INDIAN_STATES.map((st) => (
+                    <option key={st} value={st}>{st}</option>
+                  ))}
                 </select>
+              </div>
+
+              <div className="form-group">
+                <label>HQ City / District Location <span>*</span></label>
+                {DISTRICTS_BY_STATE[formData.hq] ? (
+                  <select
+                    name="location"
+                    value={formData.location}
+                    onChange={handleChange}
+                    className="form-input"
+                  >
+                    {DISTRICTS_BY_STATE[formData.hq].map((dist) => (
+                      <option key={dist} value={dist}>{dist}</option>
+                    ))}
+                  </select>
+                ) : (
+                  <input
+                    type="text"
+                    name="location"
+                    placeholder="Enter City / District"
+                    value={formData.location}
+                    onChange={handleChange}
+                    className="form-input"
+                  />
+                )}
               </div>
 
               <div className="form-group">

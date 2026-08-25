@@ -19,6 +19,16 @@ const BrandSchema = new mongoose.Schema({
         required: [true, 'Category is required'],
         trim: true
     },
+    sector: {
+        type: String,
+        trim: true,
+        default: ''
+    },
+    location: {
+        type: String,
+        trim: true,
+        default: ''
+    },
     minInvestment: {
         type: Number,
         default: 0

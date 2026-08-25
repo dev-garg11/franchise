@@ -1692,8 +1692,8 @@ export default function AdminDashboard() {
                 />
                 <div>
                   <h4 style={{ fontSize: "16px", fontWeight: "700" }}>{selectedItem.company}</h4>
-                  <p style={{ color: "var(--text-muted)", fontSize: "13px" }}>HQ State: <strong>{selectedItem.hq} {selectedItem.pincode && `(${selectedItem.pincode})`}</strong></p>
-                  <p style={{ color: "var(--text-muted)", fontSize: "13px" }}>Category: <strong>{selectedItem.category}</strong></p>
+                  <p style={{ color: "var(--text-muted)", fontSize: "13px" }}>HQ Location: <strong>{selectedItem.location ? `${selectedItem.location}, ${selectedItem.hq}` : selectedItem.hq} {selectedItem.pincode && `(${selectedItem.pincode})`}</strong></p>
+                  <p style={{ color: "var(--text-muted)", fontSize: "13px" }}>Category: <strong>{selectedItem.category}</strong> {selectedItem.sector && `(${selectedItem.sector})`}</p>
                   <span className={`status-badge ${selectedItem.status.toLowerCase()}`} style={{ marginTop: "4px" }}>
                     Status: {selectedItem.status}
                   </span>

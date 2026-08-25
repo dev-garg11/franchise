@@ -9,6 +9,8 @@ import {
   IndianRupee, PlusCircle, Globe, Award, Sparkles, CheckSquare
 } from "lucide-react";
 import { clearBrandsCache } from "@/lib/brandsCache";
+import { BRAND_CATEGORIES, BRAND_SECTORS_MAP, ALL_INDIAN_STATES } from "@/lib/brandConstants";
+import { DISTRICTS_BY_STATE } from "@/lib/districtsData";
 
 const INVESTMENT_OPTIONS = [
   "Rs. 10,000 - 50,000",
@@ -61,7 +63,9 @@ export default function BrandPanel() {
     name: "",
     company: "",
     category: "Food and Beverage",
-    hq: "New Delhi",
+    sector: "QSR & Fast Food",
+    hq: "Delhi NCR",
+    location: "New Delhi",
     pincode: "",
     investment_range: "",
     max_investment_limit: "",
@@ -117,7 +121,9 @@ export default function BrandPanel() {
             name: userBrand.name || "",
             company: userBrand.company || "",
             category: userBrand.category || "Food and Beverage",
-            hq: userBrand.hq || "New Delhi",
+            sector: userBrand.sector || (BRAND_SECTORS_MAP[userBrand.category] ? BRAND_SECTORS_MAP[userBrand.category][0] : ""),
+            hq: userBrand.hq || "Delhi NCR",
+            location: userBrand.location || "",
             pincode: userBrand.pincode || "",
             investment_range: userBrand.investment_range || "",
             max_investment_limit: userBrand.max_investment_limit || "",
@@ -377,12 +383,12 @@ export default function BrandPanel() {
                       <div style={{ background: "#f8fafc", padding: "16px", borderRadius: "8px", marginBottom: "20px" }}>
                         <h4 style={{ fontSize: "14px", marginBottom: "8px" }}>Directory Configuration</h4>
                         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", fontSize: "13px" }}>
-                          <div>Category: <strong>{brand.category}</strong></div>
+                          <div>Category: <strong>{brand.category}</strong> {brand.sector && `(${brand.sector})`}</div>
                           <div>Investment: <strong>{brand.investment_range || formatLakhs(brand.minInvestment)} - {brand.max_investment_limit || formatLakhs(brand.maxInvestment)}</strong></div>
                           <div>Franchise Fee: <strong>{formatLakhs(brand.franchiseFee)}</strong></div>
                           <div>Royalty Fee: <strong>{brand.royaltyFee || "0%"}</strong></div>
                           <div>Space Required: <strong>{brand.areaRequired || "N/A"}</strong></div>
-                          <div>HQ State: <strong>{brand.hq} {brand.pincode && `(${brand.pincode})`}</strong></div>
+                          <div>HQ Location: <strong>{brand.location ? `${brand.location}, ${brand.hq}` : brand.hq} {brand.pincode && `(${brand.pincode})`}</strong></div>
                         </div>
                       </div>
 
@@ -480,38 +486,82 @@ export default function BrandPanel() {
                       <select
                         className="form-input"
                         value={formFields.category}
-                        onChange={(e) => setFormFields({ ...formFields, category: e.target.value })}
+                        onChange={(e) => {
+                          const newCat = e.target.value;
+                          const sectors = BRAND_SECTORS_MAP[newCat] || [];
+                          setFormFields({
+                            ...formFields,
+                            category: newCat,
+                            sector: sectors[0] || ""
+                          });
+                        }}
                         style={{ background: "#f8fafc" }}
                       >
-                        <option value="Food and Beverage">Food and Beverage</option>
-                        <option value="Retail">Retail</option>
-                        <option value="Education">Education</option>
-                        <option value="Automobiles">Automobiles</option>
-                        <option value="Health and Wellness">Health and Wellness</option>
-                        <option value="Business Services">Business Services</option>
+                        {BRAND_CATEGORIES.map((cat) => (
+                          <option key={cat} value={cat}>{cat}</option>
+                        ))}
                       </select>
                     </div>
 
                     <div className="form-group">
-                      <label>Headquarters Location</label>
+                      <label>Brand Sector / Sub-Category</label>
+                      <select
+                        className="form-input"
+                        value={formFields.sector}
+                        onChange={(e) => setFormFields({ ...formFields, sector: e.target.value })}
+                        style={{ background: "#f8fafc" }}
+                      >
+                        {(BRAND_SECTORS_MAP[formFields.category] || ["General"]).map((sec) => (
+                          <option key={sec} value={sec}>{sec}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div className="form-group">
+                      <label>Headquarters State / Region</label>
                       <select
                         className="form-input"
                         value={formFields.hq}
-                        onChange={(e) => setFormFields({ ...formFields, hq: e.target.value })}
+                        onChange={(e) => {
+                          const newSt = e.target.value;
+                          const districts = DISTRICTS_BY_STATE[newSt] || [];
+                          setFormFields({
+                            ...formFields,
+                            hq: newSt,
+                            location: districts[0] || ""
+                          });
+                        }}
                         style={{ background: "#f8fafc" }}
                       >
-                        <option value="New Delhi">New Delhi</option>
-                        <option value="Maharashtra">Maharashtra</option>
-                        <option value="Gujarat">Gujarat</option>
-                        <option value="Karnataka">Karnataka</option>
-                        <option value="Tamil Nadu">Tamil Nadu</option>
-                        <option value="Haryana">Haryana</option>
-                        <option value="Punjab">Punjab</option>
-                        <option value="Rajasthan">Rajasthan</option>
-                        <option value="Uttar Pradesh">Uttar Pradesh</option>
-                        <option value="Kerala">Kerala</option>
-                        <option value="West Bengal">West Bengal</option>
+                        {ALL_INDIAN_STATES.map((st) => (
+                          <option key={st} value={st}>{st}</option>
+                        ))}
                       </select>
+                    </div>
+
+                    <div className="form-group">
+                      <label>HQ City / District Location</label>
+                      {DISTRICTS_BY_STATE[formFields.hq] ? (
+                        <select
+                          className="form-input"
+                          value={formFields.location}
+                          onChange={(e) => setFormFields({ ...formFields, location: e.target.value })}
+                          style={{ background: "#f8fafc" }}
+                        >
+                          {DISTRICTS_BY_STATE[formFields.hq].map((dist) => (
+                            <option key={dist} value={dist}>{dist}</option>
+                          ))}
+                        </select>
+                      ) : (
+                        <input
+                          type="text"
+                          className="form-input"
+                          placeholder="Enter City / District"
+                          value={formFields.location}
+                          onChange={(e) => setFormFields({ ...formFields, location: e.target.value })}
+                          style={{ background: "#f8fafc" }}
+                        />
+                      )}
                     </div>
 
                     <div className="form-group">

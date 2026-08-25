@@ -116,21 +116,22 @@ const matchCategory = (brandCategory, targetCategory) => {
 };
 
 // Flexible Location and State Matcher
-const matchLocationAndState = (brandHq, targetState, targetLocation) => {
-    if (!brandHq) return (!targetState && !targetLocation);
-    const hqLower = brandHq.toLowerCase().trim();
+const matchLocationAndState = (brand, targetState, targetLocation) => {
+    const brandHq = brand.hq || "";
+    const brandLoc = brand.location || "";
+    const locCombined = `${brandLoc} ${brandHq}`.toLowerCase().trim();
 
     if (targetState && targetState !== "" && targetState !== "All States" && targetState !== "All Regions") {
         const tsLower = targetState.toLowerCase().trim();
         const aliases = STATE_ALIAS_MAP[tsLower] || [tsLower];
-        const matchesState = aliases.some(alias => hqLower.includes(alias)) || hqLower.includes(tsLower);
+        const matchesState = aliases.some(alias => locCombined.includes(alias)) || locCombined.includes(tsLower);
         if (!matchesState) return false;
     }
 
     if (targetLocation && targetLocation !== "" && targetLocation !== "All Cities" && targetLocation !== "All Districts" && targetLocation !== "All Regions") {
         const locLower = targetLocation.toLowerCase().trim();
         const aliases = STATE_ALIAS_MAP[locLower] || [locLower];
-        const matchesCity = aliases.some(alias => hqLower.includes(alias)) || hqLower.includes(locLower) || locLower.includes(hqLower);
+        const matchesCity = aliases.some(alias => locCombined.includes(alias)) || locCombined.includes(locLower) || locLower.includes(locCombined);
         if (!matchesCity) return false;
     }
 
@@ -139,13 +140,18 @@ const matchLocationAndState = (brandHq, targetState, targetLocation) => {
 
 // Sector & Concept Keyword Matcher
 const matchSectorAndKeyword = (brand, targetSector, targetSearch) => {
-    const brandText = `${brand.name} ${brand.company || ""} ${brand.category || ""} ${brand.description || ""} ${brand.hq || ""} ${brand.areaRequired || ""}`.toLowerCase();
+    const brandSector = (brand.sector || "").toLowerCase();
+    const brandText = `${brand.name} ${brand.company || ""} ${brand.category || ""} ${brand.sector || ""} ${brand.description || ""} ${brand.hq || ""} ${brand.location || ""} ${brand.areaRequired || ""}`.toLowerCase();
 
     if (targetSector && targetSector !== "" && targetSector !== "All Sectors") {
         const sectorLower = targetSector.toLowerCase().trim();
-        const sectorWords = sectorLower.split(/[\s&,/]+/).filter(w => w.length > 2);
-        const matchesSector = sectorWords.some(w => brandText.includes(w)) || brandText.includes(sectorLower);
-        if (!matchesSector) return false;
+        if (brandSector === sectorLower || brandSector.includes(sectorLower) || sectorLower.includes(brandSector)) {
+            // direct match
+        } else {
+            const sectorWords = sectorLower.split(/[\s&,/]+/).filter(w => w.length > 2);
+            const matchesSector = sectorWords.some(w => brandText.includes(w)) || brandText.includes(sectorLower);
+            if (!matchesSector) return false;
+        }
     }
 
     if (targetSearch && targetSearch !== "" && targetSearch.trim() !== "") {
@@ -303,7 +309,7 @@ function BrandsDirectoryPage() {
 
         result = result.filter(b => {
             if (!matchCategory(b.category, selectedCategory)) return false;
-            if (!matchLocationAndState(b.hq, selectedState, selectedLocation)) return false;
+            if (!matchLocationAndState(b, selectedState, selectedLocation)) return false;
             if (!matchSectorAndKeyword(b, selectedSector, searchTerm)) return false;
             if (!matchBudgetRange(b, selectedBudget, minBudget, maxBudget)) return false;
             return true;
