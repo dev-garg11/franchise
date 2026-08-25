@@ -378,8 +378,8 @@ export default function Header() {
                 onMouseLeave={() => setActiveDropdown(false)}
                 style={{ position: 'relative' }}
               >
-                <button className="nav-link" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', cursor: 'pointer' }}>
-                  Solutions <ChevronDown size={14} style={{ transform: activeDropdown ? 'rotate(180deg)' : 'none', transition: 'var(--transition-fast)' }} />
+                <button className="nav-link" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', cursor: 'pointer', background: 'none', border: 'none', whiteSpace: 'nowrap' }}>
+                  Solutions <ChevronDown size={14} style={{ transform: activeDropdown ? 'rotate(180deg)' : 'none', transition: 'var(--transition-fast)', flexShrink: 0 }} />
                 </button>
 
                 {activeDropdown && (
@@ -436,9 +436,10 @@ export default function Header() {
                   href="/master-franchising"
                   className={`nav-link ${pathname === "/master-franchising" ? "active" : ""}`}
                   onClick={() => setMobileMenuOpen(false)}
-                  style={{ display: "inline-flex", alignItems: "center", gap: "4px" }}
+                  style={{ display: "inline-flex", alignItems: "center", gap: "5px", whiteSpace: "nowrap" }}
                 >
-                  <Crown size={13} style={{ color: "#f59e0b" }} /> Master Franchise
+                  <Crown size={13} style={{ color: "#d97706", flexShrink: 0 }} />
+                  <span>Master Franchise</span>
                 </Link>
               </li>
               <li>

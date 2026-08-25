@@ -169,6 +169,8 @@ button {
   align-items: center;
   justify-content: space-between;
   height: 80px;
+  max-width: 1380px !important;
+  width: 100%;
   transition: var(--transition-normal);
 }
 
@@ -218,23 +220,27 @@ button {
   align-items: center;
   justify-content: space-between;
   flex-grow: 1;
-  margin-left: 50px;
+  margin-left: 24px;
 }
 
 .nav-links {
   display: flex;
   align-items: center;
-  gap: 32px;
+  gap: 20px;
   list-style: none;
+  margin: 0;
+  padding: 0;
 }
 
 .nav-link {
   font-weight: 600;
   color: var(--text-dark);
-  font-size: 15px;
+  font-size: 14px;
   position: relative;
   padding: 8px 0;
   opacity: 0.85;
+  white-space: nowrap;
+  letter-spacing: -0.01em;
 }
 
 .nav-link:hover {
@@ -267,7 +273,8 @@ button {
 .nav-actions {
   display: flex;
   align-items: center;
-  gap: 20px;
+  gap: 12px;
+  flex-shrink: 0;
 }
 
 /* Premium Buttons */
@@ -2404,8 +2411,32 @@ button {
   }
 }
 
-/* 992px and under (Tablets, iPads portrait) */
-@media (max-width: 992px) {
+/* Intermediate Laptops (1081px to 1280px) */
+@media (min-width: 1081px) and (max-width: 1280px) {
+  .nav-container {
+    margin-left: 16px;
+  }
+  .nav-links {
+    gap: 14px;
+  }
+  .nav-link {
+    font-size: 13.5px;
+  }
+  .nav-actions {
+    gap: 8px;
+  }
+  .desktop-only-auth {
+    padding: 8px 12px !important;
+    font-size: 13px !important;
+  }
+  .add-brand-btn-premium {
+    padding: 8px 14px !important;
+    font-size: 13px !important;
+  }
+}
+
+/* 1080px and under (Tablets, iPads, mobile) */
+@media (max-width: 1080px) {
   .header {
     background: rgba(255, 255, 255, 0.96) !important;
     top: 0 !important;
