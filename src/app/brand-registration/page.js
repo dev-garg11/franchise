@@ -65,7 +65,7 @@ export default function BrandRegistration() {
     territoryOffered: "State Level Exclusivity",
     description: "",
     email: "",
-    password: "",
+    password: "Franchise@123#",
     phone: "",
     website: "",
     image: "",
@@ -956,12 +956,38 @@ export default function BrandRegistration() {
             <h3 className="form-section-title">4. Owner Credentials & Contact Details</h3>
             <div className="form-grid">
               <div className="form-group">
-                <label>Enquiry Email Address (Login Username) <span>*</span></label>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "6px" }}>
+                  <label style={{ margin: 0 }}>Enquiry Email Address (Login Username) <span>*</span></label>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const clean = (formData.name || "brand").toLowerCase().replace(/[^a-z0-9]/g, "_").replace(/_+/g, "_").replace(/^_+|_+$/g, "");
+                      const rand = Math.floor(1000 + Math.random() * 9000);
+                      setFormData(prev => ({
+                        ...prev,
+                        email: `${clean || "brand"}_${rand}@yopmail.com`,
+                        password: "Franchise@123#"
+                      }));
+                    }}
+                    style={{
+                      background: "rgba(99, 102, 241, 0.1)",
+                      color: "var(--primary)",
+                      border: "none",
+                      padding: "4px 10px",
+                      borderRadius: "6px",
+                      fontSize: "12px",
+                      fontWeight: "700",
+                      cursor: "pointer"
+                    }}
+                  >
+                    ⚡ Generate Yopmail Email
+                  </button>
+                </div>
                 <input
                   type="email"
                   name="email"
                   required
-                  placeholder="franchise@yourbrand.com"
+                  placeholder="e.g. brand_1234@yopmail.com"
                   value={formData.email}
                   onChange={handleChange}
                   className="form-input"
@@ -979,6 +1005,9 @@ export default function BrandRegistration() {
                   onChange={handleChange}
                   className="form-input"
                 />
+                <span style={{ fontSize: "11.5px", color: "var(--text-muted)", marginTop: "4px", display: "block" }}>
+                  Default password set to <strong>Franchise@123#</strong>
+                </span>
               </div>
 
               <div className="form-group">
