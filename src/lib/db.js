@@ -450,7 +450,8 @@ export async function getInvestors() {
 export async function saveInvestor(investorData) {
   await dbConnect();
   try {
-    const emailLower = investorData.email.toLowerCase();
+    const investorName = investorData.name || investorData.fullName || "Investor";
+    const emailLower = (investorData.email || "").toLowerCase();
     let userObj = await User.findOne({ email: emailLower });
     if (!userObj) {
       const rawPassword = investorData.password || "password123";
@@ -461,28 +462,38 @@ export async function saveInvestor(investorData) {
         email: emailLower,
         password: hashedPassword,
         role: 'investor',
-        name: investorData.name,
-        phone: investorData.phone
+        name: investorName,
+        phone: investorData.phone || ""
       });
     }
 
     const id = investorData.id || `investor-${Date.now()}`;
     const pincode = investorData.pincode || "000000";
-    const investment_range = investorData.investment_range || "Not Specified";
-    const max_investment_limit = investorData.max_investment_limit || "Not Specified";
+    const investment_range = investorData.investment_range || investorData.investmentCapacity || "Not Specified";
+    const max_investment_limit = investorData.max_investment_limit || investorData.investmentCapacity || "Not Specified";
+    const brandId = investorData.brandId || investorData.targetBrandId || null;
+    const brandName = investorData.brandName || investorData.targetBrand || null;
+    const category = investorData.category || investorData.interestedCategory || null;
+    const preferredLocation = investorData.preferredLocation || investorData.city || "Not specified";
+    const comments = investorData.comments || investorData.notes || "";
+    const validStatuses = ['Pending', 'Approved', 'Rejected'];
+    const status = validStatuses.includes(investorData.status) ? investorData.status : 'Pending';
 
     const investorPayload = {
       pincode,
       investment_range,
       max_investment_limit,
       ...investorData,
+      name: investorName,
       user: userObj._id,
       id,
-      brandId: investorData.brandId || null,
-      brandName: investorData.brandName || null,
-      category: investorData.category || null,
+      brandId,
+      brandName,
+      category,
+      preferredLocation,
+      comments,
+      status,
       investorId: investorData.investorId || null,
-      status: investorData.status || "Pending",
       appliedAt: investorData.appliedAt || new Date(),
       createdAt: investorData.createdAt || new Date()
     };

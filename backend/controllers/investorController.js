@@ -19,6 +19,7 @@ exports.getInvestors = async (req, res) => {
 // @access  Public
 exports.createInvestor = async (req, res) => {
     try {
+        const investorName = req.body.name || req.body.fullName || "Investor";
         const emailLower = (req.body.email || '').toLowerCase();
         let userObj = await User.findOne({ email: emailLower });
         if (!userObj) {
@@ -30,16 +31,26 @@ exports.createInvestor = async (req, res) => {
                 email: emailLower,
                 password: hashedPassword,
                 role: 'investor',
-                name: req.body.name,
-                phone: req.body.phone
+                name: investorName,
+                phone: req.body.phone || ""
             });
         }
 
+        const validStatuses = ['Pending', 'Approved', 'Rejected'];
+        const status = validStatuses.includes(req.body.status) ? req.body.status : 'Pending';
+
         const payload = {
             pincode: req.body.pincode || "000000",
-            investment_range: req.body.investment_range || "Not Specified",
-            max_investment_limit: req.body.max_investment_limit || "Not Specified",
+            investment_range: req.body.investment_range || req.body.investmentCapacity || "Not Specified",
+            max_investment_limit: req.body.max_investment_limit || req.body.investmentCapacity || "Not Specified",
+            brandId: req.body.brandId || req.body.targetBrandId || null,
+            brandName: req.body.brandName || req.body.targetBrand || null,
+            category: req.body.category || req.body.interestedCategory || null,
+            preferredLocation: req.body.preferredLocation || req.body.city || "Not specified",
+            comments: req.body.comments || req.body.notes || "",
             ...req.body,
+            name: investorName,
+            status,
             user: userObj._id
         };
 

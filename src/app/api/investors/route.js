@@ -14,14 +14,22 @@ export async function POST(request) {
   try {
     const body = await request.json();
 
-    // Simple validation
-    if (!body.name || !body.email || !body.phone) {
+    const name = body.name || body.fullName;
+    const email = body.email;
+    const phone = body.phone;
+
+    // Validation for required contact fields
+    if (!name || !email || !phone) {
       return NextResponse.json({ error: "Missing required fields (name, email, phone)" }, { status: 400 });
     }
 
-    const saved = await saveInvestor(body);
+    const saved = await saveInvestor({
+      ...body,
+      name
+    });
     return NextResponse.json({ success: true, investor: saved }, { status: 201 });
   } catch (error) {
-    return NextResponse.json({ error: "Failed to save investor registration" }, { status: 500 });
+    console.error("Error saving investor registration:", error);
+    return NextResponse.json({ error: error.message || "Failed to save investor registration" }, { status: 500 });
   }
 }

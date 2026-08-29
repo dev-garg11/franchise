@@ -82,6 +82,8 @@ export default function AdminDashboard() {
   const [modalType, setModalType] = useState(""); // brand, investor
   const [selectedInvestorsForBrand, setSelectedInvestorsForBrand] = useState([]);
   const [isSavingAssign, setIsSavingAssign] = useState(false);
+  const [assignFilterMode, setAssignFilterMode] = useState("matching"); // "matching" | "all"
+  const [assignSearch, setAssignSearch] = useState("");
 
   // Pagination State
   const [brandsPage, setBrandsPage] = useState(1);
@@ -94,6 +96,52 @@ export default function AdminDashboard() {
   const [servicesPerPage, setServicesPerPage] = useState(10);
   const [adsPage, setAdsPage] = useState(1);
   const [adsPerPage, setAdsPerPage] = useState(10);
+
+  // Helper function to check if investor's selected sectors match brand category
+  const isInvestorSectorMatch = (inv, brand) => {
+    if (!brand) return true;
+    const normalizeCat = (str) => (!str ? "" : String(str).toLowerCase().replace(/&/g, "and").replace(/[^a-z0-9]/g, ""));
+    const brandCat = normalizeCat(brand.category || brand.sector || "");
+    if (!brandCat) return true;
+
+    // Check investor's selected industries from "Select sectors you are interested in:"
+    const industries = Array.isArray(inv.industries) ? inv.industries : [];
+    for (const ind of industries) {
+      const normInd = normalizeCat(ind);
+      if (!normInd) continue;
+      if (normInd.includes(brandCat) || brandCat.includes(normInd)) return true;
+      if (
+        (normInd.includes("food") && brandCat.includes("food")) ||
+        (normInd.includes("auto") && brandCat.includes("auto")) ||
+        (normInd.includes("health") && (brandCat.includes("health") || brandCat.includes("wellness") || brandCat.includes("beauty"))) ||
+        (normInd.includes("beauty") && (brandCat.includes("beauty") || brandCat.includes("wellness") || brandCat.includes("health"))) ||
+        (normInd.includes("retail") && brandCat.includes("retail")) ||
+        (normInd.includes("education") && brandCat.includes("education")) ||
+        (normInd.includes("service") && brandCat.includes("service"))
+      ) {
+        return true;
+      }
+    }
+
+    // Check inv.category or inv.interestedCategory
+    const invCat = normalizeCat(inv.category || inv.interestedCategory || "");
+    if (invCat) {
+      if (invCat.includes(brandCat) || brandCat.includes(invCat)) return true;
+      if (
+        (invCat.includes("food") && brandCat.includes("food")) ||
+        (invCat.includes("auto") && brandCat.includes("auto")) ||
+        (invCat.includes("health") && (brandCat.includes("health") || brandCat.includes("wellness") || brandCat.includes("beauty"))) ||
+        (invCat.includes("beauty") && (brandCat.includes("beauty") || brandCat.includes("wellness") || brandCat.includes("health"))) ||
+        (invCat.includes("retail") && brandCat.includes("retail")) ||
+        (invCat.includes("education") && brandCat.includes("education")) ||
+        (invCat.includes("service") && brandCat.includes("service"))
+      ) {
+        return true;
+      }
+    }
+
+    return false;
+  };
 
   // Reset pagination when search or filters change
   useEffect(() => {
@@ -113,6 +161,8 @@ export default function AdminDashboard() {
         .filter(inv => inv.assignedBrands && (inv.assignedBrands.includes(brandId) || inv.assignedBrands.includes(selectedItem._id)))
         .map(inv => inv.id || inv._id);
       setSelectedInvestorsForBrand(attached);
+      setAssignFilterMode("matching");
+      setAssignSearch("");
     }
   }, [selectedItem, modalType, investors]);
 
@@ -1728,49 +1778,175 @@ export default function AdminDashboard() {
               </div>
 
               {/* Assign to Investors section */}
-              <div style={{ marginTop: "20px", background: "#f8fafc", padding: "16px", borderRadius: "8px", border: "1px solid var(--light-border)" }}>
-                <h4 style={{ fontSize: "14px", marginBottom: "12px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <span>Assign to Investors</span>
-                  {isSavingAssign && <span style={{ fontSize: "12px", color: "var(--primary)" }}>Saving...</span>}
-                </h4>
+              <div style={{ marginTop: "20px", background: "#ffffff", padding: "18px", borderRadius: "12px", border: "1px solid var(--light-border)", boxShadow: "0 2px 8px rgba(0,0,0,0.03)" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px", flexWrap: "wrap", gap: "8px" }}>
+                  <div>
+                    <h4 style={{ fontSize: "15px", fontWeight: "700", margin: 0, color: "#0f172a" }}>
+                      Assign to Investors
+                    </h4>
+                    <span style={{ fontSize: "12px", color: "var(--text-muted)" }}>
+                      Target Brand Category: <strong style={{ color: "var(--primary)" }}>{selectedItem.category || "General"}</strong>
+                    </span>
+                  </div>
+                  {isSavingAssign && <span style={{ fontSize: "12px", color: "var(--primary)", fontWeight: "600" }}>Saving...</span>}
+                </div>
+
+                {/* Filter and Search Bar for Assigning Investors */}
+                <div style={{ display: "flex", gap: "10px", marginBottom: "12px", alignItems: "center", flexWrap: "wrap" }}>
+                  <div style={{ display: "flex", background: "#f1f5f9", padding: "3px", borderRadius: "8px", border: "1px solid #e2e8f0" }}>
+                    <button
+                      type="button"
+                      onClick={() => setAssignFilterMode("matching")}
+                      style={{
+                        padding: "5px 12px",
+                        fontSize: "12px",
+                        fontWeight: "700",
+                        borderRadius: "6px",
+                        border: "none",
+                        cursor: "pointer",
+                        background: assignFilterMode === "matching" ? "#2563eb" : "transparent",
+                        color: assignFilterMode === "matching" ? "#ffffff" : "#64748b",
+                        transition: "all 0.2s ease"
+                      }}
+                    >
+                      Matching Sector ({selectedItem.category || "All"})
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setAssignFilterMode("all")}
+                      style={{
+                        padding: "5px 12px",
+                        fontSize: "12px",
+                        fontWeight: "700",
+                        borderRadius: "6px",
+                        border: "none",
+                        cursor: "pointer",
+                        background: assignFilterMode === "all" ? "#2563eb" : "transparent",
+                        color: assignFilterMode === "all" ? "#ffffff" : "#64748b",
+                        transition: "all 0.2s ease"
+                      }}
+                    >
+                      All Investors ({investors.length})
+                    </button>
+                  </div>
+
+                  <input
+                    type="text"
+                    placeholder="Search name, email, sector..."
+                    value={assignSearch}
+                    onChange={(e) => setAssignSearch(e.target.value)}
+                    style={{
+                      padding: "6px 12px",
+                      fontSize: "12px",
+                      borderRadius: "6px",
+                      border: "1px solid #cbd5e1",
+                      flexGrow: 1,
+                      minWidth: "160px"
+                    }}
+                  />
+                </div>
+
+                {/* Investors Checkbox List */}
                 {investors.length === 0 ? (
                   <p style={{ fontSize: "12px", color: "var(--text-muted)" }}>No investors registered yet.</p>
-                ) : (
-                  <>
-                    <div style={{ maxHeight: "150px", overflowY: "auto", border: "1px solid var(--light-border)", borderRadius: "6px", padding: "8px", background: "white", marginBottom: "12px" }}>
-                      {investors.map(inv => {
-                        const invId = inv.id || inv._id;
-                        const isChecked = selectedInvestorsForBrand.includes(invId);
-                        return (
-                          <label key={invId} style={{ display: "flex", alignItems: "center", gap: "8px", padding: "6px 0", cursor: "pointer", fontSize: "13px", borderBottom: "1px solid #f1f5f9" }}>
-                            <input
-                              type="checkbox"
-                              checked={isChecked}
-                              onChange={(e) => {
-                                if (e.target.checked) {
-                                  setSelectedInvestorsForBrand([...selectedInvestorsForBrand, invId]);
-                                } else {
-                                  setSelectedInvestorsForBrand(selectedInvestorsForBrand.filter(x => x !== invId));
-                                }
-                              }}
-                            />
-                            <div>
-                              <strong>{inv.name}</strong> <span style={{ color: "var(--text-muted)", fontSize: "11px" }}>({inv.email})</span>
-                            </div>
-                          </label>
-                        );
-                      })}
-                    </div>
-                    <button
-                      className="btn btn-primary"
-                      style={{ width: "100%", fontSize: "13px", padding: "8px" }}
-                      onClick={handleSaveBrandAssignment}
-                      disabled={isSavingAssign}
-                    >
-                      Save Assignment to Selected Investors
-                    </button>
-                  </>
-                )}
+                ) : (() => {
+                  const displayedAssignInvestors = investors.filter(inv => {
+                    const invId = inv.id || inv._id;
+                    const isAlreadyAssigned = selectedInvestorsForBrand.includes(invId);
+                    const isMatching = isInvestorSectorMatch(inv, selectedItem);
+                    const matchesMode = assignFilterMode === "all" || isMatching || isAlreadyAssigned;
+
+                    if (!matchesMode) return false;
+
+                    if (!assignSearch.trim()) return true;
+                    const q = assignSearch.toLowerCase();
+                    const sectorsText = Array.isArray(inv.industries) ? inv.industries.join(" ").toLowerCase() : (inv.category || "").toLowerCase();
+                    return (
+                      (inv.name && inv.name.toLowerCase().includes(q)) ||
+                      (inv.email && inv.email.toLowerCase().includes(q)) ||
+                      sectorsText.includes(q)
+                    );
+                  });
+
+                  if (displayedAssignInvestors.length === 0) {
+                    return (
+                      <div style={{ textAlign: "center", padding: "16px", background: "#f8fafc", borderRadius: "8px", border: "1px dashed #cbd5e1" }}>
+                        <p style={{ fontSize: "13px", color: "#64748b", margin: "0 0 8px 0" }}>
+                          No investors found matching sector <strong>"{selectedItem.category}"</strong>.
+                        </p>
+                        {assignFilterMode === "matching" && (
+                          <button
+                            type="button"
+                            onClick={() => setAssignFilterMode("all")}
+                            style={{ fontSize: "12px", color: "#2563eb", background: "none", border: "none", cursor: "pointer", fontWeight: "700", textDecoration: "underline" }}
+                          >
+                            Switch to view All Investors ({investors.length})
+                          </button>
+                        )}
+                      </div>
+                    );
+                  }
+
+                  return (
+                    <>
+                      <div style={{ maxHeight: "200px", overflowY: "auto", border: "1px solid #e2e8f0", borderRadius: "8px", padding: "8px 12px", background: "white", marginBottom: "12px" }}>
+                        {displayedAssignInvestors.map(inv => {
+                          const invId = inv.id || inv._id;
+                          const isChecked = selectedInvestorsForBrand.includes(invId);
+                          const isMatch = isInvestorSectorMatch(inv, selectedItem);
+                          const sectorsList = Array.isArray(inv.industries) && inv.industries.length > 0
+                            ? inv.industries.join(", ")
+                            : (inv.category || inv.interestedCategory || "General");
+
+                          return (
+                            <label key={invId} style={{ display: "flex", alignItems: "flex-start", gap: "10px", padding: "8px 0", cursor: "pointer", fontSize: "13px", borderBottom: "1px solid #f1f5f9" }}>
+                              <input
+                                type="checkbox"
+                                checked={isChecked}
+                                style={{ marginTop: "3px" }}
+                                onChange={(e) => {
+                                  if (e.target.checked) {
+                                    setSelectedInvestorsForBrand([...selectedInvestorsForBrand, invId]);
+                                  } else {
+                                    setSelectedInvestorsForBrand(selectedInvestorsForBrand.filter(x => x !== invId));
+                                  }
+                                }}
+                              />
+                              <div style={{ flexGrow: 1 }}>
+                                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "6px" }}>
+                                  <div>
+                                    <strong style={{ color: "#0f172a" }}>{inv.name}</strong>{" "}
+                                    <span style={{ color: "#64748b", fontSize: "12px" }}>({inv.email})</span>
+                                  </div>
+                                  {isMatch ? (
+                                    <span style={{ fontSize: "10px", background: "#dcfce7", color: "#16a34a", padding: "2px 8px", borderRadius: "12px", fontWeight: "700" }}>
+                                      ✓ Matching Sector
+                                    </span>
+                                  ) : (
+                                    <span style={{ fontSize: "10px", background: "#f1f5f9", color: "#64748b", padding: "2px 8px", borderRadius: "12px", fontWeight: "600" }}>
+                                      Other Sector
+                                    </span>
+                                  )}
+                                </div>
+                                <div style={{ fontSize: "11px", color: "#64748b", marginTop: "2px" }}>
+                                  <strong>Interested Sectors:</strong> {sectorsList}
+                                </div>
+                              </div>
+                            </label>
+                          );
+                        })}
+                      </div>
+                      <button
+                        className="btn btn-primary"
+                        style={{ width: "100%", fontSize: "13px", padding: "10px", borderRadius: "8px", fontWeight: "700" }}
+                        onClick={handleSaveBrandAssignment}
+                        disabled={isSavingAssign}
+                      >
+                        {isSavingAssign ? "Saving Assignment..." : `Save Assignment (${selectedInvestorsForBrand.length} Selected)`}
+                      </button>
+                    </>
+                  );
+                })()}
               </div>
             </div>
             <div className="modal-footer" style={{ display: "flex", gap: "10px", justifyContent: "flex-end", flexWrap: "wrap" }}>

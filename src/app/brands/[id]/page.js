@@ -105,20 +105,27 @@ export default function BrandDetailPage({ params }) {
 
     setSubmittingEnquiry(true);
     try {
+      const budgetFormatted = enquiryForm.budget || `${formatLakhs(brand.minInvestment)} - ${formatLakhs(brand.maxInvestment)}`;
       const res = await fetch("/api/investors", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          name: enquiryForm.name,
           fullName: enquiryForm.name,
           email: enquiryForm.email,
           phone: enquiryForm.phone,
           city: enquiryForm.city || "Not specified",
-          investmentCapacity: enquiryForm.budget || `${brand.minInvestment || 0} - ${brand.maxInvestment || 0}`,
-          interestedCategory: brand.category || "General",
           preferredLocation: enquiryForm.city || "Not specified",
+          investment_range: budgetFormatted,
+          investmentCapacity: budgetFormatted,
+          category: brand.category || "General",
+          interestedCategory: brand.category || "General",
+          comments: `Interested in Franchise: ${brand.name}. Additional Message: ${enquiryForm.message || "None"}`,
           notes: `Interested in Franchise: ${brand.name}. Additional Message: ${enquiryForm.message || "None"}`,
-          status: "New Lead",
+          status: "Pending",
+          brandName: brand.name,
           targetBrand: brand.name,
+          brandId: brand.id || brand._id,
           targetBrandId: brand.id || brand._id
         })
       });
@@ -126,7 +133,8 @@ export default function BrandDetailPage({ params }) {
       if (res.ok) {
         setEnquirySubmitted(true);
       } else {
-        alert("Failed to submit enquiry. Please try again or WhatsApp directly.");
+        const errorData = await res.json().catch(() => ({}));
+        alert(errorData.error || "Failed to submit enquiry. Please try again or WhatsApp directly.");
       }
     } catch (err) {
       console.error(err);
