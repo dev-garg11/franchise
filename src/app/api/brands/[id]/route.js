@@ -1,5 +1,22 @@
 import { NextResponse } from "next/server";
-import { updateBrand, deleteBrand } from "@/lib/db";
+import { getBrandById, updateBrand, deleteBrand } from "@/lib/db";
+
+export async function GET(request, { params }) {
+  try {
+    const resolvedParams = await params;
+    const { id } = resolvedParams;
+
+    const brand = await getBrandById(id);
+    if (!brand) {
+      return NextResponse.json({ error: "Brand not found" }, { status: 404 });
+    }
+
+    return NextResponse.json({ success: true, brand });
+  } catch (error) {
+    return NextResponse.json({ error: "Failed to fetch brand" }, { status: 500 });
+  }
+}
+
 
 export async function PATCH(request, { params }) {
   try {

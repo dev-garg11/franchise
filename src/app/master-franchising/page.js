@@ -518,8 +518,8 @@ export default function MasterFranchisingPage() {
 
                     {/* Action Button */}
                     <div style={{ marginTop: "auto" }}>
-                      <button 
-                        onClick={() => handleApplyClick(brand)}
+                      <Link 
+                        href={`/brands/${brand.id || brand._id}`}
                         className="btn btn-primary"
                         style={{
                           width: "100%",
@@ -529,11 +529,12 @@ export default function MasterFranchisingPage() {
                           display: "flex",
                           alignItems: "center",
                           justifyContent: "center",
-                          gap: "6px"
+                          gap: "6px",
+                          textDecoration: "none"
                         }}
                       >
                         Apply for Master Rights <ChevronRight size={16} />
-                      </button>
+                      </Link>
                     </div>
 
                   </div>
@@ -546,194 +547,7 @@ export default function MasterFranchisingPage() {
 
       </div>
 
-      {/* Interactive Master Franchise Application Modal */}
-      {selectedBrand !== undefined && selectedBrand !== false && selectedBrand !== null && (
-        <div style={{
-          position: "fixed",
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          background: "rgba(15, 23, 42, 0.75)",
-          backdropFilter: "blur(6px)",
-          zIndex: 9999,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          padding: "20px"
-        }} onClick={() => setSelectedBrand(null)}>
-          
-          <div style={{
-            background: "white",
-            borderRadius: "24px",
-            maxWidth: "560px",
-            width: "100%",
-            padding: "32px",
-            position: "relative",
-            boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.25)",
-            maxHeight: "90vh",
-            overflowY: "auto"
-          }} onClick={(e) => e.stopPropagation()}>
-            
-            <button 
-              onClick={() => setSelectedBrand(null)}
-              style={{
-                position: "absolute",
-                top: "20px",
-                right: "20px",
-                background: "#f1f5f9",
-                border: "none",
-                width: "36px",
-                height: "36px",
-                borderRadius: "50%",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                cursor: "pointer",
-                color: "#64748b"
-              }}
-            >
-              <X size={18} />
-            </button>
 
-            {enquirySubmitted ? (
-              <div style={{ textAlign: "center", padding: "20px 0" }}>
-                <div style={{
-                  width: "60px",
-                  height: "60px",
-                  borderRadius: "50%",
-                  background: "rgba(16, 185, 129, 0.1)",
-                  color: "#10b981",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  margin: "0 auto 16px"
-                }}>
-                  <CheckCircle2 size={36} />
-                </div>
-                <h3 style={{ fontSize: "22px", fontWeight: "800", color: "#0f172a" }}>Application Submitted!</h3>
-                <p style={{ fontSize: "14px", color: "#64748b", margin: "8px 0 24px" }}>
-                  Your Master Franchise application for <strong>{selectedBrand?.name || "Master Franchise Network"}</strong> has been received. Our Master Expansion Desk will contact you within 24 hours.
-                </p>
-                <button 
-                  onClick={() => setSelectedBrand(null)}
-                  className="btn btn-primary"
-                  style={{ width: "100%", padding: "12px" }}
-                >
-                  Close Window
-                </button>
-              </div>
-            ) : (
-              <div>
-                <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "6px" }}>
-                  <Crown size={20} style={{ color: "#fbbf24" }} />
-                  <span style={{ fontSize: "12px", fontWeight: "800", color: "#4f46e5", textTransform: "uppercase" }}>Master Rights Application</span>
-                </div>
-                
-                <h2 style={{ fontSize: "22px", fontWeight: "800", color: "#0f172a", marginBottom: "4px" }}>
-                  {selectedBrand ? selectedBrand.name : "Master Franchise Opportunity"}
-                </h2>
-                <p style={{ fontSize: "13px", color: "#64748b", marginBottom: "20px" }}>
-                  Request state exclusivity, sub-franchisee royalty terms, and investment package.
-                </p>
-
-                <form onSubmit={handleEnquirySubmit} style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
-                  
-                  <div className="form-group">
-                    <label style={{ fontSize: "12.5px", fontWeight: "700", marginBottom: "4px" }}>Full Name *</label>
-                    <input 
-                      type="text"
-                      required
-                      placeholder="e.g. Vikramaditya Sharma"
-                      value={enquiryForm.name}
-                      onChange={(e) => setEnquiryForm({ ...enquiryForm, name: e.target.value })}
-                      className="form-input"
-                    />
-                  </div>
-
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
-                    <div className="form-group">
-                      <label style={{ fontSize: "12.5px", fontWeight: "700", marginBottom: "4px" }}>Email *</label>
-                      <input 
-                        type="email"
-                        required
-                        placeholder="investor@company.com"
-                        value={enquiryForm.email}
-                        onChange={(e) => setEnquiryForm({ ...enquiryForm, email: e.target.value })}
-                        className="form-input"
-                      />
-                    </div>
-                    <div className="form-group">
-                      <label style={{ fontSize: "12.5px", fontWeight: "700", marginBottom: "4px" }}>Mobile Number *</label>
-                      <input 
-                        type="tel"
-                        required
-                        placeholder="+91-9876543210"
-                        value={enquiryForm.phone}
-                        onChange={(e) => setEnquiryForm({ ...enquiryForm, phone: e.target.value })}
-                        className="form-input"
-                      />
-                    </div>
-                  </div>
-
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
-                    <div className="form-group">
-                      <label style={{ fontSize: "12.5px", fontWeight: "700", marginBottom: "4px" }}>Target Exclusivity State *</label>
-                      <select 
-                        value={enquiryForm.targetState}
-                        onChange={(e) => setEnquiryForm({ ...enquiryForm, targetState: e.target.value })}
-                        className="form-input"
-                      >
-                        {ALL_INDIAN_STATES.map((st) => (
-                          <option key={st} value={st}>{st}</option>
-                        ))}
-                      </select>
-                    </div>
-
-                    <div className="form-group">
-                      <label style={{ fontSize: "12.5px", fontWeight: "700", marginBottom: "4px" }}>Master Budget Capital *</label>
-                      <select 
-                        value={enquiryForm.budget}
-                        onChange={(e) => setEnquiryForm({ ...enquiryForm, budget: e.target.value })}
-                        className="form-input"
-                      >
-                        <option value="Rs. 15 Lakhs - 25 Lakhs">Rs. 15 Lakhs - 25 Lakhs</option>
-                        <option value="Rs. 25 Lakhs - 50 Lakhs">Rs. 25 Lakhs - 50 Lakhs</option>
-                        <option value="Rs. 50 Lakhs - 1 Crore">Rs. 50 Lakhs - 1 Crore</option>
-                        <option value="Rs. 1 Crore - 2 Crores">Rs. 1 Crore - 2 Crores</option>
-                        <option value="Above Rs. 2 Crores">Above Rs. 2 Crores</option>
-                      </select>
-                    </div>
-                  </div>
-
-                  <div className="form-group">
-                    <label style={{ fontSize: "12.5px", fontWeight: "700", marginBottom: "4px" }}>Business Background & Comments</label>
-                    <textarea 
-                      rows="3"
-                      placeholder="Briefly state your current business background, existing retail space (if any), and questions for the brand owner."
-                      value={enquiryForm.message}
-                      onChange={(e) => setEnquiryForm({ ...enquiryForm, message: e.target.value })}
-                      className="form-input"
-                    ></textarea>
-                  </div>
-
-                  <button 
-                    type="submit" 
-                    disabled={submitting}
-                    className="btn btn-primary"
-                    style={{ width: "100%", padding: "14px", fontSize: "15px", fontWeight: "700", marginTop: "8px" }}
-                  >
-                    {submitting ? "Submitting Application..." : "Submit Master Franchise Application"}
-                  </button>
-
-                </form>
-              </div>
-            )}
-
-          </div>
-
-        </div>
-      )}
 
     </div>
   );

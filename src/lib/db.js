@@ -286,6 +286,29 @@ export async function getBrands() {
   }
 }
 
+export async function getBrandById(id) {
+  await dbConnect();
+  try {
+    let brand = null;
+    if (mongoose.Types.ObjectId.isValid(id)) {
+      brand = await Brand.findById(id).populate('user').lean();
+    }
+    if (!brand) {
+      brand = await Brand.findOne({ id: id }).populate('user').lean();
+    }
+    if (!brand) return null;
+    return {
+      ...brand,
+      id: brand.id || brand._id.toString(),
+      email: brand.user ? brand.user.email : brand.email
+    };
+  } catch (error) {
+    console.error("Error fetching brand by ID:", error);
+    return null;
+  }
+}
+
+
 export async function saveBrand(brandData) {
   await dbConnect();
   try {

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Link from "next/link";
 import { Briefcase, Zap, ShieldCheck, ArrowRight, MessageCircle, Percent, DollarSign, ChevronRight, X, CheckCircle, Award, RefreshCw } from "lucide-react";
 import { ProductSkeletonGrid } from "@/components/SkeletonLoader";
 import { getApprovedBrands } from "@/lib/brandsCache";
@@ -349,8 +350,8 @@ export default function TopBusinessOpportunities({ brands = [], loading = false,
 
                   {/* Action Buttons Grid */}
                   <div style={{ marginTop: "auto", display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
-                    <button
-                      onClick={() => setSelectedOpportunity(biz)}
+                    <Link
+                      href={`/brands/${biz.id || biz._id}`}
                       style={{
                         padding: "10px",
                         borderRadius: "8px",
@@ -359,11 +360,12 @@ export default function TopBusinessOpportunities({ brands = [], loading = false,
                         color: "#0f172a",
                         fontWeight: "700",
                         fontSize: "13px",
-                        cursor: "pointer"
+                        textDecoration: "none",
+                        textAlign: "center"
                       }}
                     >
                       View Details
-                    </button>
+                    </Link>
 
                     <button
                       onClick={() => handleWhatsAppEnquiry(biz)}
@@ -392,171 +394,7 @@ export default function TopBusinessOpportunities({ brands = [], loading = false,
         )}
       </div>
 
-      {/* Opportunity Details Popup Modal */}
-      {selectedOpportunity && (
-        <div
-          className="modal-overlay"
-          onClick={(e) => { if (e.target === e.currentTarget) setSelectedOpportunity(null); }}
-          style={{
-            position: "fixed",
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            backgroundColor: "rgba(15, 23, 42, 0.8)",
-            backdropFilter: "blur(6px)",
-            WebkitBackdropFilter: "blur(6px)",
-            padding: "20px",
-            zIndex: 999999,
-            fontFamily: "'Inter', sans-serif"
-          }}
-        >
-          <div
-            style={{
-              maxWidth: "600px",
-              width: "100%",
-              borderRadius: "20px",
-              overflow: "hidden",
-              backgroundColor: "#ffffff",
-              boxShadow: "0 25px 50px -12px rgba(0,0,0,0.4)",
-              maxHeight: "90vh",
-              display: "flex",
-              flexDirection: "column",
-              position: "relative"
-            }}
-          >
-            {/* Header Image */}
-            <div style={{ position: "relative", height: "180px" }}>
-              <img
-                src={selectedOpportunity.image}
-                alt={selectedOpportunity.title}
-                style={{ width: "100%", height: "100%", objectFit: "cover" }}
-              />
-              <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, rgba(15,23,42,0.9) 0%, transparent 60%)" }}></div>
 
-              <button
-                onClick={() => setSelectedOpportunity(null)}
-                style={{
-                  position: "absolute",
-                  right: "16px",
-                  top: "16px",
-                  background: "rgba(0,0,0,0.4)",
-                  border: "none",
-                  color: "#fff",
-                  width: "32px",
-                  height: "32px",
-                  borderRadius: "50%",
-                  cursor: "pointer",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center"
-                }}
-              >
-                <X size={18} />
-              </button>
-
-              <div style={{ position: "absolute", bottom: "16px", left: "20px", right: "20px" }}>
-                <span style={{ fontSize: "11px", color: "#38bdf8", fontWeight: "700", textTransform: "uppercase", background: "rgba(15, 23, 42, 0.8)", padding: "3px 10px", borderRadius: "12px", border: "1px solid rgba(56, 189, 248, 0.3)" }}>
-                  {selectedOpportunity.badge}
-                </span>
-                <h3 style={{ fontSize: "22px", fontWeight: "800", color: "#ffffff", margin: "6px 0 0 0" }}>
-                  {selectedOpportunity.title}
-                </h3>
-              </div>
-            </div>
-
-            {/* Content Body */}
-            <div style={{ padding: "24px", overflowY: "auto" }}>
-              <div
-                style={{ fontSize: "14px", color: "#475569", lineHeight: 1.6, marginBottom: "20px" }}
-                dangerouslySetInnerHTML={{ __html: selectedOpportunity.description || "" }}
-              />
-
-
-              {/* Business Metrics Grid */}
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "12px", padding: "14px", background: "#f8fafc", borderRadius: "12px", marginBottom: "20px", border: "1px solid #e2e8f0" }}>
-                <div>
-                  <span style={{ fontSize: "11px", color: "#94a3b8", fontWeight: "700", display: "block" }}>INVESTMENT</span>
-                  <span style={{ fontSize: "14px", fontWeight: "800", color: "#0f172a" }}>{selectedOpportunity.investment}</span>
-                </div>
-                <div>
-                  <span style={{ fontSize: "11px", color: "#94a3b8", fontWeight: "700", display: "block" }}>MARGIN / ROYALTY</span>
-                  <span style={{ fontSize: "14px", fontWeight: "800", color: "#16a34a" }}>{selectedOpportunity.margin}</span>
-                </div>
-                <div>
-                  <span style={{ fontSize: "11px", color: "#94a3b8", fontWeight: "700", display: "block" }}>PAYBACK</span>
-                  <span style={{ fontSize: "14px", fontWeight: "800", color: "#2563eb" }}>{selectedOpportunity.payback}</span>
-                </div>
-              </div>
-
-              {/* Highlights */}
-              {selectedOpportunity.highlights && (
-                <div style={{ marginBottom: "24px" }}>
-                  <h4 style={{ fontSize: "14px", fontWeight: "800", color: "#0f172a", marginBottom: "10px" }}>
-                    Key Opportunity Highlights
-                  </h4>
-                  <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-                    {selectedOpportunity.highlights.map((h, i) => (
-                      <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: "8px", fontSize: "13px", color: "#334155" }}>
-                        <CheckCircle size={16} style={{ color: "#16a34a", flexShrink: 0, marginTop: "2px" }} />
-                        <span>{h}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* CTAs */}
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
-                <button
-                  onClick={() => {
-                    setSelectedOpportunity(null);
-                    if (onAskExperts) onAskExperts("buy");
-                  }}
-                  style={{
-                    padding: "12px",
-                    borderRadius: "10px",
-                    border: "1px solid #cbd5e1",
-                    background: "#ffffff",
-                    color: "#0f172a",
-                    fontWeight: "700",
-                    fontSize: "14px",
-                    cursor: "pointer"
-                  }}
-                >
-                  Ask Expert Advice
-                </button>
-
-                <button
-                  onClick={() => {
-                    handleWhatsAppEnquiry(selectedOpportunity);
-                    setSelectedOpportunity(null);
-                  }}
-                  style={{
-                    padding: "12px",
-                    borderRadius: "10px",
-                    border: "none",
-                    background: "#25D366",
-                    color: "#ffffff",
-                    fontWeight: "700",
-                    fontSize: "14px",
-                    cursor: "pointer",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    gap: "8px"
-                  }}
-                >
-                  <MessageCircle size={18} /> WhatsApp Admin
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
     </section>
   );
 }

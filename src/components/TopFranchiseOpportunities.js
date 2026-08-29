@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { Star, Award, Building, ArrowRight, MessageCircle, CheckCircle2, TrendingUp } from "lucide-react";
 import { ProductSkeletonGrid } from "@/components/SkeletonLoader";
 
@@ -246,8 +247,8 @@ export default function TopFranchiseOpportunities({ brands = [], loading = false
 
                 {/* Action buttons */}
                 <div style={{ marginTop: "auto", display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
-                  <button
-                    onClick={() => onSelectBrand && onSelectBrand(brand)}
+                  <Link
+                    href={`/brands/${brand.id || brand._id}`}
                     style={{
                       padding: "10px",
                       borderRadius: "8px",
@@ -256,11 +257,12 @@ export default function TopFranchiseOpportunities({ brands = [], loading = false
                       color: "#0f172a",
                       fontWeight: "700",
                       fontSize: "13px",
-                      cursor: "pointer"
+                      textDecoration: "none",
+                      textAlign: "center"
                     }}
                   >
                     View Details
-                  </button>
+                  </Link>
 
                   <button
                     onClick={() => handleWhatsAppEnquiry(brand)}
