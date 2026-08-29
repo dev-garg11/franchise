@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { CheckCircle2, ShieldCheck, Mail, MapPin, IndianRupee, Lock } from "lucide-react";
 import { REGISTRATION_INVESTMENT_OPTIONS, getFilteredMaxLimits } from "@/lib/investmentData";
+import { BRAND_CATEGORIES } from "@/lib/brandConstants";
 
 const INVESTMENT_OPTIONS = [
   "Rs. 10,000 - 50,000",
@@ -339,15 +340,8 @@ export default function InvestorRegistration() {
             <h3 className="form-section-title">3. Sector Preferences</h3>
             <div className="form-group" style={{ marginBottom: "20px" }}>
               <label>Select sectors you are interested in:</label>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px", marginTop: "8px" }}>
-                {[
-                  "Food and Beverage",
-                  "Retail",
-                  "Education",
-                  "Automobiles",
-                  "Health and Wellness",
-                  "Business Services",
-                ].map((ind, i) => (
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", gap: "10px", marginTop: "8px" }}>
+                {BRAND_CATEGORIES.map((ind, i) => (
                   <div key={i} className="form-checkbox">
                     <input
                       type="checkbox"
