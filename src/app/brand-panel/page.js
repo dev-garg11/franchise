@@ -229,18 +229,55 @@ export default function BrandPanel() {
       }
 
       if (res.ok) {
+        setUpdateSuccess("Brand listing updated successfully! Your updates are now Under Review by our admin team.");
         clearBrandsCache();
-        setUpdateSuccess("Listing updated successfully and submitted for Admin Review! Status changed to Pending.");
         loadBrandData(email);
       } else {
         const data = await res.json();
         setUpdateError(data.error || "Failed to update listing.");
       }
     } catch (err) {
-      setUpdateError("Network error. Please try again.");
+      console.error(err);
+      setUpdateError("Server error while updating listing.");
     } finally {
       setUpdateLoading(false);
     }
+  };
+
+  const handleImageFileSelect = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      alert("Please select a valid image file (PNG, JPG, WEBP).");
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        let width = img.width;
+        let height = img.height;
+        const maxDim = 1200;
+        if (width > maxDim || height > maxDim) {
+          if (width > height) {
+            height = Math.round((height * maxDim) / width);
+            width = maxDim;
+          } else {
+            width = Math.round((width * maxDim) / height);
+            height = maxDim;
+          }
+        }
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(img, 0, 0, width, height);
+        const base64 = canvas.toDataURL("image/jpeg", 0.85);
+        setFormFields((prev) => ({ ...prev, image: base64 }));
+      };
+      img.src = event.target.result;
+    };
+    reader.readAsDataURL(file);
   };
 
   const formatLakhs = (val) => {
@@ -650,15 +687,42 @@ export default function BrandPanel() {
                       />
                     </div>
 
-                    <div className="form-group">
-                      <label>Cover Image URL</label>
+                    <div className="form-group form-grid-full" style={{ background: "#f8fafc", padding: "16px", borderRadius: "12px", border: "1px solid var(--border-color)" }}>
+                      <label style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px", fontWeight: "700" }}>
+                        <span>Brand Cover / Logo Image</span>
+                        <span style={{ fontSize: "12px", color: "var(--primary)", fontWeight: "600" }}>Upload File or Paste Image URL</span>
+                      </label>
+
+                      <div style={{ display: "flex", gap: "14px", alignItems: "center", flexWrap: "wrap", marginBottom: "10px" }}>
+                        {formFields.image ? (
+                          <img
+                            src={formFields.image}
+                            alt="Cover Preview"
+                            style={{ width: "70px", height: "70px", borderRadius: "10px", objectFit: "cover", border: "2px solid var(--primary)" }}
+                          />
+                        ) : (
+                          <div style={{ width: "70px", height: "70px", borderRadius: "10px", background: "#e2e8f0", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "11px", color: "#64748b", textAlign: "center" }}>
+                            No Image
+                          </div>
+                        )}
+                        <div>
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={handleImageFileSelect}
+                            style={{ fontSize: "13px" }}
+                          />
+                          <p style={{ fontSize: "11px", color: "var(--text-muted)", marginTop: "4px" }}>Max recommended size: 1200x1200px (JPG, PNG, WEBP)</p>
+                        </div>
+                      </div>
+
                       <input
-                        type="url"
+                        type="text"
                         className="form-input"
-                        placeholder="https://images.unsplash.com/..."
+                        placeholder="Or paste image URL (https://... or data:image/...)"
                         value={formFields.image}
                         onChange={(e) => setFormFields({ ...formFields, image: e.target.value })}
-                        style={{ background: "#f8fafc" }}
+                        style={{ background: "#ffffff" }}
                       />
                     </div>
 

@@ -5,25 +5,22 @@ import { useState, useEffect, useCallback } from "react";
 let memoryBrandsCache = null;
 let fetchPromise = null;
 
-const CACHE_KEY = "cached_approved_brands";
+const CACHE_KEY = "cached_approved_brands_v2";
 
 /**
- * Safely saves brand data to sessionStorage by stripping heavy payload fields and catching quota limits.
+ * Safely saves brand data to sessionStorage while preserving original brand image data.
  */
 function saveToSessionStorage(data) {
     if (typeof window === "undefined" || !Array.isArray(data)) return;
     try {
-        // Sanitize brand items (omit ultra-large base64 strings and non-essential fields to fit storage quota)
+        // Sanitize brand items (omit sensitive user objects and passwords, retain all image data)
         const cleanData = data.map(b => {
             const { user, password, ...rest } = b;
-            if (typeof rest.image === "string" && rest.image.length > 1000 && rest.image.startsWith("data:")) {
-                return { ...rest, image: "" };
-            }
             return rest;
         });
         sessionStorage.setItem(CACHE_KEY, JSON.stringify(cleanData));
     } catch (e) {
-        // If quota exceeded, silently clear item to prevent browser error logs
+        // If quota exceeded, silently handle item to prevent browser error logs
         try {
             sessionStorage.removeItem(CACHE_KEY);
         } catch (ignored) {}
@@ -39,6 +36,9 @@ export function getCachedApprovedBrandsSync() {
     }
     if (typeof window !== "undefined") {
         try {
+            // Clean legacy cache key that stripped images
+            sessionStorage.removeItem("cached_approved_brands");
+
             const stored = sessionStorage.getItem(CACHE_KEY);
             if (stored) {
                 const parsed = JSON.parse(stored);
@@ -100,6 +100,7 @@ export function clearBrandsCache() {
     if (typeof window !== "undefined") {
         try {
             sessionStorage.removeItem(CACHE_KEY);
+            sessionStorage.removeItem("cached_approved_brands");
         } catch (e) {}
     }
 }

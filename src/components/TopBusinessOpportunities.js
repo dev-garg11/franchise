@@ -62,122 +62,7 @@ export default function TopBusinessOpportunities({ brands = [], loading = false,
 
 
   // Fallback static business opportunities
-  const fallbackOpportunities = [
-    {
-      id: "biz-1",
-      title: "EV Charging Station Dealership",
-      type: "Distributorship",
-      category: "Automobiles",
-      investment: "₹3 Lakhs - ₹8 Lakhs",
-      margin: "Up to 35%",
-      payback: "8 - 12 Months",
-      tags: ["Low Capital", "Govt Subsidized", "High Margin"],
-      badge: "HOT DEALERSHIP",
-      image: "https://images.unsplash.com/photo-1593941707882-a5bba14938c7?auto=format&fit=crop&q=80&w=600",
-      description: "Setup fast EV charging points at high-traffic commercial spaces with 24x7 hardware and app management.",
-      highlights: [
-        "Government subsidies & green energy tax benefits available",
-        "24/7 automated remote monitoring and digital payments",
-        "Complete installation support & site location approval",
-        "High repeat customer traffic from EV drivers"
-      ]
-    },
-    {
-      id: "biz-2",
-      title: "Solar Rooftop Systems Agency",
-      type: "Distributorship",
-      category: "Clean Energy",
-      investment: "₹2 Lakhs - ₹5 Lakhs",
-      margin: "Up to 25%",
-      payback: "6 - 10 Months",
-      tags: ["Low Capital", "High Growth"],
-      badge: "TOP SELLER",
-      image: "https://images.unsplash.com/photo-1509391365360-2e959784a276?auto=format&fit=crop&q=80&w=600",
-      description: "Distribute modular rooftop solar power kits and net-metering solutions for residential & industrial clients.",
-      highlights: [
-        "High demand driven by rising electricity tariffs",
-        "Zero warehousing requirement - direct factory delivery",
-        "Full technical training provided for local installations",
-        "Recurring maintenance revenue streams"
-      ]
-    },
-    {
-      id: "biz-3",
-      title: "FMCG Organic Food Distribution",
-      type: "Distributorship",
-      category: "Retail",
-      investment: "₹4 Lakhs - ₹10 Lakhs",
-      margin: "Up to 30%",
-      payback: "9 - 14 Months",
-      tags: ["High Margin", "Fast Rotation"],
-      badge: "HIGH MARGIN",
-      image: "https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&q=80&w=600",
-      description: "Exclusive district-level distribution rights for premium organic grocery, cold-pressed oils & superfoods.",
-      highlights: [
-        "Exclusive territory rights for your target district",
-        "High inventory turnover with 30%+ net margins",
-        "Strong marketing collateral & supermarket tie-ups",
-        "100% certified organic product range"
-      ]
-    },
-    {
-      id: "biz-4",
-      title: "Fintech & ATM Franchise Agency",
-      type: "Low Investment (< ₹5L)",
-      category: "Business Services",
-      investment: "₹1.5 Lakhs - ₹3 Lakhs",
-      margin: "₹12 - ₹18 per Transaction",
-      payback: "5 - 8 Months",
-      tags: ["Low Capital", "Passive Income"],
-      badge: "PASSIVE INCOME",
-      image: "https://images.unsplash.com/photo-1559526324-4b87b5e36e44?auto=format&fit=crop&q=80&w=600",
-      description: "Install white-label ATMs & digital banking kiosks in tier-2/3 towns with lifetime residual commissions.",
-      highlights: [
-        "Earn daily transaction commissions without inventory",
-        "Complete machine security & insurance coverage",
-        "Fast setup within 15 days of site approval",
-        "Low space requirement: 50-100 Sq.Ft"
-      ]
-    },
-    {
-      id: "biz-5",
-      title: "Master Franchise - EdTech Coding",
-      type: "Master Franchise",
-      category: "Education",
-      investment: "₹12 Lakhs - ₹25 Lakhs",
-      margin: "Up to 45%",
-      payback: "12 - 16 Months",
-      tags: ["Master Territory", "High Margin"],
-      badge: "EXCLUSIVE TERRITORY",
-      image: "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&q=80&w=600",
-      description: "State-level master franchise rights to sub-franchise and distribute AI coding curriculum.",
-      highlights: [
-        "Sub-franchise licensing rights with revenue sharing",
-        "Turnkey LMS software and teacher training module",
-        "Corporate branding & national advertising support",
-        "Guaranteed institutional school tie-ups"
-      ]
-    },
-    {
-      id: "biz-6",
-      title: "Smart Home Automation Dealership",
-      type: "Distributorship",
-      category: "Retail",
-      investment: "₹3.5 Lakhs - ₹7 Lakhs",
-      margin: "Up to 40%",
-      payback: "8 - 12 Months",
-      tags: ["High Margin", "Tech Driven"],
-      badge: "TRENDING TECH",
-      image: "https://images.unsplash.com/photo-1558002038-1055907df827?auto=format&fit=crop&q=80&w=600",
-      description: "IoT smart switches, biometric security doors, and wireless home automation distributorship.",
-      highlights: [
-        "Compatible with Alexa, Google Home & mobile apps",
-        "High profit margin on luxury builder projects",
-        "Experience center demo kit provided by franchisor",
-        "Dedicated technical support engineer"
-      ]
-    }
-  ];
+  const fallbackOpportunities = [];
 
   // Dynamically map MongoDB brands to opportunity cards
   const dynamicOpportunities = (dbBrands || []).map((brand, idx) => {
@@ -223,11 +108,7 @@ export default function TopBusinessOpportunities({ brands = [], loading = false,
     };
   });
 
-
-  // Combine database opportunities with fallback items if DB has few items
-  const allOpportunities = dynamicOpportunities.length >= 3
-    ? dynamicOpportunities
-    : [...dynamicOpportunities, ...fallbackOpportunities.slice(dynamicOpportunities.length)];
+  const allOpportunities = dynamicOpportunities;
 
   const filteredOpportunities = allOpportunities.filter(item => {
     if (activeFilter === "All") return true;
@@ -268,9 +149,9 @@ export default function TopBusinessOpportunities({ brands = [], loading = false,
                   padding: "8px 18px",
                   borderRadius: "20px",
                   fontSize: "13px",
-                  fontWeight: "700",
-                  border: activeFilter === f ? "none" : "1px solid #e2e8f0",
-                  background: activeFilter === f ? "#25D366" : "#f8fafc",
+                  fontWeight: "600",
+                  border: activeFilter === f ? "none" : "1px solid #cbd5e1",
+                  background: activeFilter === f ? "#16a34a" : "#ffffff",
                   color: activeFilter === f ? "#ffffff" : "#475569",
                   cursor: "pointer",
                   transition: "all 0.2s ease"
@@ -285,6 +166,11 @@ export default function TopBusinessOpportunities({ brands = [], loading = false,
         {/* Opportunities List Grid */}
         {isSkeletonLoading ? (
           <ProductSkeletonGrid count={6} minWidth="350px" />
+        ) : filteredOpportunities.length === 0 ? (
+          <div style={{ textAlign: "center", padding: "50px 20px", background: "#f8fafc", borderRadius: "16px", border: "1px dashed #cbd5e1" }}>
+            <h3 style={{ fontSize: "18px", fontWeight: "800", color: "#0f172a", marginBottom: "6px" }}>No Business Opportunities Currently Listed</h3>
+            <p style={{ color: "#64748b", fontSize: "14px" }}>Dealership and distributorship opportunities registered on Franchise Roots will appear here once approved.</p>
+          </div>
         ) : (
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(350px, 1fr))", gap: "24px" }}>
             {filteredOpportunities.map((biz) => (

@@ -75,96 +75,7 @@ const FI_MAX_BUDGETS = [
   "Rs. 30 Lakhs", "Rs. 50 Lakhs", "Rs. 1 Crore", "Rs. 2 Crores", "Rs. 5 Crores+"
 ];
 
-const LEADING_FRANCHISES = [
-  {
-    id: "lf-1",
-    name: "Performax Activewear",
-    category: "Sports & Fitness",
-    minInvestment: 1500000,
-    maxInvestment: 3000000,
-    hq: "Mumbai, MH",
-    roi: "12-18 Mos",
-    image: "https://images.unsplash.com/photo-1517838277536-f5f99be501cd?auto=format&fit=crop&q=80&w=600",
-    badge: "Trending"
-  },
-  {
-    id: "lf-2",
-    name: "Lee Cooper Denim",
-    category: "Fashion Apparel",
-    minInvestment: 2500000,
-    maxInvestment: 5000000,
-    hq: "New Delhi, DL",
-    roi: "18-24 Mos",
-    image: "https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&q=80&w=600",
-    badge: "Top Brand"
-  },
-  {
-    id: "lf-3",
-    name: "Cult Fitness Hub",
-    category: "Health & Fitness",
-    minInvestment: 3000000,
-    maxInvestment: 7500000,
-    hq: "Bengaluru, KA",
-    roi: "15-20 Mos",
-    image: "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&q=80&w=600",
-    badge: "High ROI"
-  },
-  {
-    id: "lf-4",
-    name: "Presto Personalised Gifts",
-    category: "Retail & Gifting",
-    minInvestment: 800000,
-    maxInvestment: 1500000,
-    hq: "Kolkata, WB",
-    roi: "10-14 Mos",
-    image: "https://images.unsplash.com/photo-1513885535751-8b9238bd345a?auto=format&fit=crop&q=80&w=600",
-    badge: "Popular"
-  },
-  {
-    id: "lf-5",
-    name: "Lakme Salon & Spa",
-    category: "Beauty & Wellness",
-    minInvestment: 3500000,
-    maxInvestment: 8000000,
-    hq: "Mumbai, MH",
-    roi: "18-24 Mos",
-    image: "https://images.unsplash.com/photo-1560066984-138dadb4c035?auto=format&fit=crop&q=80&w=600",
-    badge: "Luxury"
-  },
-  {
-    id: "lf-6",
-    name: "Zudio Fashion Outlet",
-    category: "Retail Apparel",
-    minInvestment: 4000000,
-    maxInvestment: 10000000,
-    hq: "Pune, MH",
-    roi: "20-24 Mos",
-    image: "https://images.unsplash.com/photo-1441986300917-64674bd600d8?auto=format&fit=crop&q=80&w=600",
-    badge: "Hot Demand"
-  },
-  {
-    id: "lf-7",
-    name: "Jaipur Chai Premium",
-    category: "Food & Beverage",
-    minInvestment: 500000,
-    maxInvestment: 1200000,
-    hq: "Jaipur, RJ",
-    roi: "10-15 Mos",
-    image: "https://images.unsplash.com/photo-1544787219-7f47ccb76574?auto=format&fit=crop&q=80&w=600",
-    badge: "#1 Pick"
-  },
-  {
-    id: "lf-8",
-    name: "Doctor Garage EV Hub",
-    category: "Automobiles",
-    minInvestment: 1000000,
-    maxInvestment: 2500000,
-    hq: "Ahmedabad, GJ",
-    roi: "12-18 Mos",
-    image: "https://images.unsplash.com/photo-1617814076367-b759c7d7e738?auto=format&fit=crop&q=80&w=600",
-    badge: "EV Growth"
-  }
-];
+const LEADING_FRANCHISES = [];
 
 // FAQS mock data
 const FAQS = [
@@ -770,25 +681,26 @@ export default function Home() {
                   </div>
                 </div>
               ))
+            ) : brands.length === 0 ? (
+              <div style={{ gridColumn: "1 / -1", textAlign: "center", padding: "50px 20px", background: "#ffffff", borderRadius: "18px", border: "1px dashed var(--border-color)" }}>
+                <h3 style={{ fontSize: "18px", fontWeight: "800", color: "var(--text-dark)", marginBottom: "8px" }}>No Featured Brands Currently Listed</h3>
+                <p style={{ color: "var(--text-muted)", marginBottom: "20px", fontSize: "14px" }}>Be the first to list your franchise opportunity on Franchise Roots.</p>
+                <Link href="/brand-registration" className="btn btn-primary">Register Your Brand</Link>
+              </div>
             ) : (
-              (brands.length > 0
-                ? brands.map((b, idx) => ({
-                  ...b,
-                  id: b.id || b._id || `db-${idx}`,
-                  name: b.name || b.brandName || "Luxury Franchise",
-                  company: b.company || b.name || "",
-                  category: b.category || "Franchise Opportunity",
-                  minInvestment: b.minInvestment || 500000,
-                  maxInvestment: b.maxInvestment || 2000000,
-                  hq: b.hq || b.location || "India",
-                  roi: b.roi || "12-18 Mos",
-                  image: b.image || b.logo || b.bannerImage || LEADING_FRANCHISES[idx % LEADING_FRANCHISES.length].image,
-                  badge: b.featured ? "Featured" : "#1 Pick"
-                })).concat(
-                  LEADING_FRANCHISES.filter(fb => !brands.some(b => (b.name || b.brandName || "").toLowerCase() === fb.name.toLowerCase()))
-                )
-                : LEADING_FRANCHISES
-              ).map((b) => (
+              brands.map((b, idx) => ({
+                ...b,
+                id: b.id || b._id || `db-${idx}`,
+                name: b.name || b.brandName || "Franchise Opportunity",
+                company: b.company || b.name || "",
+                category: b.category || "Franchise Opportunity",
+                minInvestment: b.minInvestment || 0,
+                maxInvestment: b.maxInvestment || 0,
+                hq: b.hq || b.location || "India",
+                roi: b.roi || "12-18 Mos",
+                image: b.image || "https://images.unsplash.com/photo-1524178232363-1fb2b075b655?auto=format&fit=crop&q=80&w=400",
+                badge: b.featured ? "Featured" : "Verified"
+              })).map((b) => (
                 <div key={b.id} className="fi-brand-card-item">
                   <div className="fi-brand-img-box">
                     <img src={b.image} alt={b.name} />

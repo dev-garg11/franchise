@@ -1031,7 +1031,16 @@ export default function AdminDashboard() {
                         <tbody>
                           {brands.filter(b => b.status === "Pending").map((b) => (
                             <tr key={b.id}>
-                              <td style={{ fontWeight: "600" }}>{b.name}</td>
+                              <td style={{ fontWeight: "600" }}>
+                                <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                                  <img
+                                    src={b.image || "https://images.unsplash.com/photo-1524178232363-1fb2b075b655?auto=format&fit=crop&q=80&w=100"}
+                                    alt={b.name}
+                                    style={{ width: "36px", height: "36px", borderRadius: "8px", objectFit: "cover", flexShrink: 0, border: "1px solid var(--border-color)" }}
+                                  />
+                                  <span>{b.name}</span>
+                                </div>
+                              </td>
                               <td>{b.category}</td>
                               <td>{formatLakhs(b.minInvestment)}</td>
                               <td style={{ whiteSpace: "nowrap", textAlign: "right" }}>
@@ -1130,25 +1139,32 @@ export default function AdminDashboard() {
                         return (
                           <tr key={b.id}>
                             <td>
-                              <div>
-                                <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                                  <span style={{ fontWeight: "700" }}>{b.name}</span>
-                                  {isNew(b.createdAt) && (
-                                    <span style={{
-                                      background: "var(--primary)",
-                                      color: "white",
-                                      fontSize: "10px",
-                                      fontWeight: "800",
-                                      padding: "2px 6px",
-                                      borderRadius: "4px",
-                                      textTransform: "uppercase",
-                                      letterSpacing: "0.05em"
-                                    }}>NEW</span>
-                                  )}
-                                </div>
-                                <div style={{ fontSize: "12px", color: "var(--text-muted)" }}>{b.company}</div>
-                              </div>
-                            </td>
+                               <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                                 <img
+                                   src={b.image || "https://images.unsplash.com/photo-1524178232363-1fb2b075b655?auto=format&fit=crop&q=80&w=100"}
+                                   alt={b.name}
+                                   style={{ width: "40px", height: "40px", borderRadius: "8px", objectFit: "cover", flexShrink: 0, border: "1px solid var(--border-color)" }}
+                                 />
+                                 <div>
+                                   <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                                     <span style={{ fontWeight: "700" }}>{b.name}</span>
+                                     {isNew(b.createdAt) && (
+                                       <span style={{
+                                         background: "var(--primary)",
+                                         color: "white",
+                                         fontSize: "10px",
+                                         fontWeight: "800",
+                                         padding: "2px 6px",
+                                         borderRadius: "4px",
+                                         textTransform: "uppercase",
+                                         letterSpacing: "0.05em"
+                                       }}>NEW</span>
+                                     )}
+                                   </div>
+                                   <div style={{ fontSize: "12px", color: "var(--text-muted)" }}>{b.company}</div>
+                                 </div>
+                               </div>
+                             </td>
                             <td>{b.category}</td>
                             <td style={{ fontWeight: "600" }}>
                               {b.investment_range || formatLakhs(b.minInvestment)} - {b.max_investment_limit || formatLakhs(b.maxInvestment)}

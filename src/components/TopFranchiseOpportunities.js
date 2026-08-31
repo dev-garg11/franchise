@@ -13,101 +13,14 @@ export default function TopFranchiseOpportunities({ brands = [], loading = false
   // Filter brands based on category or fall back to high-quality fallback data if DB brands are few
   const filteredBrands = brands.filter(b => activeCategory === "All" || b.category === activeCategory);
 
-  const fallbackTopFranchises = [
-    {
-      id: "top-1",
-      name: "Jaipur Chai Premium",
-      category: "Food and Beverage",
-      minInvestment: 500000,
-      maxInvestment: 1200000,
-      areaRequired: "150 - 300 Sq.Ft",
-      hq: "Jaipur, RJ",
-      royaltyFee: "5%",
-      badge: "#1 Top Pick",
-      roi: "12-18 Months",
-      image: "https://images.unsplash.com/photo-1544787219-7f47ccb76574?auto=format&fit=crop&q=80&w=600",
-      description: "Authentic kulhad tea, traditional snacks & cozy café franchise with proven high daily ticket count."
-    },
-    {
-      id: "top-2",
-      name: "Doctor Garage EV Hub",
-      category: "Automobiles",
-      minInvestment: 1000000,
-      maxInvestment: 2500000,
-      areaRequired: "800 - 1500 Sq.Ft",
-      hq: "Ahmedabad, GJ",
-      royaltyFee: "0%",
-      badge: "High Growth",
-      roi: "15-20 Months",
-      image: "https://images.unsplash.com/photo-1617814076367-b759c7d7e738?auto=format&fit=crop&q=80&w=600",
-      description: "India's fastest growing multi-brand 2-wheeler automobile and EV service station chain."
-    },
-    {
-      id: "top-3",
-      name: "EduQuantum STEM Labs",
-      category: "Education",
-      minInvestment: 800000,
-      maxInvestment: 1500000,
-      areaRequired: "1000 - 2000 Sq.Ft",
-      hq: "Bengaluru, KA",
-      royaltyFee: "10%",
-      badge: "Hot Opportunity",
-      roi: "10-14 Months",
-      image: "https://images.unsplash.com/photo-1509062522246-3755977927d7?auto=format&fit=crop&q=80&w=600",
-      description: "Robotics, Coding & AI learning academy for K-12 students with guaranteed student enrolment support."
-    },
-    {
-      id: "top-4",
-      name: "Bombay Kulfi & Desserts",
-      category: "Food and Beverage",
-      minInvestment: 600000,
-      maxInvestment: 1200000,
-      areaRequired: "200 - 400 Sq.Ft",
-      hq: "Mumbai, MH",
-      royaltyFee: "0%",
-      badge: "Trending",
-      roi: "10-15 Months",
-      image: "https://images.unsplash.com/photo-1563805042-7684c019e1cb?auto=format&fit=crop&q=80&w=600",
-      description: "100% natural gourmet kulfi & artisanal dessert parlor with zero cooking overheads."
-    },
-    {
-      id: "top-5",
-      name: "Jaaz Luxury Bathware",
-      category: "Retail",
-      minInvestment: 1500000,
-      maxInvestment: 3500000,
-      areaRequired: "1200 - 2500 Sq.Ft",
-      hq: "New Delhi, DL",
-      royaltyFee: "0%",
-      badge: "Premium Concept",
-      roi: "18-24 Months",
-      image: "https://images.unsplash.com/photo-1584622650111-993a426fbf0a?auto=format&fit=crop&q=80&w=600",
-      description: "Exclusive sanitaryware, designer faucets & smart bathroom solution franchise."
-    },
-    {
-      id: "top-6",
-      name: "NutriFit Wellness Lounge",
-      category: "Health and Wellness",
-      minInvestment: 1200000,
-      maxInvestment: 2800000,
-      areaRequired: "1500 - 3000 Sq.Ft",
-      hq: "Pune, MH",
-      royaltyFee: "8%",
-      badge: "High ROI",
-      roi: "14-18 Months",
-      image: "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&q=80&w=600",
-      description: "Premium fitness center & holistic wellness lounge equipped with automated equipment."
-    }
-  ];
+  const fallbackTopFranchises = [];
 
-  const displayBrands = filteredBrands.length >= 3 
-    ? filteredBrands.slice(0, 6).map((b, idx) => ({
-        ...b,
-        badge: idx === 0 ? "#1 Top Pick" : idx === 1 ? "Hot Opportunity" : idx === 2 ? "High Growth" : "Featured",
-        roi: "12-18 Months",
-        royaltyFee: b.royaltyFee || "0%"
-      }))
-    : fallbackTopFranchises.filter(b => activeCategory === "All" || b.category === activeCategory);
+  const displayBrands = filteredBrands.slice(0, 6).map((b, idx) => ({
+    ...b,
+    badge: idx === 0 ? "#1 Top Pick" : idx === 1 ? "Hot Opportunity" : idx === 2 ? "High Growth" : "Featured",
+    roi: "12-18 Months",
+    royaltyFee: b.royaltyFee || "0%"
+  }));
 
   const formatCurrency = (val) => {
     if (!val) return "N/A";
@@ -166,6 +79,11 @@ export default function TopFranchiseOpportunities({ brands = [], loading = false
         {/* Brand Cards Grid */}
         {loading ? (
           <ProductSkeletonGrid count={6} minWidth="340px" />
+        ) : displayBrands.length === 0 ? (
+          <div style={{ textAlign: "center", padding: "50px 20px", background: "#ffffff", borderRadius: "16px", border: "1px dashed #cbd5e1" }}>
+            <h3 style={{ fontSize: "18px", fontWeight: "800", color: "#0f172a", marginBottom: "6px" }}>No Top Opportunities Listed Yet</h3>
+            <p style={{ color: "#64748b", fontSize: "14px" }}>Brands registered on Franchise Roots will appear here once approved.</p>
+          </div>
         ) : (
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(340px, 1fr))", gap: "24px" }}>
           {displayBrands.map((brand) => (

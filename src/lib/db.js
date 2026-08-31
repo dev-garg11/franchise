@@ -62,43 +62,22 @@ async function dbConnect() {
 }
 async function seedDatabase() {
   try {
-    const brandCount = await Brand.countDocuments();
-    if (brandCount === 0) {
-      const dataFilePath = path.join(process.cwd(), "src/lib/data.json");
-      if (fs.existsSync(dataFilePath)) {
-        const brandsData = JSON.parse(fs.readFileSync(dataFilePath, "utf8"));
-        if (brandsData.length > 0) {
-          const validatedBrands = brandsData.map(b => ({
-            ...b,
-            password: b.password || "password123",
-            minInvestment: b.minInvestment || 0,
-            maxInvestment: b.maxInvestment || 0,
-            category: b.category || "General"
-          }));
-          await Brand.insertMany(validatedBrands, { ordered: false });
-          console.log(`Seeded ${validatedBrands.length} brands from data.json to MongoDB.`);
-        }
-      }
-    }
+    // Clean up legacy dummy seed data from MongoDB collections
+    await Brand.deleteMany({
+      $or: [
+        { id: { $regex: /^brand-\d+/ } },
+        { email: { $in: ["brand@example.com", "contact@jaazcorp.in", "info@axonifytech.com", "partner@brainytoys.com", "franchise@bombaykulfi.com"] } }
+      ]
+    }).catch(() => {});
 
-    const investorCount = await Investor.countDocuments();
-    if (investorCount === 0) {
-      const investorsFilePath = path.join(process.cwd(), "src/lib/investors.json");
-      if (fs.existsSync(investorsFilePath)) {
-        const investorsData = JSON.parse(fs.readFileSync(investorsFilePath, "utf8"));
-        if (investorsData.length > 0) {
-          const validatedInvestors = investorsData.map(i => ({
-            ...i,
-            password: i.password || "password123",
-            budgetMin: i.budgetMin || 0,
-            budgetMax: i.budgetMax || 0
-          }));
-          await Investor.insertMany(validatedInvestors, { ordered: false });
-          console.log(`Seeded ${validatedInvestors.length} investors from investors.json to MongoDB.`);
-        }
-      }
-    }
+    await Investor.deleteMany({
+      $or: [
+        { id: "investor-seed" },
+        { email: "investor@example.com" }
+      ]
+    }).catch(() => {});
 
+    // Ensure default Admin user exists in Admin collection
     const adminCount = await Admin.countDocuments();
     if (adminCount === 0) {
       await Admin.create({
@@ -108,10 +87,9 @@ async function seedDatabase() {
       console.log("Seeded default admin user to MongoDB.");
     }
 
-    // Seed User Collection (For central login with role and encrypted passwords)
-    const userCount = await User.countDocuments();
-    if (userCount === 0) {
-      // Seed Admin User
+    // Ensure default Admin user exists in User collection
+    const adminUser = await User.findOne({ role: "admin" });
+    if (!adminUser) {
       const hashedAdminPassword = await bcrypt.hash("admin123", 10);
       await User.create({
         email: "admin@franchiseroots.com",
@@ -120,153 +98,9 @@ async function seedDatabase() {
         role: "admin",
         name: "Administrator"
       });
-
-      // Seed Brand Users and link them via foreign key
-      const brands = await Brand.find({});
-      for (const brand of brands) {
-        if (brand.email) {
-          const emailLower = brand.email.toLowerCase();
-          let existing = await User.findOne({ email: emailLower });
-          if (!existing) {
-            const hashedPassword = await bcrypt.hash(brand.password || "password123", 10);
-            existing = await User.create({
-              email: brand.email,
-              password: hashedPassword,
-              role: "brand",
-              name: brand.name,
-              phone: brand.phone
-            });
-          }
-          brand.user = existing._id;
-          await brand.save();
-        }
-      }
-
-      // Seed Investor Users and link them via foreign key
-      const investors = await Investor.find({});
-      for (const investor of investors) {
-        if (investor.email) {
-          const emailLower = investor.email.toLowerCase();
-          let existing = await User.findOne({ email: emailLower });
-          if (!existing) {
-            const hashedPassword = await bcrypt.hash(investor.password || "password123", 10);
-            existing = await User.create({
-              email: investor.email,
-              password: hashedPassword,
-              role: "investor",
-              name: investor.name,
-              phone: investor.phone
-            });
-          }
-          investor.user = existing._id;
-          await investor.save();
-        }
-      }
-      console.log("Seeded User collection and linked all profiles via foreign key.");
-    }
-
-    // Migration fallback: Ensure all existing brands and investors in MongoDB have their user reference set
-    const unlinkedBrands = await Brand.find({ user: { $exists: false } });
-    for (const b of unlinkedBrands) {
-      if (b.email) {
-        let existing = await User.findOne({ email: b.email.toLowerCase() });
-        if (!existing) {
-          const hashedPassword = await bcrypt.hash(b.password || "password123", 10);
-          existing = await User.create({
-            email: b.email.toLowerCase(),
-            password: hashedPassword,
-            role: "brand",
-            name: b.name,
-            phone: b.phone
-          });
-        }
-        b.user = existing._id;
-        await b.save();
-      }
-    }
-
-    const unlinkedInvestors = await Investor.find({ user: { $exists: false } });
-    for (const inv of unlinkedInvestors) {
-      if (inv.email) {
-        let existing = await User.findOne({ email: inv.email.toLowerCase() });
-        if (!existing) {
-          const hashedPassword = await bcrypt.hash(inv.password || "password123", 10);
-          existing = await User.create({
-            email: inv.email.toLowerCase(),
-            password: hashedPassword,
-            role: "investor",
-            name: inv.name,
-            phone: inv.phone
-          });
-        }
-        inv.user = existing._id;
-        await inv.save();
-      }
-    }
-
-    // Seed Services Collection if empty
-    const serviceCount = await Service.countDocuments();
-    if (serviceCount === 0) {
-      const defaultServices = [
-        {
-          title: "Franchise Advisory & Business Consulting",
-          content: "End-to-end guidance for selecting high ROI franchise models, unit metrics evaluation, legal documentation, and financial planning tailored to your investment budget.",
-          image: "https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?auto=format&fit=crop&q=80&w=600",
-          createdAt: new Date()
-        },
-        {
-          title: "Investor & Brand Matching Desk",
-          content: "Connect pre-qualified investors with top-tier brands across 15+ industry verticals. We analyze budget, territory preferences, and operational capability to ensure optimal partnership.",
-          image: "https://images.unsplash.com/photo-1521737711867-e3b97375f902?auto=format&fit=crop&q=80&w=600",
-          createdAt: new Date()
-        },
-        {
-          title: "Legal, Trademark & Compliance Assistance",
-          content: "Comprehensive legal assistance for drafting franchise agreements, NDA documentation, trademark registration, local municipal licensing, and dispute resolution.",
-          image: "https://images.unsplash.com/photo-1450133064473-71024230f91b?auto=format&fit=crop&q=80&w=600",
-          createdAt: new Date()
-        },
-        {
-          title: "Brand Expansion & Marketing Support",
-          content: "360-degree brand scaling solutions including digital investor lead generation, regional broker networking, franchise expos, and localized market launch campaigns.",
-          image: "https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&q=80&w=600",
-          createdAt: new Date()
-        }
-      ];
-      await Service.insertMany(defaultServices);
-      console.log(`Seeded ${defaultServices.length} default services to MongoDB.`);
-    }
-
-    // Seed Advertisement Collection if empty
-    const adCount = await Advertisement.countDocuments();
-    if (adCount === 0) {
-      const defaultAds = [
-        {
-          title: "Promote Your Brand to 50,000+ Verified Investors",
-          subtitle: "Expand your franchise network nationwide with premium advertising placement.",
-          image: "https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&q=80&w=1200",
-          link: "/brand-registration",
-          badge: "SPONSORED",
-          position: "homepage_banner",
-          isActive: true,
-          createdAt: new Date()
-        },
-        {
-          title: "Exclusive Franchise Expo & Advisory Desk",
-          subtitle: "Get 1-on-1 guidance from top-tier franchise consultants and master brokers.",
-          image: "https://images.unsplash.com/photo-1540575467063-178a50c2df87?auto=format&fit=crop&q=80&w=1200",
-          link: "/investor-registration",
-          badge: "FEATURED AD",
-          position: "homepage_banner",
-          isActive: true,
-          createdAt: new Date()
-        }
-      ];
-      await Advertisement.insertMany(defaultAds);
-      console.log(`Seeded ${defaultAds.length} default advertisements to MongoDB.`);
     }
   } catch (error) {
-    console.error("Error during Next.js DB seeding:", error);
+    console.error("Error during DB initialization:", error);
   }
 }
 
