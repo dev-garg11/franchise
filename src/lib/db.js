@@ -211,18 +211,29 @@ export async function updateBrand(id, updatedFields) {
       if (updatedFields.phone) userUpdate.phone = updatedFields.phone;
       if (updatedFields.email) userUpdate.email = updatedFields.email.toLowerCase();
       if (Object.keys(userUpdate).length > 0) {
-        await User.updateOne({ _id: existingBrand.user }, { $set: userUpdate });
+        const userId = typeof existingBrand.user === 'object' ? existingBrand.user._id : existingBrand.user;
+        await User.updateOne({ _id: userId }, { $set: userUpdate }).catch(err =>
+          console.error("User update failed during brand update:", err)
+        );
       }
     }
 
     const payload = { ...updatedFields };
+    delete payload._id;
+    delete payload.id;
     delete payload.password;
-    delete payload.email;
+    delete payload.createdAt;
+    delete payload.updatedAt;
+    delete payload.__v;
+
+    if (updatedFields.email) {
+      payload.email = updatedFields.email.toLowerCase();
+    }
 
     const updated = await Brand.findOneAndUpdate(
       query,
       { $set: payload },
-      { new: true }
+      { returnDocument: 'after' }
     ).populate('user').lean();
 
     if (!updated) return null;
@@ -230,7 +241,7 @@ export async function updateBrand(id, updatedFields) {
     const obj = {
       ...updated,
       id: updated.id || updated._id.toString(),
-      email: updated.user ? updated.user.email : (updated.email || "")
+      email: (updated.user && typeof updated.user === 'object' && updated.user.email) ? updated.user.email : (updated.email || "")
     };
 
     // Trigger status change emails

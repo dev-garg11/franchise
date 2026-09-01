@@ -31,7 +31,8 @@ export async function PATCH(request, { params }) {
 
     return NextResponse.json({ success: true, brand: updated });
   } catch (error) {
-    return NextResponse.json({ error: "Failed to update brand" }, { status: 500 });
+    console.error("Error in PATCH /api/brands/[id]:", error);
+    return NextResponse.json({ error: error.message || "Failed to update brand" }, { status: 500 });
   }
 }
 

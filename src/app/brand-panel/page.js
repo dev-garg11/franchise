@@ -11,6 +11,7 @@ import {
 import { clearBrandsCache } from "@/lib/brandsCache";
 import { BRAND_CATEGORIES, BRAND_SECTORS_MAP, ALL_INDIAN_STATES } from "@/lib/brandConstants";
 import { DISTRICTS_BY_STATE } from "@/lib/districtsData";
+import { getFilteredMaxLimits } from "@/lib/investmentData";
 
 const INVESTMENT_OPTIONS = [
   "Rs. 10,000 - 50,000",
@@ -190,12 +191,14 @@ export default function BrandPanel() {
         !formFields.investment_range ||
         !formFields.max_investment_limit
       ) {
+        setUpdateSuccess("");
         setUpdateError("Please fill in all mandatory fields.");
         setUpdateLoading(false);
         return;
       }
 
       if (formFields.pincode.length !== 6 || !/^\d{6}$/.test(formFields.pincode)) {
+        setUpdateSuccess("");
         setUpdateError("Pincode must be exactly 6 digits.");
         setUpdateLoading(false);
         return;
@@ -204,6 +207,7 @@ export default function BrandPanel() {
       const rangeIndex = INVESTMENT_OPTIONS.indexOf(formFields.investment_range);
       const maxIndex = INVESTMENT_OPTIONS.indexOf(formFields.max_investment_limit);
       if (maxIndex < rangeIndex) {
+        setUpdateSuccess("");
         setUpdateError("Max Investment Limit cannot be lower than the selected Investment Range.");
         setUpdateLoading(false);
         return;
@@ -222,8 +226,9 @@ export default function BrandPanel() {
 
       let res;
       if (brand) {
-        // Update existing listing
-        res = await fetch(`/api/brands/${brand.id}`, {
+        // Update existing listing safely
+        const brandId = brand.id || brand._id;
+        res = await fetch(`/api/brands/${brandId}`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload),
@@ -238,15 +243,28 @@ export default function BrandPanel() {
       }
 
       if (res.ok) {
+        setUpdateError("");
         setUpdateSuccess("Brand listing updated successfully! Your updates are now Under Review by our admin team.");
         clearBrandsCache();
-        loadBrandData(email);
+        try {
+          await loadBrandData(email);
+        } catch (e) {
+          console.error("Failed to reload brand data after update:", e);
+        }
       } else {
-        const data = await res.json();
-        setUpdateError(data.error || "Failed to update listing.");
+        let errorMsg = "Failed to update listing.";
+        try {
+          const data = await res.json();
+          errorMsg = data.error || errorMsg;
+        } catch (e) {
+          // If response body is not JSON
+        }
+        setUpdateSuccess("");
+        setUpdateError(errorMsg);
       }
     } catch (err) {
-      console.error(err);
+      console.error("Update listing exception:", err);
+      setUpdateSuccess("");
       setUpdateError("Server error while updating listing.");
     } finally {
       setUpdateLoading(false);
@@ -645,7 +663,14 @@ export default function BrandPanel() {
                     </div>
 
                     <div className="form-group">
-                      <label>Max Investment Limit <span>*</span></label>
+                      <label>
+                        Max Investment Limit <span>*</span>
+                        {formFields.investment_range && (
+                          <span style={{ fontSize: "11px", color: "var(--success)", fontWeight: "700", marginLeft: "6px" }}>
+                            (≥ {formFields.investment_range})
+                          </span>
+                        )}
+                      </label>
                       <select
                         className="form-input"
                         required
@@ -654,7 +679,7 @@ export default function BrandPanel() {
                         style={{ background: "#f8fafc" }}
                       >
                         <option value="" disabled>Select Max Investment Limit</option>
-                        {INVESTMENT_OPTIONS.map((opt) => (
+                        {getFilteredMaxLimits(formFields.investment_range).map((opt) => (
                           <option key={opt} value={opt}>{opt}</option>
                         ))}
                       </select>

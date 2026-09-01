@@ -10,6 +10,25 @@ import {
 } from "lucide-react";
 import Pagination from "@/components/Pagination";
 import { clearBrandsCache } from "@/lib/brandsCache";
+import { REGISTRATION_INVESTMENT_OPTIONS, getFilteredMaxLimits } from "@/lib/investmentData";
+import { BRAND_CATEGORIES, BRAND_SECTORS_MAP, ALL_INDIAN_STATES } from "@/lib/brandConstants";
+import { DISTRICTS_BY_STATE } from "@/lib/districtsData";
+
+const mapRangeToNumeric = (rangeStr, isMax = false) => {
+  if (!rangeStr) return 0;
+  if (rangeStr === "Rs. 10,000 - 50,000") return isMax ? 50000 : 10000;
+  if (rangeStr === "Rs. 50,000 - 2 Lakh") return isMax ? 200000 : 50000;
+  if (rangeStr === "Rs. 2 Lakh - 5 Lakh") return isMax ? 500000 : 200000;
+  if (rangeStr === "Rs. 5 Lakh - 10 Lakh") return isMax ? 1000000 : 500000;
+  if (rangeStr === "Rs. 10 Lakh - 20 Lakh") return isMax ? 2000000 : 1000000;
+  if (rangeStr === "Rs. 20 Lakh - 30 Lakh") return isMax ? 3000000 : 2000000;
+  if (rangeStr === "Rs. 30 Lakh - 50 Lakh") return isMax ? 5000000 : 3000000;
+  if (rangeStr === "Rs. 50 Lakh - 1 Crore") return isMax ? 10000000 : 5000000;
+  if (rangeStr === "Rs. 1 Crore - 2 Crore") return isMax ? 20000000 : 10000000;
+  if (rangeStr === "Rs. 2 Crore - 5 Crore") return isMax ? 50000000 : 20000000;
+  if (rangeStr === "Above Rs. 5 Crore") return isMax ? 999999999 : 50000000;
+  return 0;
+};
 
 const isNew = (dateString) => {
   if (!dateString) return false;
@@ -147,16 +166,84 @@ export default function AdminDashboard() {
     setEditBrandModalOpen(true);
   };
 
+  const handleAdminInvestmentRangeChange = (val) => {
+    const validMaxOptions = getFilteredMaxLimits(val);
+    setAdminBrandForm((prev) => {
+      let maxVal = prev.max_investment_limit;
+      if (maxVal && !validMaxOptions.includes(maxVal)) {
+        maxVal = val;
+      }
+      return {
+        ...prev,
+        investment_range: val,
+        max_investment_limit: maxVal || val,
+      };
+    });
+  };
+
+  const handleAdminImageFileSelect = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      alert("Please select a valid image file (PNG, JPG, WEBP).");
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        let width = img.width;
+        let height = img.height;
+        const maxDim = 1200;
+        if (width > maxDim || height > maxDim) {
+          if (width > height) {
+            height = Math.round((height * maxDim) / width);
+            width = maxDim;
+          } else {
+            width = Math.round((width * maxDim) / height);
+            height = maxDim;
+          }
+        }
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(img, 0, 0, width, height);
+        const base64 = canvas.toDataURL("image/jpeg", 0.85);
+        setAdminBrandForm((prev) => ({ ...prev, image: base64 }));
+      };
+      img.src = event.target?.result;
+    };
+    reader.readAsDataURL(file);
+  };
+
   const handleSaveAdminBrand = async (e) => {
     e.preventDefault();
     if (!editingBrand) return;
+
+    const rangeIndex = REGISTRATION_INVESTMENT_OPTIONS.indexOf(adminBrandForm.investment_range);
+    const maxIndex = REGISTRATION_INVESTMENT_OPTIONS.indexOf(adminBrandForm.max_investment_limit);
+    if (adminBrandForm.investment_range && adminBrandForm.max_investment_limit && maxIndex < rangeIndex) {
+      alert("Max Investment Limit cannot be lower than the selected Investment Range.");
+      return;
+    }
+
     setIsSavingAdminBrand(true);
     try {
       const brandId = editingBrand.id || editingBrand._id;
+      const rangeMinVal = mapRangeToNumeric(adminBrandForm.investment_range, false);
+      const rangeMaxVal = mapRangeToNumeric(adminBrandForm.max_investment_limit, true);
+
+      const payload = {
+        ...adminBrandForm,
+        minInvestment: rangeMinVal || editingBrand.minInvestment || 0,
+        maxInvestment: rangeMaxVal || editingBrand.maxInvestment || 0,
+      };
+
       const res = await fetch(`/api/brands/${brandId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(adminBrandForm)
+        body: JSON.stringify(payload)
       });
       if (res.ok) {
         clearBrandsCache();
@@ -2122,50 +2209,93 @@ export default function AdminDashboard() {
                     />
                   </div>
                   <div className="form-group">
-                    <label>Category</label>
-                    <input
-                      type="text"
-                      required
+                    <label>Category <span>*</span></label>
+                    <select
                       className="form-input"
+                      required
                       value={adminBrandForm.category}
-                      onChange={(e) => setAdminBrandForm({ ...adminBrandForm, category: e.target.value })}
-                    />
+                      onChange={(e) => {
+                        const newCat = e.target.value;
+                        const availableSectors = BRAND_SECTORS_MAP[newCat] || [];
+                        setAdminBrandForm((prev) => ({
+                          ...prev,
+                          category: newCat,
+                          sector: availableSectors[0] || "",
+                        }));
+                      }}
+                    >
+                      {BRAND_CATEGORIES.map((cat) => (
+                        <option key={cat} value={cat}>{cat}</option>
+                      ))}
+                    </select>
                   </div>
                   <div className="form-group">
-                    <label>Sector / Sub-Category</label>
-                    <input
-                      type="text"
+                    <label>Sector / Sub-Category <span>*</span></label>
+                    <select
                       className="form-input"
                       value={adminBrandForm.sector}
                       onChange={(e) => setAdminBrandForm({ ...adminBrandForm, sector: e.target.value })}
-                    />
+                    >
+                      {(BRAND_SECTORS_MAP[adminBrandForm.category] || [adminBrandForm.sector || "General"]).map((sec) => (
+                        <option key={sec} value={sec}>{sec}</option>
+                      ))}
+                    </select>
                   </div>
                   <div className="form-group">
-                    <label>HQ State / Region</label>
-                    <input
-                      type="text"
+                    <label>HQ State / Region <span>*</span></label>
+                    <select
                       className="form-input"
                       value={adminBrandForm.hq}
-                      onChange={(e) => setAdminBrandForm({ ...adminBrandForm, hq: e.target.value })}
-                    />
+                      onChange={(e) => {
+                        const newHq = e.target.value;
+                        const availableDistricts = DISTRICTS_BY_STATE[newHq] || [];
+                        setAdminBrandForm((prev) => ({
+                          ...prev,
+                          hq: newHq,
+                          location: availableDistricts[0] || prev.location || "",
+                        }));
+                      }}
+                    >
+                      {ALL_INDIAN_STATES.map((st) => (
+                        <option key={st} value={st}>{st}</option>
+                      ))}
+                    </select>
                   </div>
                   <div className="form-group">
-                    <label>HQ City / District Location</label>
-                    <input
-                      type="text"
-                      className="form-input"
-                      value={adminBrandForm.location}
-                      onChange={(e) => setAdminBrandForm({ ...adminBrandForm, location: e.target.value })}
-                    />
+                    <label>HQ City / District Location <span>*</span></label>
+                    {DISTRICTS_BY_STATE[adminBrandForm.hq] ? (
+                      <select
+                        className="form-input"
+                        value={adminBrandForm.location}
+                        onChange={(e) => setAdminBrandForm({ ...adminBrandForm, location: e.target.value })}
+                      >
+                        {DISTRICTS_BY_STATE[adminBrandForm.hq].map((dist) => (
+                          <option key={dist} value={dist}>{dist}</option>
+                        ))}
+                      </select>
+                    ) : (
+                      <input
+                        type="text"
+                        className="form-input"
+                        placeholder="Enter City / District"
+                        value={adminBrandForm.location}
+                        onChange={(e) => setAdminBrandForm({ ...adminBrandForm, location: e.target.value })}
+                      />
+                    )}
                   </div>
                   <div className="form-group">
-                    <label>Pincode</label>
+                    <label>Pincode <span>*</span></label>
                     <input
                       type="text"
                       required
                       className="form-input"
                       value={adminBrandForm.pincode}
-                      onChange={(e) => setAdminBrandForm({ ...adminBrandForm, pincode: e.target.value })}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        if (val === "" || (/^\d+$/.test(val) && val.length <= 6)) {
+                          setAdminBrandForm({ ...adminBrandForm, pincode: val });
+                        }
+                      }}
                     />
                   </div>
                   <div className="form-group">
@@ -2181,24 +2311,39 @@ export default function AdminDashboard() {
                     </select>
                   </div>
                   <div className="form-group">
-                    <label>Investment Range</label>
-                    <input
-                      type="text"
-                      required
+                    <label>Investment Range <span>*</span></label>
+                    <select
                       className="form-input"
+                      required
                       value={adminBrandForm.investment_range}
-                      onChange={(e) => setAdminBrandForm({ ...adminBrandForm, investment_range: e.target.value })}
-                    />
+                      onChange={(e) => handleAdminInvestmentRangeChange(e.target.value)}
+                    >
+                      <option value="" disabled>Select Investment Range</option>
+                      {REGISTRATION_INVESTMENT_OPTIONS.map((opt) => (
+                        <option key={opt} value={opt}>{opt}</option>
+                      ))}
+                    </select>
                   </div>
                   <div className="form-group">
-                    <label>Max Investment Limit</label>
-                    <input
-                      type="text"
-                      required
+                    <label>
+                      Max Investment Limit <span>*</span>
+                      {adminBrandForm.investment_range && (
+                        <span style={{ fontSize: "11px", color: "var(--success)", fontWeight: "700", marginLeft: "6px" }}>
+                          (≥ {adminBrandForm.investment_range})
+                        </span>
+                      )}
+                    </label>
+                    <select
                       className="form-input"
+                      required
                       value={adminBrandForm.max_investment_limit}
                       onChange={(e) => setAdminBrandForm({ ...adminBrandForm, max_investment_limit: e.target.value })}
-                    />
+                    >
+                      <option value="" disabled>Select Max Investment Limit</option>
+                      {getFilteredMaxLimits(adminBrandForm.investment_range).map((opt) => (
+                        <option key={opt} value={opt}>{opt}</option>
+                      ))}
+                    </select>
                   </div>
                   <div className="form-group">
                     <label>Franchise Fee (INR)</label>
@@ -2228,6 +2373,28 @@ export default function AdminDashboard() {
                     />
                   </div>
                   <div className="form-group">
+                    <label>Training Support</label>
+                    <select
+                      className="form-input"
+                      value={adminBrandForm.trainingSupport}
+                      onChange={(e) => setAdminBrandForm({ ...adminBrandForm, trainingSupport: e.target.value })}
+                    >
+                      <option value="Yes">Yes, comprehensive training provided</option>
+                      <option value="No">No training support</option>
+                    </select>
+                  </div>
+                  <div className="form-group">
+                    <label>Standard Franchise Agreement?</label>
+                    <select
+                      className="form-input"
+                      value={adminBrandForm.agreement}
+                      onChange={(e) => setAdminBrandForm({ ...adminBrandForm, agreement: e.target.value })}
+                    >
+                      <option value="Yes">Yes, standardized contract (3-5 Years)</option>
+                      <option value="No">No, negotiable / custom contract</option>
+                    </select>
+                  </div>
+                  <div className="form-group">
                     <label>Featured Listing?</label>
                     <select
                       className="form-input"
@@ -2238,6 +2405,56 @@ export default function AdminDashboard() {
                       <option value="false">No, Standard Listing</option>
                     </select>
                   </div>
+
+                  {/* Master Franchise Rights */}
+                  <div className="form-group form-grid-full" style={{ background: "#f8fafc", padding: "16px", borderRadius: "12px", border: "1px solid var(--border-color)", margin: "10px 0" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: adminBrandForm.masterFranchiseAvailable ? "12px" : "0" }}>
+                      <input
+                        type="checkbox"
+                        id="adminMasterFranchiseAvailable"
+                        checked={adminBrandForm.masterFranchiseAvailable}
+                        onChange={(e) => setAdminBrandForm({ ...adminBrandForm, masterFranchiseAvailable: e.target.checked })}
+                        style={{ width: "18px", height: "18px", accentColor: "var(--primary)", cursor: "pointer" }}
+                      />
+                      <label htmlFor="adminMasterFranchiseAvailable" style={{ fontSize: "14.5px", fontWeight: "700", cursor: "pointer", margin: 0 }}>
+                        👑 Offer Master Franchise / Regional Exclusivity Rights?
+                      </label>
+                    </div>
+
+                    {adminBrandForm.masterFranchiseAvailable && (
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px", marginTop: "12px" }}>
+                        <div>
+                          <label style={{ fontSize: "12px", fontWeight: "700", display: "block", marginBottom: "4px" }}>Est. Master Investment Range</label>
+                          <select
+                            className="form-input"
+                            value={adminBrandForm.masterInvestmentRange}
+                            onChange={(e) => setAdminBrandForm({ ...adminBrandForm, masterInvestmentRange: e.target.value })}
+                          >
+                            <option value="Rs. 15 Lakhs - 25 Lakhs">Rs. 15 Lakhs - 25 Lakhs</option>
+                            <option value="Rs. 25 Lakhs - 50 Lakhs">Rs. 25 Lakhs - 50 Lakhs</option>
+                            <option value="Rs. 50 Lakhs - 1 Crore">Rs. 50 Lakhs - 1 Crore</option>
+                            <option value="Rs. 1 Crore - 2 Crores">Rs. 1 Crore - 2 Crores</option>
+                            <option value="Above Rs. 2 Crores">Above Rs. 2 Crores</option>
+                          </select>
+                        </div>
+
+                        <div>
+                          <label style={{ fontSize: "12px", fontWeight: "700", display: "block", marginBottom: "4px" }}>Territory Rights Offered</label>
+                          <select
+                            className="form-input"
+                            value={adminBrandForm.territoryOffered}
+                            onChange={(e) => setAdminBrandForm({ ...adminBrandForm, territoryOffered: e.target.value })}
+                          >
+                            <option value="State Level Exclusivity">State Level Exclusivity</option>
+                            <option value="Multi-District Zone">Multi-District Zone</option>
+                            <option value="Metropolitan Area">Metropolitan Area</option>
+                            <option value="Pan India Rights">Pan India Rights</option>
+                          </select>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
                   <div className="form-group">
                     <label>Contact Phone</label>
                     <input
@@ -2266,13 +2483,73 @@ export default function AdminDashboard() {
                     />
                   </div>
                   <div className="form-group form-grid-full">
-                    <label>Image URL / Cover Base64</label>
-                    <input
-                      type="text"
-                      className="form-input"
-                      value={adminBrandForm.image}
-                      onChange={(e) => setAdminBrandForm({ ...adminBrandForm, image: e.target.value })}
-                    />
+                    <label style={{ fontSize: "14px", fontWeight: "700", display: "block", marginBottom: "8px" }}>
+                      Brand Logo / Cover Image
+                    </label>
+
+                    {adminBrandForm.image ? (
+                      <div style={{ display: "flex", alignItems: "center", gap: "16px", padding: "12px", background: "#f8fafc", borderRadius: "10px", border: "1px solid var(--border-color)", marginBottom: "12px" }}>
+                        <img
+                          src={adminBrandForm.image}
+                          alt="Brand Preview"
+                          style={{ width: "80px", height: "80px", borderRadius: "8px", objectFit: "cover", border: "1px solid #cbd5e1" }}
+                        />
+                        <div>
+                          <span style={{ fontSize: "13px", fontWeight: "600", display: "block", color: "#0f172a", marginBottom: "4px" }}>
+                            Current Brand Image
+                          </span>
+                          <div style={{ display: "flex", gap: "8px" }}>
+                            <label className="btn btn-outline" style={{ fontSize: "12px", padding: "4px 10px", cursor: "pointer", display: "inline-flex", alignItems: "center", gap: "4px" }}>
+                              <UploadCloud size={13} /> Replace Image
+                              <input
+                                type="file"
+                                accept="image/*"
+                                style={{ display: "none" }}
+                                onChange={handleAdminImageFileSelect}
+                              />
+                            </label>
+                            <button
+                              type="button"
+                              className="btn btn-outline"
+                              style={{ fontSize: "12px", padding: "4px 10px", color: "var(--danger)", borderColor: "var(--danger)" }}
+                              onClick={() => setAdminBrandForm((prev) => ({ ...prev, image: "" }))}
+                            >
+                              Remove Image
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <div style={{ border: "2px dashed #cbd5e1", borderRadius: "10px", padding: "20px", textAlign: "center", background: "#f8fafc", marginBottom: "12px" }}>
+                        <UploadCloud size={32} color="var(--primary)" style={{ marginBottom: "8px" }} />
+                        <p style={{ fontSize: "13px", fontWeight: "600", color: "#334155", margin: "0 0 4px 0" }}>
+                          Upload Brand Logo or Cover Photo
+                        </p>
+                        <p style={{ fontSize: "12px", color: "#64748b", margin: "0 0 12px 0" }}>
+                          PNG, JPG, WEBP up to 5MB (Auto-compressed)
+                        </p>
+                        <label className="btn btn-primary" style={{ fontSize: "13px", padding: "8px 16px", cursor: "pointer", display: "inline-flex", alignItems: "center", gap: "6px" }}>
+                          <UploadCloud size={15} /> Choose Image File
+                          <input
+                            type="file"
+                            accept="image/*"
+                            style={{ display: "none" }}
+                            onChange={handleAdminImageFileSelect}
+                          />
+                        </label>
+                      </div>
+                    )}
+
+                    <div style={{ marginTop: "6px" }}>
+                      <label style={{ fontSize: "12px", color: "var(--text-muted)", display: "block", marginBottom: "4px" }}>Or enter Image URL:</label>
+                      <input
+                        type="text"
+                        className="form-input"
+                        placeholder="https://example.com/brand-logo.jpg"
+                        value={adminBrandForm.image}
+                        onChange={(e) => setAdminBrandForm({ ...adminBrandForm, image: e.target.value })}
+                      />
+                    </div>
                   </div>
                   <div className="form-group form-grid-full">
                     <label>Business Description</label>
