@@ -34,6 +34,7 @@ export async function POST(request) {
     const saved = await saveBrand(body);
     return NextResponse.json({ success: true, brand: saved }, { status: 201 });
   } catch (error) {
-    return NextResponse.json({ error: "Failed to save brand registration" }, { status: 500 });
+    console.error("Error in POST /api/brands:", error);
+    return NextResponse.json({ error: error.message || "Failed to save brand registration" }, { status: 500 });
   }
 }

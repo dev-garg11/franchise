@@ -111,8 +111,12 @@ export default function BrandPanel() {
         const brandsList = await brandsRes.json();
         const investorsList = await investorsRes.json();
 
-        // Find brand matching owner's email
-        const userBrand = brandsList.find((b) => b.email.toLowerCase() === email.toLowerCase());
+        // Find brand matching owner's email safely
+        const ownerEmailClean = (email || "").toLowerCase().trim();
+        const userBrand = brandsList.find((b) => {
+          const brandEmail = (b.email || (b.user && b.user.email) || "").toLowerCase().trim();
+          return brandEmail && brandEmail === ownerEmailClean;
+        });
         setBrand(userBrand);
 
         if (userBrand) {
@@ -142,10 +146,15 @@ export default function BrandPanel() {
           });
 
           // Fetch leads (investor submissions referencing this brand name in the comments)
-          const matchedLeads = investorsList.filter((inv) =>
-            inv.comments?.toLowerCase().includes(`brand: ${userBrand.name.toLowerCase()}`) ||
-            inv.comments?.toLowerCase().includes(`brand: ${userBrand.company.toLowerCase()}`)
-          );
+          const brandNameLower = (userBrand.name || "").toLowerCase();
+          const companyLower = (userBrand.company || "").toLowerCase();
+          const matchedLeads = investorsList.filter((inv) => {
+            const comments = (inv.comments || "").toLowerCase();
+            return (
+              (brandNameLower && comments.includes(`brand: ${brandNameLower}`)) ||
+              (companyLower && comments.includes(`brand: ${companyLower}`))
+            );
+          });
           setLeads(matchedLeads);
         }
       }

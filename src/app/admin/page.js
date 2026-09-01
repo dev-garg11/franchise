@@ -85,6 +85,99 @@ export default function AdminDashboard() {
   const [assignFilterMode, setAssignFilterMode] = useState("matching"); // "matching" | "all"
   const [assignSearch, setAssignSearch] = useState("");
 
+  // Admin Brand Edit State
+  const [editBrandModalOpen, setEditBrandModalOpen] = useState(false);
+  const [editingBrand, setEditingBrand] = useState(null);
+  const [isSavingAdminBrand, setIsSavingAdminBrand] = useState(false);
+  const [adminBrandForm, setAdminBrandForm] = useState({
+    name: "",
+    company: "",
+    category: "Food and Beverage",
+    sector: "QSR & Fast Food",
+    hq: "Delhi NCR",
+    location: "New Delhi",
+    pincode: "",
+    investment_range: "",
+    max_investment_limit: "",
+    franchiseFee: "",
+    royaltyFee: "",
+    areaRequired: "",
+    description: "",
+    email: "",
+    phone: "",
+    website: "",
+    image: "",
+    status: "Approved",
+    featured: false,
+    masterFranchiseAvailable: false,
+    masterInvestmentRange: "",
+    territoryOffered: "State Level Exclusivity",
+    trainingSupport: "Yes",
+    agreement: "Yes"
+  });
+
+  const handleOpenEditBrand = (brand) => {
+    setEditingBrand(brand);
+    setAdminBrandForm({
+      name: brand.name || "",
+      company: brand.company || "",
+      category: brand.category || "Food and Beverage",
+      sector: brand.sector || "",
+      hq: brand.hq || "Delhi NCR",
+      location: brand.location || "",
+      pincode: brand.pincode || "",
+      investment_range: brand.investment_range || "",
+      max_investment_limit: brand.max_investment_limit || "",
+      franchiseFee: brand.franchiseFee || "",
+      royaltyFee: brand.royaltyFee || "",
+      areaRequired: brand.areaRequired || "",
+      description: brand.description || "",
+      email: brand.email || "",
+      phone: brand.phone || "",
+      website: brand.website || "",
+      image: brand.image || "",
+      status: brand.status || "Pending",
+      featured: brand.featured || false,
+      masterFranchiseAvailable: brand.masterFranchiseAvailable || false,
+      masterInvestmentRange: brand.masterInvestmentRange || "",
+      territoryOffered: brand.territoryOffered || "State Level Exclusivity",
+      trainingSupport: brand.trainingSupport || "Yes",
+      agreement: brand.agreement || "Yes"
+    });
+    setEditBrandModalOpen(true);
+  };
+
+  const handleSaveAdminBrand = async (e) => {
+    e.preventDefault();
+    if (!editingBrand) return;
+    setIsSavingAdminBrand(true);
+    try {
+      const brandId = editingBrand.id || editingBrand._id;
+      const res = await fetch(`/api/brands/${brandId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(adminBrandForm)
+      });
+      if (res.ok) {
+        clearBrandsCache();
+        fetchData();
+        setEditBrandModalOpen(false);
+        setEditingBrand(null);
+        if (selectedItem && (selectedItem.id === brandId || selectedItem._id === brandId)) {
+          setSelectedItem(null);
+        }
+      } else {
+        const data = await res.json();
+        alert(data.error || "Failed to update brand.");
+      }
+    } catch (err) {
+      console.error("Failed to save brand edits:", err);
+      alert("Error updating brand.");
+    } finally {
+      setIsSavingAdminBrand(false);
+    }
+  };
+
   // Pagination State
   const [brandsPage, setBrandsPage] = useState(1);
   const [brandsPerPage, setBrandsPerPage] = useState(10);
@@ -760,11 +853,15 @@ export default function AdminDashboard() {
   const totalInvestorsCount = investors.length;
 
   // Filtered Lists & Paginated Data Slices
-  const filteredBrands = brands.filter(b =>
-    b.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    b.company.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    b.category.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredBrands = brands.filter(b => {
+    const term = (searchTerm || "").toLowerCase();
+    if (!term) return true;
+    const nameMatch = (b.name || "").toLowerCase().includes(term);
+    const companyMatch = (b.company || "").toLowerCase().includes(term);
+    const categoryMatch = (b.category || "").toLowerCase().includes(term);
+    const emailMatch = (b.email || (b.user && b.user.email) || "").toLowerCase().includes(term);
+    return nameMatch || companyMatch || categoryMatch || emailMatch;
+  });
   const paginatedBrands = filteredBrands.slice((brandsPage - 1) * brandsPerPage, brandsPage * brandsPerPage);
 
   const filteredInvestors = investors.filter(i => {
@@ -1187,6 +1284,9 @@ export default function AdminDashboard() {
                               <div className="admin-actions-cell" style={{ justifyContent: "flex-end" }}>
                                 <button className="admin-btn admin-btn-details" onClick={() => { setSelectedItem(b); setModalType("brand"); }}>
                                   <Eye size={13} /> Details
+                                </button>
+                                <button className="admin-btn admin-btn-details" style={{ background: "rgba(99, 102, 241, 0.1)", color: "var(--primary)", borderColor: "rgba(99, 102, 241, 0.2)" }} onClick={() => handleOpenEditBrand(b)}>
+                                  <Edit3 size={13} /> Edit
                                 </button>
                                 {b.status === "Pending" && (
                                   <>
@@ -1976,12 +2076,232 @@ export default function AdminDashboard() {
                   </button>
                 </>
               )}
+              <button className="admin-btn admin-btn-details" style={{ background: "rgba(99, 102, 241, 0.1)", color: "var(--primary)", borderColor: "rgba(99, 102, 241, 0.2)", padding: "8px 16px", fontSize: "13px" }} onClick={() => handleOpenEditBrand(selectedItem)}>
+                <Edit3 size={15} /> Edit Brand Specs
+              </button>
               <button className="admin-btn admin-btn-delete" style={{ padding: "8px 16px", fontSize: "13px" }} onClick={() => handleDeleteBrand(selectedItem.id)}>
                 <Trash2 size={15} /> Delete Listing
               </button>
               <button className="admin-btn admin-btn-details" style={{ padding: "8px 16px", fontSize: "13px" }} onClick={() => setSelectedItem(null)}>
                 Close Window
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Admin Edit Brand Modal */}
+      {editBrandModalOpen && editingBrand && (
+        <div className="modal-overlay" onClick={() => setEditBrandModalOpen(false)}>
+          <div className="modal-content" style={{ maxWidth: "800px" }} onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>Edit Brand Specs: {editingBrand.name}</h3>
+              <button className="close-btn" onClick={() => setEditBrandModalOpen(false)}>×</button>
+            </div>
+            <div className="modal-body" style={{ maxHeight: "75vh", overflowY: "auto" }}>
+              <form onSubmit={handleSaveAdminBrand}>
+                <div className="form-grid">
+                  <div className="form-group">
+                    <label>Brand Name</label>
+                    <input
+                      type="text"
+                      required
+                      className="form-input"
+                      value={adminBrandForm.name}
+                      onChange={(e) => setAdminBrandForm({ ...adminBrandForm, name: e.target.value })}
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label>Parent Company Name</label>
+                    <input
+                      type="text"
+                      required
+                      className="form-input"
+                      value={adminBrandForm.company}
+                      onChange={(e) => setAdminBrandForm({ ...adminBrandForm, company: e.target.value })}
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label>Category</label>
+                    <input
+                      type="text"
+                      required
+                      className="form-input"
+                      value={adminBrandForm.category}
+                      onChange={(e) => setAdminBrandForm({ ...adminBrandForm, category: e.target.value })}
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label>Sector / Sub-Category</label>
+                    <input
+                      type="text"
+                      className="form-input"
+                      value={adminBrandForm.sector}
+                      onChange={(e) => setAdminBrandForm({ ...adminBrandForm, sector: e.target.value })}
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label>HQ State / Region</label>
+                    <input
+                      type="text"
+                      className="form-input"
+                      value={adminBrandForm.hq}
+                      onChange={(e) => setAdminBrandForm({ ...adminBrandForm, hq: e.target.value })}
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label>HQ City / District Location</label>
+                    <input
+                      type="text"
+                      className="form-input"
+                      value={adminBrandForm.location}
+                      onChange={(e) => setAdminBrandForm({ ...adminBrandForm, location: e.target.value })}
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label>Pincode</label>
+                    <input
+                      type="text"
+                      required
+                      className="form-input"
+                      value={adminBrandForm.pincode}
+                      onChange={(e) => setAdminBrandForm({ ...adminBrandForm, pincode: e.target.value })}
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label>Status</label>
+                    <select
+                      className="form-input"
+                      value={adminBrandForm.status}
+                      onChange={(e) => setAdminBrandForm({ ...adminBrandForm, status: e.target.value })}
+                    >
+                      <option value="Approved">Approved</option>
+                      <option value="Pending">Pending</option>
+                      <option value="Declined">Declined</option>
+                    </select>
+                  </div>
+                  <div className="form-group">
+                    <label>Investment Range</label>
+                    <input
+                      type="text"
+                      required
+                      className="form-input"
+                      value={adminBrandForm.investment_range}
+                      onChange={(e) => setAdminBrandForm({ ...adminBrandForm, investment_range: e.target.value })}
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label>Max Investment Limit</label>
+                    <input
+                      type="text"
+                      required
+                      className="form-input"
+                      value={adminBrandForm.max_investment_limit}
+                      onChange={(e) => setAdminBrandForm({ ...adminBrandForm, max_investment_limit: e.target.value })}
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label>Franchise Fee (INR)</label>
+                    <input
+                      type="number"
+                      className="form-input"
+                      value={adminBrandForm.franchiseFee}
+                      onChange={(e) => setAdminBrandForm({ ...adminBrandForm, franchiseFee: e.target.value })}
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label>Royalty Fee</label>
+                    <input
+                      type="text"
+                      className="form-input"
+                      value={adminBrandForm.royaltyFee}
+                      onChange={(e) => setAdminBrandForm({ ...adminBrandForm, royaltyFee: e.target.value })}
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label>Space Required (Sq. Ft.)</label>
+                    <input
+                      type="text"
+                      className="form-input"
+                      value={adminBrandForm.areaRequired}
+                      onChange={(e) => setAdminBrandForm({ ...adminBrandForm, areaRequired: e.target.value })}
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label>Featured Listing?</label>
+                    <select
+                      className="form-input"
+                      value={adminBrandForm.featured ? "true" : "false"}
+                      onChange={(e) => setAdminBrandForm({ ...adminBrandForm, featured: e.target.value === "true" })}
+                    >
+                      <option value="true">Yes, Highlight as Featured</option>
+                      <option value="false">No, Standard Listing</option>
+                    </select>
+                  </div>
+                  <div className="form-group">
+                    <label>Contact Phone</label>
+                    <input
+                      type="tel"
+                      className="form-input"
+                      value={adminBrandForm.phone}
+                      onChange={(e) => setAdminBrandForm({ ...adminBrandForm, phone: e.target.value })}
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label>Official Email</label>
+                    <input
+                      type="email"
+                      className="form-input"
+                      value={adminBrandForm.email}
+                      onChange={(e) => setAdminBrandForm({ ...adminBrandForm, email: e.target.value })}
+                    />
+                  </div>
+                  <div className="form-group form-grid-full">
+                    <label>Official Website URL</label>
+                    <input
+                      type="url"
+                      className="form-input"
+                      value={adminBrandForm.website}
+                      onChange={(e) => setAdminBrandForm({ ...adminBrandForm, website: e.target.value })}
+                    />
+                  </div>
+                  <div className="form-group form-grid-full">
+                    <label>Image URL / Cover Base64</label>
+                    <input
+                      type="text"
+                      className="form-input"
+                      value={adminBrandForm.image}
+                      onChange={(e) => setAdminBrandForm({ ...adminBrandForm, image: e.target.value })}
+                    />
+                  </div>
+                  <div className="form-group form-grid-full">
+                    <label>Business Description</label>
+                    <textarea
+                      rows="4"
+                      className="form-input"
+                      value={adminBrandForm.description}
+                      onChange={(e) => setAdminBrandForm({ ...adminBrandForm, description: e.target.value })}
+                    ></textarea>
+                  </div>
+                </div>
+
+                <div className="modal-footer" style={{ marginTop: "20px", display: "flex", gap: "10px", justifyContent: "flex-end" }}>
+                  <button
+                    type="button"
+                    className="btn btn-outline"
+                    onClick={() => setEditBrandModalOpen(false)}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="btn btn-primary"
+                    disabled={isSavingAdminBrand}
+                  >
+                    {isSavingAdminBrand ? "Saving Changes..." : "Save Brand Changes"}
+                  </button>
+                </div>
+              </form>
             </div>
           </div>
         </div>

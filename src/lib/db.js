@@ -35,7 +35,6 @@ if (!cached) {
 
 async function dbConnect() {
   if (cached.conn) {
-    seedDatabase().catch(err => console.error("Error seeding DB async:", err));
     return cached.conn;
   }
 
@@ -52,7 +51,7 @@ async function dbConnect() {
 
   try {
     cached.conn = await cached.promise;
-    //await seedDatabase();
+    await seedDatabase();
   } catch (e) {
     cached.promise = null;
     throw e;
@@ -60,23 +59,9 @@ async function dbConnect() {
 
   return cached.conn;
 }
+
 async function seedDatabase() {
   try {
-    // Clean up legacy dummy seed data from MongoDB collections
-    await Brand.deleteMany({
-      $or: [
-        { id: { $regex: /^brand-\d+/ } },
-        { email: { $in: ["brand@example.com", "contact@jaazcorp.in", "info@axonifytech.com", "partner@brainytoys.com", "franchise@bombaykulfi.com"] } }
-      ]
-    }).catch(() => {});
-
-    await Investor.deleteMany({
-      $or: [
-        { id: "investor-seed" },
-        { email: "investor@example.com" }
-      ]
-    }).catch(() => {});
-
     // Ensure default Admin user exists in Admin collection
     const adminCount = await Admin.countDocuments();
     if (adminCount === 0) {
@@ -109,11 +94,19 @@ export async function getBrands() {
   await dbConnect();
   try {
     const brands = await Brand.find({}).populate('user').sort({ createdAt: -1 }).lean();
-    return brands.map(b => ({
-      ...b,
-      id: b.id || b._id.toString(),
-      email: b.user ? b.user.email : b.email
-    }));
+    return brands.map(b => {
+      const userEmail = (b.user && typeof b.user === 'object' && b.user.email) ? b.user.email : null;
+      const email = userEmail || b.email || "";
+      return {
+        ...b,
+        id: b.id || b._id.toString(),
+        name: b.name || "Unnamed Brand",
+        company: b.company || b.name || "",
+        category: b.category || "General",
+        status: b.status || "Pending",
+        email: email
+      };
+    });
   } catch (error) {
     console.error("Error reading brands from MongoDB:", error);
     return [];
@@ -146,29 +139,36 @@ export async function getBrandById(id) {
 export async function saveBrand(brandData) {
   await dbConnect();
   try {
-    const rawPassword = brandData.password || "password123";
-    const hashedPassword = await bcrypt.hash(rawPassword, 10);
+    const emailLower = (brandData.email || "").toLowerCase().trim();
+    if (!emailLower) {
+      throw new Error("Email is required for brand registration.");
+    }
 
-    // Save to User collection
-    const createdUser = await User.create({
-      email: brandData.email.toLowerCase(),
-      password: hashedPassword,
-      role: 'brand',
-      name: brandData.name,
-      phone: brandData.phone
-    });
+    const rawPassword = brandData.password || "password123";
+    let userObj = await User.findOne({ email: emailLower });
+
+    if (!userObj) {
+      const hashedPassword = await bcrypt.hash(rawPassword, 10);
+      userObj = await User.create({
+        email: emailLower,
+        password: hashedPassword,
+        role: 'brand',
+        name: brandData.name,
+        phone: brandData.phone || ""
+      });
+    }
 
     const id = brandData.id || `brand-${Date.now()}`;
     const brandPayload = {
       ...brandData,
-      user: createdUser._id,
+      email: emailLower,
+      user: userObj._id,
       id,
       status: brandData.status || "Pending",
       featured: brandData.featured || false,
       createdAt: brandData.createdAt || new Date()
     };
     delete brandPayload.password;
-    delete brandPayload.email;
 
     const brand = new Brand(brandPayload);
     const saved = await brand.save();
@@ -177,7 +177,7 @@ export async function saveBrand(brandData) {
     const returnObj = {
       ...obj,
       id: obj.id || obj._id.toString(),
-      email: obj.user ? obj.user.email : brandData.email
+      email: obj.user ? obj.user.email : emailLower
     };
 
     // Trigger registration email

@@ -41,24 +41,39 @@ exports.getBrandById = async (req, res) => {
 // @access  Public
 exports.createBrand = async (req, res) => {
     try {
-        const rawPassword = req.body.password || 'password123';
-        const hashedPassword = await bcrypt.hash(rawPassword, 10);
+        const emailLower = (req.body.email || "").toLowerCase().trim();
+        if (!emailLower) {
+            return res.status(400).json({ success: false, error: 'Email is required' });
+        }
 
-        // Save to User collection
-        await User.create({
-            email: req.body.email,
-            password: hashedPassword,
-            role: 'brand',
-            name: req.body.name,
-            phone: req.body.phone
-        });
+        let user = await User.findOne({ email: emailLower });
+        if (!user) {
+            const rawPassword = req.body.password || 'password123';
+            const hashedPassword = await bcrypt.hash(rawPassword, 10);
+            user = await User.create({
+                email: emailLower,
+                password: hashedPassword,
+                role: 'brand',
+                name: req.body.name,
+                phone: req.body.phone
+            });
+        }
 
-        req.body.password = hashedPassword;
+        req.body.user = user._id;
+        req.body.email = emailLower;
+        req.body.id = req.body.id || `brand-${Date.now()}`;
+        req.body.pincode = req.body.pincode || '110001';
+        req.body.investment_range = req.body.investment_range || 'Rs. 10 Lakh - 20 Lakh';
+        req.body.max_investment_limit = req.body.max_investment_limit || req.body.investment_range || 'Rs. 10 Lakh - 20 Lakh';
+        req.body.status = req.body.status || 'Pending';
+        delete req.body.password;
+
         const brand = await Brand.create(req.body);
         res.status(201).json({ success: true, data: brand });
     } catch (error) {
+        console.error("Error creating brand in Express backend:", error);
         if (error.code === 11000) {
-            return res.status(400).json({ success: false, error: 'Email already exists' });
+            return res.status(400).json({ success: false, error: 'Brand or Email already exists' });
         }
         res.status(400).json({ success: false, error: error.message });
     }

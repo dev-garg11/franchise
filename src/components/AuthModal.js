@@ -101,20 +101,20 @@ export default function AuthModal({ isOpen, onClose, initialTab = "login" }) {
           if (user.role === "admin") {
             localStorage.setItem("adminLoggedIn", "true");
             localStorage.setItem("adminUsername", user.username || "admin");
-            window.location.href = "/admin/dashboard";
+            window.location.href = "/admin";
           } else if (user.role === "investor") {
             localStorage.setItem("investorLoggedIn", "true");
             localStorage.setItem("investorEmail", user.email);
             localStorage.setItem("investorName", user.name);
             localStorage.setItem("investorPhone", user.phone || "");
             localStorage.setItem("investorId", user.id || "");
-            window.location.href = "/investor/dashboard";
+            window.location.href = "/investor-panel";
           } else {
             localStorage.setItem("brandLoggedIn", "true");
             localStorage.setItem("brandEmail", user.email);
             localStorage.setItem("brandId", user.id);
             localStorage.setItem("brandName", user.name);
-            window.location.href = "/brand-owner/dashboard";
+            window.location.href = "/brand-panel";
           }
         }, 1000);
       } else {
@@ -198,20 +198,20 @@ export default function AuthModal({ isOpen, onClose, initialTab = "login" }) {
 
               if (user.role === "admin") {
                 localStorage.setItem("adminLoggedIn", "true");
-                window.location.href = "/admin/dashboard";
+                window.location.href = "/admin";
               } else if (user.role === "investor") {
                 localStorage.setItem("investorLoggedIn", "true");
                 localStorage.setItem("investorEmail", user.email);
                 localStorage.setItem("investorName", user.name);
                 localStorage.setItem("investorPhone", user.phone || "");
                 localStorage.setItem("investorId", user.id || "");
-                window.location.href = "/investor/dashboard";
+                window.location.href = "/investor-panel";
               } else {
                 localStorage.setItem("brandLoggedIn", "true");
                 localStorage.setItem("brandEmail", user.email);
                 localStorage.setItem("brandId", user.id);
                 localStorage.setItem("brandName", user.name);
-                window.location.href = "/brand-owner/dashboard";
+                window.location.href = "/brand-panel";
               }
             } else {
               setActiveTab("login");

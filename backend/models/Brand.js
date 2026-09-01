@@ -108,7 +108,7 @@ const BrandSchema = new mongoose.Schema({
     },
     status: {
         type: String,
-        enum: ['Pending', 'Approved', 'Rejected'],
+        enum: ['Pending', 'Approved', 'Rejected', 'Declined'],
         default: 'Pending'
     },
     featured: {
