@@ -146,14 +146,21 @@ export default function BrandPanel() {
             image: userBrand.image || "",
           });
 
-          // Fetch leads (investor submissions referencing this brand name in the comments)
-          const brandNameLower = (userBrand.name || "").toLowerCase();
-          const companyLower = (userBrand.company || "").toLowerCase();
+          // Fetch leads (investor submissions referencing this brand name in brandId, brandName, targetBrand, or comments)
+          const brandNameLower = (userBrand.name || "").trim().toLowerCase();
+          const companyLower = (userBrand.company || "").trim().toLowerCase();
+          const brandIdStr = (userBrand.id || userBrand._id || "").toString();
+
           const matchedLeads = investorsList.filter((inv) => {
             const comments = (inv.comments || "").toLowerCase();
+            const invBrandName = (inv.brandName || inv.targetBrand || "").trim().toLowerCase();
+            const invBrandId = (inv.brandId || inv.targetBrandId || "").toString();
+
             return (
-              (brandNameLower && comments.includes(`brand: ${brandNameLower}`)) ||
-              (companyLower && comments.includes(`brand: ${companyLower}`))
+              (brandIdStr && invBrandId === brandIdStr) ||
+              (brandNameLower && invBrandName === brandNameLower) ||
+              (brandNameLower && comments.includes(brandNameLower)) ||
+              (companyLower && comments.includes(companyLower))
             );
           });
           setLeads(matchedLeads);

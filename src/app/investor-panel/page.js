@@ -57,15 +57,29 @@ export default function InvestorPanel() {
         setBrands(approvedBrands);
 
         // Find primary profile for this investor (first instance or seed)
-        const primaryProfile = investorsList.find(
-          (inv) => inv.email.toLowerCase() === email.toLowerCase() && !inv.comments?.startsWith("Enquiry submitted")
-        ) || investorsList.find((inv) => inv.email.toLowerCase() === email.toLowerCase());
+        const emailClean = (email || "").trim().toLowerCase();
 
-        setInvestor(primaryProfile);
+        const userRecords = investorsList.filter((inv) => {
+          const invEmail = (inv.email || (inv.user && typeof inv.user === "object" ? inv.user.email : "") || "").trim().toLowerCase();
+          return invEmail === emailClean;
+        });
 
-        // Track enquiries (records containing "Enquiry submitted for Brand" under comments matching this email)
-        const activeEnquiries = investorsList.filter(
-          (inv) => inv.email.toLowerCase() === email.toLowerCase() && inv.comments?.startsWith("Enquiry submitted")
+        const primaryProfile = userRecords.find(
+          (inv) => !inv.comments?.startsWith("Enquiry submitted") && !inv.comments?.startsWith("Interested in") && !inv.brandName && !inv.targetBrand
+        ) || userRecords[0];
+
+        setInvestor(primaryProfile || { email: emailClean, name: localStorage.getItem("investorName") || "Investor Profile" });
+
+        // Track enquiries & lead records (all submissions for this email with brand details or comments distinct from profile)
+        const activeEnquiries = userRecords.filter(
+          (inv) =>
+            inv.brandName ||
+            inv.targetBrand ||
+            inv.brandId ||
+            inv.targetBrandId ||
+            (inv.comments && inv.comments.trim().length > 0 && inv.comments !== primaryProfile?.comments) ||
+            (inv.id && primaryProfile?.id && inv.id !== primaryProfile.id) ||
+            (inv._id && primaryProfile?._id && inv._id !== primaryProfile._id)
         );
         setEnquiries(activeEnquiries);
 
@@ -81,8 +95,6 @@ export default function InvestorPanel() {
             const categoryMatch = preferredSectors.length === 0 || preferredSectors.includes(brand.category);
             // Match budget range (brand min investment should be below/around investor's max budget)
             const budgetMatch = brand.minInvestment <= maxBudget && brand.maxInvestment >= minBudget;
-            // Match location (HQ or general option)
-            const locationMatch = !targetLoc || brand.hq === targetLoc || true; // Broad recommendation
 
             return categoryMatch && budgetMatch;
           });
@@ -181,7 +193,7 @@ export default function InvestorPanel() {
                   onClick={() => setActiveTab("enquiries")}
                 >
                   <FileText size={18} />
-                  My Active Applications ({enquiries.length})
+                  My Lead Records & Applications ({enquiries.length})
                 </div>
               </li>
               <li className="admin-nav-item">
@@ -213,11 +225,11 @@ export default function InvestorPanel() {
             <h1 style={{ fontSize: "28px" }}>
               {activeTab === "dashboard" && "My Investor Profile"}
               {activeTab === "recommendations" && "Curated Matches For You"}
-              {activeTab === "enquiries" && "Franchise Applications log"}
+              {activeTab === "enquiries" && "Investor Lead Records & Applications"}
               {activeTab === "consultancy" && "Corporate Business Desk"}
             </h1>
             <p style={{ color: "var(--text-muted)", fontSize: "14px", marginTop: "4px" }}>
-              Welcome back, <strong>{investor.name}</strong>. Monitor matches and submit applications.
+              Welcome back, <strong>{investor.name}</strong>. Monitor matches and lead records.
             </p>
           </div>
 
@@ -328,7 +340,7 @@ export default function InvestorPanel() {
                     </div>
                     <div style={{ background: "#f8fafc", padding: "16px", borderRadius: "10px" }}>
                       <h3 style={{ fontSize: "28px", color: "var(--secondary)" }}>{enquiries.length}</h3>
-                      <p style={{ fontSize: "12px", color: "var(--text-muted)", marginTop: "4px" }}>Active Applications</p>
+                      <p style={{ fontSize: "12px", color: "var(--text-muted)", marginTop: "4px" }}>Active Lead Records</p>
                     </div>
                   </div>
 
@@ -395,19 +407,19 @@ export default function InvestorPanel() {
               </>
             )}
 
-            {/* Enquiries Tab */}
+            {/* Enquiries / Leads Tab */}
             {activeTab === "enquiries" && (
               <div className="table-container">
                 <div className="table-header">
-                  <h3 style={{ fontSize: "18px" }}>Submitted Proposals</h3>
-                  <p style={{ color: "var(--text-muted)", fontSize: "13px" }}>Tracking enquiries sent directly to brand operators.</p>
+                  <h3 style={{ fontSize: "18px" }}>Investor Leads & Applications Log</h3>
+                  <p style={{ color: "var(--text-muted)", fontSize: "13px" }}>Tracking enquiries and lead records submitted to brand operators.</p>
                 </div>
 
                 {enquiries.length === 0 ? (
                   <div className="flex-center" style={{ padding: "40px", flexDirection: "column", color: "var(--text-muted)" }}>
                     <HelpCircle size={32} style={{ marginBottom: "12px" }} />
-                    <p style={{ fontWeight: "500" }}>You haven't applied for any franchise proposals yet.</p>
-                    <p style={{ fontSize: "12px", marginTop: "4px" }}>Apply directly from homepage opportunities or recommended matches.</p>
+                    <p style={{ fontWeight: "500" }}>No investor lead records found for your account.</p>
+                    <p style={{ fontSize: "12px", marginTop: "4px" }}>Submit enquiries from homepage opportunities or brand proposals to record leads.</p>
                   </div>
                 ) : (
                   <table className="admin-table">
@@ -422,19 +434,26 @@ export default function InvestorPanel() {
                     </thead>
                     <tbody>
                       {enquiries.map((enq) => {
-                        // Extract brand name from comment "Enquiry submitted for Brand: [BrandName]"
-                        const match = enq.comments?.match(/Enquiry submitted for Brand: (.*?)\./);
-                        const brandName = match ? match[1] : "Franchise Concept";
+                        let brandName = enq.brandName || enq.targetBrand;
+                        if (!brandName && enq.comments) {
+                          const match1 = enq.comments.match(/Enquiry submitted for Brand: (.*?)(?:\.|$)/i);
+                          const match2 = enq.comments.match(/Interested in Franchise: (.*?)(?:\.|$)/i);
+                          const match3 = enq.comments.match(/Brand: (.*?)(?:\.|$)/i);
+                          if (match1) brandName = match1[1];
+                          else if (match2) brandName = match2[1];
+                          else if (match3) brandName = match3[1];
+                        }
+                        if (!brandName) brandName = enq.category ? `${enq.category} Franchise` : "Franchise Lead Record";
 
                         return (
-                          <tr key={enq.id}>
+                          <tr key={enq.id || enq._id}>
                             <td style={{ fontWeight: "700" }}>{brandName}</td>
-                            <td>{enq.propertyArea || "Not specified"}</td>
-                            <td>{new Date(enq.createdAt).toLocaleDateString()}</td>
-                            <td style={{ fontSize: "12px", color: "var(--text-muted)" }}>{enq.comments}</td>
+                            <td>{enq.propertyArea || enq.preferredLocation || enq.city || "Not specified"}</td>
+                            <td>{new Date(enq.appliedAt || enq.createdAt || Date.now()).toLocaleDateString("en-IN", { day: 'numeric', month: 'short', year: 'numeric' })}</td>
+                            <td style={{ fontSize: "12px", color: "var(--text-muted)", maxWidth: "300px" }}>{enq.comments || enq.notes || "Lead record submitted"}</td>
                             <td>
                               <span className="status-badge approved" style={{ background: "rgba(16,185,129,0.08)", color: "var(--success)" }}>
-                                Contacted
+                                {enq.status || "Contacted"}
                               </span>
                             </td>
                           </tr>
