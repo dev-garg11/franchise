@@ -163,7 +163,6 @@ export default function Home() {
   // Services State
   const [services, setServices] = useState([]);
   const [loadingServices, setLoadingServices] = useState(true);
-  const [selectedService, setSelectedService] = useState(null);
 
   // Advertisements State
   const [ads, setAds] = useState([]);
@@ -1090,13 +1089,13 @@ export default function Home() {
                     {service.content}
                   </p>
                 </div>
-                <button
-                  onClick={() => setSelectedService(service)}
+                <Link
+                  href={`/services/${service.id || service._id}`}
                   className="btn btn-outline"
-                  style={{ width: "100%", padding: "10px", fontSize: "13px", fontWeight: "700" }}
+                  style={{ width: "100%", padding: "10px", fontSize: "13px", fontWeight: "700", textAlign: "center", textDecoration: "none" }}
                 >
                   Explore Details
-                </button>
+                </Link>
               </div>
             </div>
           ))}
@@ -1389,82 +1388,6 @@ export default function Home() {
           </div>
         </div>
       </section>
-
-
-
-      {/* Service Details Modal */}
-      {selectedService && (
-        <div className="modal-overlay" onClick={() => setSelectedService(null)}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: "560px", padding: 0, overflow: "hidden", borderRadius: "16px" }}>
-            <div style={{ position: "relative", height: "220px" }}>
-              <img
-                src={selectedService.image || "https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?auto=format&fit=crop&q=80&w=600"}
-                alt={selectedService.title}
-                style={{ width: "100%", height: "100%", objectFit: "cover" }}
-              />
-              <button
-                className="close-btn"
-                onClick={() => setSelectedService(null)}
-                style={{
-                  position: "absolute",
-                  top: "16px",
-                  right: "16px",
-                  background: "rgba(0,0,0,0.6)",
-                  color: "white",
-                  border: "none",
-                  borderRadius: "50%",
-                  width: "36px",
-                  height: "36px",
-                  cursor: "pointer",
-                  fontSize: "18px"
-                }}
-              >
-                ×
-              </button>
-            </div>
-
-            <div style={{ padding: "24px" }}>
-              <h3 style={{ fontSize: "22px", fontWeight: "800", color: "var(--text-dark)", marginBottom: "12px" }}>
-                {selectedService.title}
-              </h3>
-              <p style={{ fontSize: "14px", color: "#475569", lineHeight: "1.7", marginBottom: "24px", whiteSpace: "pre-line" }}>
-                {selectedService.content}
-              </p>
-
-              <div style={{ display: "flex", gap: "12px" }}>
-                <a
-                  href={`https://wa.me/919876543210?text=${encodeURIComponent(`Hi Franchise Roots team, I am interested in learning more about your service: ${selectedService.title}`)}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="btn"
-                  style={{
-                    flex: 1,
-                    background: "#25D366",
-                    color: "white",
-                    fontWeight: "700",
-                    textAlign: "center",
-                    padding: "12px",
-                    borderRadius: "10px",
-                    display: "inline-flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    gap: "8px"
-                  }}
-                >
-                  <MessageCircle size={18} /> Inquire via WhatsApp
-                </a>
-                <button
-                  className="btn btn-outline"
-                  onClick={() => setSelectedService(null)}
-                  style={{ padding: "12px 20px" }}
-                >
-                  Close
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
