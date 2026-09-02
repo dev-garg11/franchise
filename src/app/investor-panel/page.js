@@ -8,6 +8,21 @@ import {
   Home, Search, LayoutDashboard, PlusCircle, User, Briefcase,
   MapPin, IndianRupee, MessageSquare, Send, CheckCircle2
 } from "lucide-react";
+import { ALL_INDIAN_STATES } from "@/lib/brandConstants";
+
+const INVESTMENT_OPTIONS = [
+  "Rs. 10,000 - 50,000",
+  "Rs. 50,000 - 2 Lakh",
+  "Rs. 2 Lakh - 5 Lakh",
+  "Rs. 5 Lakh - 10 Lakh",
+  "Rs. 10 Lakh - 20 Lakh",
+  "Rs. 20 Lakh - 30 Lakh",
+  "Rs. 30 Lakh - 50 Lakh",
+  "Rs. 50 Lakh - 1 Crore",
+  "Rs. 1 Crore - 2 Crore",
+  "Rs. 2 Crore - 5 Crore",
+  "Above Rs. 5 Crore"
+];
 
 export default function InvestorPanel() {
   const router = useRouter();
@@ -29,6 +44,25 @@ export default function InvestorPanel() {
 
   // Brand detail modal
   const [selectedBrand, setSelectedBrand] = useState(null);
+
+  // Popup application form state
+  const [applyForm, setApplyForm] = useState({ name: "", email: "", phone: "", city: "", budget: "", message: "" });
+  const [submittingApply, setSubmittingApply] = useState(false);
+  const [applySuccess, setApplySuccess] = useState(false);
+
+  useEffect(() => {
+    if (selectedBrand && investor) {
+      setApplyForm({
+        name: investor.name || localStorage.getItem("investorName") || "",
+        email: investor.email || localStorage.getItem("investorEmail") || "",
+        phone: investor.phone || "",
+        city: investor.preferredLocation || "",
+        budget: investor.investment_range || `${formatLakhs(selectedBrand.minInvestment)} - ${formatLakhs(selectedBrand.maxInvestment)}`,
+        message: ""
+      });
+      setApplySuccess(false);
+    }
+  }, [selectedBrand, investor]);
 
   useEffect(() => {
     const isLoggedIn = localStorage.getItem("investorLoggedIn");
@@ -132,6 +166,53 @@ export default function InvestorPanel() {
     setTimeout(() => {
       setTicketSubmitted(false);
     }, 4000);
+  };
+
+  const handleApplySubmit = async (e) => {
+    e.preventDefault();
+    if (!selectedBrand) return;
+
+    setSubmittingApply(true);
+    try {
+      const res = await fetch("/api/investors", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: applyForm.name,
+          fullName: applyForm.name,
+          email: applyForm.email,
+          phone: applyForm.phone,
+          city: applyForm.city || "Not specified",
+          preferredLocation: applyForm.city || "Not specified",
+          investment_range: applyForm.budget,
+          investmentCapacity: applyForm.budget,
+          category: selectedBrand.category || "General",
+          brandName: selectedBrand.name,
+          targetBrand: selectedBrand.name,
+          brandId: selectedBrand.id || selectedBrand._id,
+          targetBrandId: selectedBrand.id || selectedBrand._id,
+          comments: `Enquiry submitted for Brand: ${selectedBrand.name}. Message: ${applyForm.message || "Applied from Investor Panel"}`,
+          notes: `Enquiry submitted for Brand: ${selectedBrand.name}. Message: ${applyForm.message || "Applied from Investor Panel"}`,
+          status: "Pending"
+        })
+      });
+
+      if (res.ok) {
+        setApplySuccess(true);
+        const email = localStorage.getItem("investorEmail");
+        if (email) {
+          loadDashboardData(email);
+        }
+      } else {
+        const errData = await res.json().catch(() => ({}));
+        alert(errData.error || "Failed to submit application.");
+      }
+    } catch (err) {
+      console.error("Error submitting application:", err);
+      alert("Failed to submit application. Please try again.");
+    } finally {
+      setSubmittingApply(false);
+    }
   };
 
   if (!authorized || !investor) {
@@ -548,7 +629,7 @@ export default function InvestorPanel() {
       {/* Brand Detail Modal */}
       {selectedBrand && (
         <div className="modal-overlay" onClick={() => setSelectedBrand(null)}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: "680px", maxHeight: "90vh", overflowY: "auto" }}>
             <div className="modal-header">
               <h3 style={{ fontSize: "22px" }}>{selectedBrand.name}</h3>
               <button className="close-btn" onClick={() => setSelectedBrand(null)}>×</button>
@@ -590,6 +671,116 @@ export default function InvestorPanel() {
                   <span style={{ color: "var(--text-muted)", display: "block", fontSize: "11px" }}>SPACE REQUIRED</span>
                   <strong>{selectedBrand.areaRequired || "Any"}</strong>
                 </div>
+              </div>
+
+              {/* Franchise Lead Application Form */}
+              <div style={{ background: "#f8fafc", border: "1px solid var(--light-border)", padding: "20px", borderRadius: "14px", marginTop: "24px" }}>
+                <h4 style={{ fontSize: "16px", fontWeight: "700", marginBottom: "4px", color: "var(--text-dark)" }}>
+                  Submit Franchise Application for {selectedBrand.name}
+                </h4>
+                <p style={{ fontSize: "12.5px", color: "var(--text-muted)", marginBottom: "16px" }}>
+                  Express your interest directly. This will create an active lead record in your dashboard.
+                </p>
+
+                {applySuccess ? (
+                  <div className="alert flex-center" style={{ background: "rgba(16,185,129,0.08)", color: "var(--success)", border: "1px solid rgba(16,185,129,0.2)", gap: "10px", padding: "14px", borderRadius: "10px" }}>
+                    <CheckCircle2 size={20} />
+                    <p style={{ fontSize: "13.5px", fontWeight: "600" }}>Application submitted successfully! Track it under "My Lead Records & Applications".</p>
+                  </div>
+                ) : (
+                  <form onSubmit={handleApplySubmit} style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                    <div className="form-grid" style={{ gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+                      <div className="form-group">
+                        <label style={{ fontSize: "11.5px" }}>Full Name</label>
+                        <input
+                          type="text"
+                          required
+                          className="form-input"
+                          value={applyForm.name}
+                          onChange={(e) => setApplyForm({ ...applyForm, name: e.target.value })}
+                          style={{ background: "#ffffff" }}
+                        />
+                      </div>
+                      <div className="form-group">
+                        <label style={{ fontSize: "11.5px" }}>Email Address</label>
+                        <input
+                          type="email"
+                          required
+                          className="form-input"
+                          value={applyForm.email}
+                          onChange={(e) => setApplyForm({ ...applyForm, email: e.target.value })}
+                          style={{ background: "#ffffff" }}
+                        />
+                      </div>
+                      <div className="form-group">
+                        <label style={{ fontSize: "11.5px" }}>Phone Number</label>
+                        <input
+                          type="tel"
+                          required
+                          className="form-input"
+                          value={applyForm.phone}
+                          onChange={(e) => setApplyForm({ ...applyForm, phone: e.target.value })}
+                          style={{ background: "#ffffff" }}
+                        />
+                      </div>
+                      <div className="form-group">
+                        <label style={{ fontSize: "11.5px" }}>Target City / State</label>
+                        <select
+                          required
+                          className="form-input"
+                          value={applyForm.city}
+                          onChange={(e) => setApplyForm({ ...applyForm, city: e.target.value })}
+                          style={{ background: "#ffffff" }}
+                        >
+                          <option value="">Select Target Location State</option>
+                          {applyForm.city && !ALL_INDIAN_STATES.includes(applyForm.city) && (
+                            <option value={applyForm.city}>{applyForm.city}</option>
+                          )}
+                          {ALL_INDIAN_STATES.map((st, i) => (
+                            <option key={i} value={st}>{st}</option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+                    <div className="form-group">
+                      <label style={{ fontSize: "11.5px" }}>Investment Capacity</label>
+                      <select
+                        required
+                        className="form-input"
+                        value={applyForm.budget}
+                        onChange={(e) => setApplyForm({ ...applyForm, budget: e.target.value })}
+                        style={{ background: "#ffffff" }}
+                      >
+                        <option value="">Select Investment Capacity</option>
+                        {applyForm.budget && !INVESTMENT_OPTIONS.includes(applyForm.budget) && (
+                          <option value={applyForm.budget}>{applyForm.budget}</option>
+                        )}
+                        {INVESTMENT_OPTIONS.map((opt, i) => (
+                          <option key={i} value={opt}>{opt}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="form-group">
+                      <label style={{ fontSize: "11.5px" }}>Message / Location Notes (Optional)</label>
+                      <textarea
+                        className="form-input"
+                        rows="3"
+                        placeholder="Add notes about your property location, experience, or launch timeline..."
+                        value={applyForm.message}
+                        onChange={(e) => setApplyForm({ ...applyForm, message: e.target.value })}
+                        style={{ background: "#ffffff" }}
+                      ></textarea>
+                    </div>
+                    <button
+                      type="submit"
+                      disabled={submittingApply}
+                      className="btn btn-primary"
+                      style={{ padding: "12px", width: "100%", fontSize: "13.5px", fontWeight: "700" }}
+                    >
+                      {submittingApply ? "Submitting Application..." : `Submit Application for ${selectedBrand.name}`}
+                    </button>
+                  </form>
+                )}
               </div>
             </div>
             <div className="modal-footer">
