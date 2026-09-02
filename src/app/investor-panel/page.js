@@ -591,15 +591,6 @@ export default function InvestorPanel() {
                   <strong>{selectedBrand.areaRequired || "Any"}</strong>
                 </div>
               </div>
-
-              <div style={{ background: "#eff6ff", border: "1px solid #bfdbfe", padding: "16px", borderRadius: "10px", display: "flex", flexDirection: "column", gap: "6px" }}>
-                <h4 style={{ fontSize: "14px", color: "var(--primary)" }}>Direct Brand Coordination Desk</h4>
-                <p style={{ fontSize: "12px", color: "#1e3a8a" }}>For agreements, royalty models, and local operations support, you can reach out directly:</p>
-                <div style={{ display: "flex", gap: "16px", marginTop: "6px", fontSize: "12px" }}>
-                  <span>Email: <strong>{selectedBrand.email}</strong></span>
-                  <span>Phone: <strong>{selectedBrand.phone}</strong></span>
-                </div>
-              </div>
             </div>
             <div className="modal-footer">
               <button className="btn btn-outline" onClick={() => setSelectedBrand(null)}>Close Window</button>
