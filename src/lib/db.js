@@ -198,7 +198,7 @@ export async function saveBrand(brandData) {
   }
 }
 
-export async function updateBrand(id, updatedFields) {
+export async function updateBrand(id, updatedFields, customMessage = "", adminInfo = {}) {
   await dbConnect();
   try {
     const query = mongoose.Types.ObjectId.isValid(id)
@@ -245,13 +245,67 @@ export async function updateBrand(id, updatedFields) {
       email: (updated.user && typeof updated.user === 'object' && updated.user.email) ? updated.user.email : (updated.email || "")
     };
 
-    // Trigger status change emails
+    // Trigger status change emails & audit logs
     if (updatedFields.status === "Approved") {
-      sendBrandApprovalEmail(obj).catch(err =>
+      const action = "BRAND_APPROVED";
+      const desc = `Approved brand listing '${obj.name}'${customMessage ? `. Note: ${customMessage}` : ""}`;
+      
+      await createLog({
+        panel: "admin",
+        action,
+        description: desc,
+        userEmail: adminInfo.email || "admin@franchiseroots.com",
+        userName: adminInfo.name || "Administrator",
+        targetId: obj.id,
+        targetType: "Brand",
+        details: { brandName: obj.name, customMessage }
+      }).catch(err => console.error("Log creation error:", err));
+
+      if (obj.email) {
+        await createLog({
+          panel: "brand",
+          action,
+          description: `Your brand listing '${obj.name}' was approved.${customMessage ? ` Note: ${customMessage}` : ""}`,
+          userEmail: obj.email,
+          userName: obj.name,
+          targetId: obj.id,
+          targetType: "Brand",
+          details: { brandName: obj.name, customMessage }
+        }).catch(err => console.error("Log creation error:", err));
+      }
+
+      sendBrandApprovalEmail(obj, customMessage).catch(err =>
         console.error("Failed to send brand approval email:", err)
       );
-    } else if (updatedFields.status === "Declined") {
-      sendBrandDeclineEmail(obj).catch(err =>
+    } else if (updatedFields.status === "Declined" || updatedFields.status === "Rejected") {
+      const action = "BRAND_DECLINED";
+      const desc = `Declined brand listing '${obj.name}'${customMessage ? `. Reason: ${customMessage}` : ""}`;
+
+      await createLog({
+        panel: "admin",
+        action,
+        description: desc,
+        userEmail: adminInfo.email || "admin@franchiseroots.com",
+        userName: adminInfo.name || "Administrator",
+        targetId: obj.id,
+        targetType: "Brand",
+        details: { brandName: obj.name, customMessage }
+      }).catch(err => console.error("Log creation error:", err));
+
+      if (obj.email) {
+        await createLog({
+          panel: "brand",
+          action,
+          description: `Your brand listing '${obj.name}' was declined.${customMessage ? ` Reason: ${customMessage}` : ""}`,
+          userEmail: obj.email,
+          userName: obj.name,
+          targetId: obj.id,
+          targetType: "Brand",
+          details: { brandName: obj.name, customMessage }
+        }).catch(err => console.error("Log creation error:", err));
+      }
+
+      sendBrandDeclineEmail(obj, customMessage).catch(err =>
         console.error("Failed to send brand decline email:", err)
       );
     }
@@ -373,7 +427,7 @@ export async function saveInvestor(investorData) {
   }
 }
 
-export async function assignBrandToInvestors(brandId, investorIds) {
+export async function assignBrandToInvestors(brandId, investorIds, customMessage = "", adminInfo = {}) {
   await dbConnect();
   try {
     // 1. Fetch the brand details
@@ -386,7 +440,15 @@ export async function assignBrandToInvestors(brandId, investorIds) {
       email: rawBrand.user ? rawBrand.user.email : rawBrand.email
     } : null;
 
-    // 2. Fetch the investor details
+    const storedBrandId = brand?.id || brand?._id?.toString() || brandId;
+
+    // 2. Fetch previously assigned investors for this brand
+    const prevAssignedInvestors = await Investor.find({
+      assignedBrands: { $in: [brandId, brand?._id?.toString(), brand?.id].filter(Boolean) }
+    }).populate('user').lean();
+    const prevInvestorIds = new Set(prevAssignedInvestors.map(inv => inv.id || inv._id.toString()));
+
+    // 3. Fetch selected new investor details
     const cleanInvestorIds = (investorIds || []).filter(Boolean);
     const queryInvestors = {
       $or: [
@@ -394,20 +456,23 @@ export async function assignBrandToInvestors(brandId, investorIds) {
         { id: { $in: cleanInvestorIds } }
       ]
     };
-    const rawInvestors = await Investor.find(queryInvestors).populate('user').lean();
+    const rawInvestors = cleanInvestorIds.length > 0
+      ? await Investor.find(queryInvestors).populate('user').lean()
+      : [];
     const selectedInvestors = rawInvestors.map(inv => ({
       ...inv,
+      id: inv.id || inv._id.toString(),
       email: inv.user ? inv.user.email : inv.email
     }));
+    const newInvestorIds = new Set(selectedInvestors.map(inv => inv.id));
 
-    // 3. Remove brandId from all investors first
+    // 4. Remove brandId from all investors first
     await Investor.updateMany(
       { assignedBrands: { $in: [brandId, brand?._id?.toString(), brand?.id].filter(Boolean) } },
       { $pull: { assignedBrands: { $in: [brandId, brand?._id?.toString(), brand?.id].filter(Boolean) } } }
     );
 
-    // 4. Add brandId to selected investors
-    const storedBrandId = brand?.id || brand?._id?.toString() || brandId;
+    // 5. Add brandId to selected investors
     if (cleanInvestorIds.length > 0) {
       await Investor.updateMany(
         queryInvestors,
@@ -415,14 +480,77 @@ export async function assignBrandToInvestors(brandId, investorIds) {
       );
     }
 
-    // 5. Send emails
+    // 6. Identify newly assigned and unassigned/declined investors for logging
+    const newlyAssigned = selectedInvestors.filter(inv => !prevInvestorIds.has(inv.id));
+    const unassigned = prevAssignedInvestors
+      .map(inv => ({ ...inv, id: inv.id || inv._id.toString(), email: inv.user ? inv.user.email : inv.email }))
+      .filter(inv => !newInvestorIds.has(inv.id));
+
+    const adminEmail = adminInfo.email || "admin@franchiseroots.com";
+    const adminName = adminInfo.name || "Administrator";
+
+    for (const inv of newlyAssigned) {
+      const desc = `Assigned investor lead '${inv.name}' to brand '${brand ? brand.name : brandId}'.${customMessage ? ` Message: ${customMessage}` : ""}`;
+      await createLog({
+        panel: "admin",
+        action: "INVESTOR_ASSIGNED_TO_BRAND",
+        description: desc,
+        userEmail: adminEmail,
+        userName: adminName,
+        targetId: inv.id,
+        targetType: "Investor",
+        details: { brandId, brandName: brand?.name, investorName: inv.name, customMessage }
+      }).catch(err => console.error("Log error:", err));
+
+      if (inv.email) {
+        await createLog({
+          panel: "investor",
+          action: "INVESTOR_ASSIGNED_TO_BRAND",
+          description: `Assigned and matched to brand '${brand ? brand.name : brandId}'.${customMessage ? ` Message: ${customMessage}` : ""}`,
+          userEmail: inv.email,
+          userName: inv.name,
+          targetId: inv.id,
+          targetType: "Investor",
+          details: { brandId, brandName: brand?.name, customMessage }
+        }).catch(err => console.error("Log error:", err));
+      }
+    }
+
+    for (const inv of unassigned) {
+      const desc = `Declined/Unassigned investor lead '${inv.name}' from brand '${brand ? brand.name : brandId}'.${customMessage ? ` Message: ${customMessage}` : ""}`;
+      await createLog({
+        panel: "admin",
+        action: "INVESTOR_DECLINED_FROM_BRAND",
+        description: desc,
+        userEmail: adminEmail,
+        userName: adminName,
+        targetId: inv.id,
+        targetType: "Investor",
+        details: { brandId, brandName: brand?.name, investorName: inv.name, customMessage }
+      }).catch(err => console.error("Log error:", err));
+
+      if (inv.email) {
+        await createLog({
+          panel: "investor",
+          action: "INVESTOR_DECLINED_FROM_BRAND",
+          description: `Declined/Unassigned from brand '${brand ? brand.name : brandId}'.${customMessage ? ` Message: ${customMessage}` : ""}`,
+          userEmail: inv.email,
+          userName: inv.name,
+          targetId: inv.id,
+          targetType: "Investor",
+          details: { brandId, brandName: brand?.name, customMessage }
+        }).catch(err => console.error("Log error:", err));
+      }
+    }
+
+    // 7. Send emails
     if (brand && selectedInvestors.length > 0) {
-      sendBrandAssignedToInvestorsEmail(brand, selectedInvestors).catch(err =>
+      sendBrandAssignedToInvestorsEmail(brand, selectedInvestors, customMessage).catch(err =>
         console.error("Failed to send brand assignment email to brand owner:", err)
       );
 
       selectedInvestors.forEach(inv => {
-        sendInvestorAssignedBrandEmail(inv, brand).catch(err =>
+        sendInvestorAssignedBrandEmail(inv, brand, customMessage).catch(err =>
           console.error(`Failed to send brand assignment email to investor ${inv.email}:`, err)
         );
       });
@@ -503,7 +631,7 @@ export async function loginUser(identifier, password) {
   }
 }
 
-export async function updateInvestor(id, updatedFields) {
+export async function updateInvestor(id, updatedFields, customMessage = "", adminInfo = {}) {
   await dbConnect();
   try {
     const query = mongoose.Types.ObjectId.isValid(id)
@@ -518,11 +646,69 @@ export async function updateInvestor(id, updatedFields) {
 
     if (!updated) return null;
 
-    return {
+    const resObj = {
       ...updated,
       id: updated.id || updated._id.toString(),
       email: updated.user ? updated.user.email : (updated.email || "")
     };
+
+    if (updatedFields.status === "Approved") {
+      const action = "INVESTOR_APPROVED";
+      const desc = `Approved investor lead '${resObj.name}'${customMessage ? `. Note: ${customMessage}` : ""}`;
+      
+      await createLog({
+        panel: "admin",
+        action,
+        description: desc,
+        userEmail: adminInfo.email || "admin@franchiseroots.com",
+        userName: adminInfo.name || "Administrator",
+        targetId: resObj.id,
+        targetType: "Investor",
+        details: { investorName: resObj.name, customMessage }
+      }).catch(err => console.error("Log error:", err));
+
+      if (resObj.email) {
+        await createLog({
+          panel: "investor",
+          action,
+          description: `Your investor lead profile was approved.${customMessage ? ` Note: ${customMessage}` : ""}`,
+          userEmail: resObj.email,
+          userName: resObj.name,
+          targetId: resObj.id,
+          targetType: "Investor",
+          details: { customMessage }
+        }).catch(err => console.error("Log error:", err));
+      }
+    } else if (updatedFields.status === "Rejected" || updatedFields.status === "Declined") {
+      const action = "INVESTOR_DECLINED";
+      const desc = `Declined investor lead '${resObj.name}'${customMessage ? `. Reason: ${customMessage}` : ""}`;
+
+      await createLog({
+        panel: "admin",
+        action,
+        description: desc,
+        userEmail: adminInfo.email || "admin@franchiseroots.com",
+        userName: adminInfo.name || "Administrator",
+        targetId: resObj.id,
+        targetType: "Investor",
+        details: { investorName: resObj.name, customMessage }
+      }).catch(err => console.error("Log error:", err));
+
+      if (resObj.email) {
+        await createLog({
+          panel: "investor",
+          action,
+          description: `Your investor lead request was declined.${customMessage ? ` Reason: ${customMessage}` : ""}`,
+          userEmail: resObj.email,
+          userName: resObj.name,
+          targetId: resObj.id,
+          targetType: "Investor",
+          details: { customMessage }
+        }).catch(err => console.error("Log error:", err));
+      }
+    }
+
+    return resObj;
   } catch (error) {
     console.error("Error updating investor in MongoDB:", error);
     throw error;

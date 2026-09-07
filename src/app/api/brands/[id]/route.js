@@ -23,8 +23,9 @@ export async function PATCH(request, { params }) {
     const resolvedParams = await params;
     const { id } = resolvedParams;
     const body = await request.json();
+    const { customMessage, adminEmail, adminName, ...brandFields } = body;
 
-    const updated = await updateBrand(id, body);
+    const updated = await updateBrand(id, brandFields, customMessage || "", { email: adminEmail, name: adminName });
     if (!updated) {
       return NextResponse.json({ error: "Brand not found" }, { status: 404 });
     }

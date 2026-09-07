@@ -209,12 +209,17 @@ export async function sendInvestorRegistrationEmail(investor) {
 }
 
 // 3. Send Brand Approval Email
-export async function sendBrandApprovalEmail(brand) {
+export async function sendBrandApprovalEmail(brand, customMessage = "") {
   const title = "Listing Approved! Your Brand is Live - Franchise Roots";
   const contentHeader = `
     <span class="badge badge-approved">Approved & Live</span>
     <h2>Congratulations ${brand.name}!</h2>
     <p>We are pleased to inform you that your brand listing has been approved by our administrators. Your brand is now live on our franchise portal and open for investor leads.</p>
+    ${customMessage ? `
+    <div style="background-color: #f1f5f9; border-left: 4px solid #10b981; padding: 12px 16px; margin: 16px 0; border-radius: 6px;">
+      <p style="margin: 0; font-size: 12px; color: #475569; font-weight: 700; text-transform: uppercase;">Admin Message / Note:</p>
+      <p style="margin: 4px 0 0 0; font-size: 14px; color: #0f172a;">${customMessage}</p>
+    </div>` : ""}
   `;
   const contentBody = `
     <table class="details-table">
@@ -243,12 +248,17 @@ export async function sendBrandApprovalEmail(brand) {
 }
 
 // 4. Send Brand Decline Email
-export async function sendBrandDeclineEmail(brand) {
+export async function sendBrandDeclineEmail(brand, customMessage = "") {
   const title = "Update on your Brand Submission - Franchise Roots";
   const contentHeader = `
     <span class="badge badge-declined">Declined</span>
     <h2>Hello ${brand.name},</h2>
     <p>Thank you for submitting your brand details to Franchise Roots. Unfortunately, after review, our administration team has declined your brand listing request at this time.</p>
+    ${customMessage ? `
+    <div style="background-color: #fef2f2; border-left: 4px solid #ef4444; padding: 12px 16px; margin: 16px 0; border-radius: 6px;">
+      <p style="margin: 0; font-size: 12px; color: #991b1b; font-weight: 700; text-transform: uppercase;">Reason / Admin Note:</p>
+      <p style="margin: 4px 0 0 0; font-size: 14px; color: #7f1d1d;">${customMessage}</p>
+    </div>` : ""}
   `;
   const contentBody = `
     <p>This decision might be due to missing company details, verification issues, or mismatch with our current listing guidelines.</p>
@@ -263,11 +273,16 @@ export async function sendBrandDeclineEmail(brand) {
 }
 
 // 5. Send Brand Assigned to Investors Email
-export async function sendBrandAssignedToInvestorsEmail(brand, investorsList) {
+export async function sendBrandAssignedToInvestorsEmail(brand, investorsList, customMessage = "") {
   const title = "New Investor Leads Linked to your Brand - Franchise Roots";
   const contentHeader = `
     <h2>Hello ${brand.name} Team,</h2>
     <p>Good news! Our administration team has linked your brand <strong>${brand.name}</strong> to new prospective investor leads that match your investment profile.</p>
+    ${customMessage ? `
+    <div style="background-color: #f1f5f9; border-left: 4px solid #4f46e5; padding: 12px 16px; margin: 16px 0; border-radius: 6px;">
+      <p style="margin: 0; font-size: 12px; color: #475569; font-weight: 700; text-transform: uppercase;">Admin Note:</p>
+      <p style="margin: 4px 0 0 0; font-size: 14px; color: #0f172a;">${customMessage}</p>
+    </div>` : ""}
   `;
   
   let investorsRows = "";
@@ -309,11 +324,16 @@ export async function sendBrandAssignedToInvestorsEmail(brand, investorsList) {
 }
 
 // 6. Send Investor Assigned Brand Email
-export async function sendInvestorAssignedBrandEmail(investor, brand) {
+export async function sendInvestorAssignedBrandEmail(investor, brand, customMessage = "") {
   const title = "New Hand-Picked Franchise Opportunity Matched to You - Franchise Roots";
   const contentHeader = `
     <h2>Hello ${investor.name},</h2>
     <p>Our administrator has hand-picked and assigned a premium franchise opportunity that matches your investment preferences!</p>
+    ${customMessage ? `
+    <div style="background-color: #f1f5f9; border-left: 4px solid #4f46e5; padding: 12px 16px; margin: 16px 0; border-radius: 6px;">
+      <p style="margin: 0; font-size: 12px; color: #475569; font-weight: 700; text-transform: uppercase;">Admin Note:</p>
+      <p style="margin: 4px 0 0 0; font-size: 14px; color: #0f172a;">${customMessage}</p>
+    </div>` : ""}
   `;
   
   const contentBody = `

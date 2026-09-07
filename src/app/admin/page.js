@@ -6,7 +6,7 @@ import Link from "next/link";
 import {
   Building, Users, FileText, CheckCircle, CheckCircle2, XCircle, Trash2, LogOut,
   Home, Search, LayoutDashboard, ShieldCheck, Mail, Phone, MapPin,
-  UploadCloud, Eye, Edit3, Wrench, Megaphone, Image as ImageIcon, RefreshCw, Filter, Clock
+  UploadCloud, Eye, Edit3, Wrench, Megaphone, Image as ImageIcon, RefreshCw, Filter, Clock, UserCheck, X
 } from "lucide-react";
 import Pagination from "@/components/Pagination";
 import { clearBrandsCache } from "@/lib/brandsCache";
@@ -70,6 +70,11 @@ export default function AdminDashboard({ initialTab = "dashboard" }) {
   const [logSearch, setLogSearch] = useState("");
   const [logPage, setLogPage] = useState(1);
   const logsPerPage = 10;
+
+  // Custom Message Action Modal State
+  const [customMsgModal, setCustomMsgModal] = useState(null); // { isOpen: boolean, type: string, targetItem: object, extraPayload?: object }
+  const [customMessageText, setCustomMessageText] = useState("");
+  const [isSubmittingCustomMsg, setIsSubmittingCustomMsg] = useState(false);
 
   const fetchLogs = async () => {
     setLogsLoading(true);
@@ -421,30 +426,103 @@ export default function AdminDashboard({ initialTab = "dashboard" }) {
     }
   }, [selectedItem, modalType, investors]);
 
-  const handleSaveBrandAssignment = async () => {
-    const brandId = selectedItem.id || selectedItem._id;
-    setIsSavingAssign(true);
+  const openCustomMsgModal = (type, targetItem, extraPayload = {}) => {
+    setCustomMsgModal({
+      isOpen: true,
+      type,
+      targetItem,
+      extraPayload
+    });
+    setCustomMessageText("");
+  };
+
+  const handleConfirmCustomMsgAction = async () => {
+    if (!customMsgModal) return;
+    setIsSubmittingCustomMsg(true);
+    const { type, targetItem, extraPayload } = customMsgModal;
+    const adminEmail = localStorage.getItem("adminEmail") || "admin@franchiseroots.com";
+    const adminName = "Administrator";
+
     try {
-      const res = await fetch("/api/investors/assign-brand", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          brandId,
-          investorIds: selectedInvestorsForBrand
-        })
-      });
-      if (res.ok) {
-        alert("Brand assignment updated successfully!");
-        fetchData();
-      } else {
-        alert("Failed to save assignment.");
+      if (type === "APPROVE_BRAND" || type === "DECLINE_BRAND") {
+        const status = type === "APPROVE_BRAND" ? "Approved" : "Declined";
+        const brandId = targetItem.id || targetItem._id;
+        const res = await fetch(`/api/brands/${brandId}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            status,
+            customMessage: customMessageText,
+            adminEmail,
+            adminName
+          })
+        });
+        if (res.ok) {
+          clearBrandsCache();
+          fetchData();
+          fetchLogs();
+          if (selectedItem && (selectedItem.id === brandId || selectedItem._id === brandId)) {
+            setSelectedItem(null);
+          }
+        } else {
+          alert(`Failed to ${status.toLowerCase()} brand.`);
+        }
+      } else if (type === "APPROVE_INVESTOR" || type === "DECLINE_INVESTOR") {
+        const status = type === "APPROVE_INVESTOR" ? "Approved" : "Rejected";
+        const invId = targetItem.id || targetItem._id;
+        const res = await fetch(`/api/investors/${invId}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            status,
+            customMessage: customMessageText,
+            adminEmail,
+            adminName
+          })
+        });
+        if (res.ok) {
+          fetchData();
+          fetchLogs();
+          if (selectedItem && (selectedItem.id === invId || selectedItem._id === invId)) {
+            setSelectedItem(null);
+          }
+        } else {
+          alert(`Failed to ${status === "Approved" ? "approve" : "decline"} investor lead.`);
+        }
+      } else if (type === "ASSIGN_BRAND") {
+        const brandId = targetItem.id || targetItem._id;
+        const res = await fetch("/api/investors/assign-brand", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            brandId,
+            investorIds: extraPayload.investorIds || [],
+            customMessage: customMessageText,
+            adminEmail,
+            adminName
+          })
+        });
+        if (res.ok) {
+          alert("Brand assignment and custom log updated successfully!");
+          fetchData();
+          fetchLogs();
+        } else {
+          alert("Failed to save brand assignment.");
+        }
       }
     } catch (err) {
-      console.error(err);
-      alert("Error saving brand assignment.");
+      console.error("Action error:", err);
+      alert("An error occurred while processing the request.");
     } finally {
-      setIsSavingAssign(false);
+      setIsSubmittingCustomMsg(false);
+      setCustomMsgModal(null);
+      setCustomMessageText("");
     }
+  };
+
+  const handleSaveBrandAssignment = async () => {
+    if (!selectedItem) return;
+    openCustomMsgModal("ASSIGN_BRAND", selectedItem, { investorIds: selectedInvestorsForBrand });
   };
 
   // Auth Guard
@@ -503,37 +581,15 @@ export default function AdminDashboard({ initialTab = "dashboard" }) {
   };
 
   // Approve Brand Listing
-  const handleApprove = async (id) => {
-    try {
-      const res = await fetch(`/api/brands/${id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status: "Approved" })
-      });
-      if (res.ok) {
-        clearBrandsCache();
-        fetchData();
-      }
-    } catch (err) {
-      console.error("Failed to approve brand:", err);
-    }
+  const handleApprove = (idOrBrand) => {
+    const brand = typeof idOrBrand === "object" ? idOrBrand : brands.find(b => b.id === idOrBrand || b._id === idOrBrand) || { id: idOrBrand, name: "Brand" };
+    openCustomMsgModal("APPROVE_BRAND", brand);
   };
 
   // Decline Brand Listing
-  const handleDecline = async (id) => {
-    try {
-      const res = await fetch(`/api/brands/${id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status: "Declined" })
-      });
-      if (res.ok) {
-        clearBrandsCache();
-        fetchData();
-      }
-    } catch (err) {
-      console.error("Failed to decline brand:", err);
-    }
+  const handleDecline = (idOrBrand) => {
+    const brand = typeof idOrBrand === "object" ? idOrBrand : brands.find(b => b.id === idOrBrand || b._id === idOrBrand) || { id: idOrBrand, name: "Brand" };
+    openCustomMsgModal("DECLINE_BRAND", brand);
   };
 
   // Delete Brand Listing
@@ -546,6 +602,7 @@ export default function AdminDashboard({ initialTab = "dashboard" }) {
       if (res.ok) {
         clearBrandsCache();
         fetchData();
+        fetchLogs();
         if (selectedItem && selectedItem.id === id) setSelectedItem(null);
       }
     } catch (err) {
@@ -554,37 +611,15 @@ export default function AdminDashboard({ initialTab = "dashboard" }) {
   };
 
   // Approve Investor Lead
-  const handleApproveInvestor = async (id) => {
-    try {
-      const res = await fetch(`/api/investors/${id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status: "Approved" })
-      });
-      if (res.ok) {
-        fetchData();
-        setSelectedItem(null);
-      }
-    } catch (err) {
-      console.error("Failed to approve investor lead:", err);
-    }
+  const handleApproveInvestor = (idOrInvestor) => {
+    const investor = typeof idOrInvestor === "object" ? idOrInvestor : investors.find(i => i.id === idOrInvestor || i._id === idOrInvestor) || { id: idOrInvestor, name: "Investor" };
+    openCustomMsgModal("APPROVE_INVESTOR", investor);
   };
 
   // Decline Investor Lead
-  const handleDeclineInvestor = async (id) => {
-    try {
-      const res = await fetch(`/api/investors/${id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status: "Rejected" })
-      });
-      if (res.ok) {
-        fetchData();
-        setSelectedItem(null);
-      }
-    } catch (err) {
-      console.error("Failed to decline investor lead:", err);
-    }
+  const handleDeclineInvestor = (idOrInvestor) => {
+    const investor = typeof idOrInvestor === "object" ? idOrInvestor : investors.find(i => i.id === idOrInvestor || i._id === idOrInvestor) || { id: idOrInvestor, name: "Investor" };
+    openCustomMsgModal("DECLINE_INVESTOR", investor);
   };
 
   // Delete Investor Lead
@@ -3334,6 +3369,84 @@ export default function AdminDashboard({ initialTab = "dashboard" }) {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Custom Message Action Modal */}
+      {customMsgModal && customMsgModal.isOpen && (
+        <div className="modal-overlay" onClick={() => !isSubmittingCustomMsg && setCustomMsgModal(null)} style={{ zIndex: 1100 }}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: "520px", borderRadius: "16px", padding: "24px", background: "white", boxShadow: "0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04)" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px", borderBottom: "1px solid #f1f5f9", paddingBottom: "12px" }}>
+              <h3 style={{ margin: 0, fontSize: "18px", fontWeight: "700", color: "#0f172a", display: "flex", alignItems: "center", gap: "8px" }}>
+                {customMsgModal.type === "APPROVE_BRAND" && <><CheckCircle2 style={{ color: "#10b981" }} size={20} /> Approve Brand Listing</>}
+                {customMsgModal.type === "DECLINE_BRAND" && <><XCircle style={{ color: "#ef4444" }} size={20} /> Decline Brand Listing</>}
+                {customMsgModal.type === "APPROVE_INVESTOR" && <><CheckCircle2 style={{ color: "#10b981" }} size={20} /> Approve Investor Lead</>}
+                {customMsgModal.type === "DECLINE_INVESTOR" && <><XCircle style={{ color: "#ef4444" }} size={20} /> Decline Investor Lead</>}
+                {customMsgModal.type === "ASSIGN_BRAND" && <><UserCheck style={{ color: "#4f46e5" }} size={20} /> Update Brand Assignment</>}
+              </h3>
+              <button
+                onClick={() => !isSubmittingCustomMsg && setCustomMsgModal(null)}
+                style={{ background: "none", border: "none", cursor: "pointer", color: "#64748b", padding: "4px" }}
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <div style={{ marginBottom: "20px" }}>
+              <p style={{ fontSize: "14px", color: "#334155", marginBottom: "12px", lineHeight: "1.5" }}>
+                Target: <strong>{customMsgModal.targetItem?.name || customMsgModal.targetItem?.title || "Item"}</strong>
+              </p>
+
+              <label style={{ display: "block", fontSize: "13px", fontWeight: "600", color: "#475569", marginBottom: "6px" }}>
+                Custom Message / Admin Note (Optional):
+              </label>
+              <textarea
+                rows={4}
+                value={customMessageText}
+                onChange={(e) => setCustomMessageText(e.target.value)}
+                placeholder={
+                  customMsgModal.type.includes("DECLINE")
+                    ? "Provide reason for declining (e.g. Incomplete details, invalid contact info, policy mismatch)..."
+                    : customMsgModal.type.includes("ASSIGN")
+                    ? "Add a note regarding this investor assignment for audit logs and email notification..."
+                    : "Add custom note or welcome message for this approval..."
+                }
+                style={{
+                  width: "100%",
+                  borderRadius: "8px",
+                  border: "1px solid #cbd5e1",
+                  padding: "10px 12px",
+                  fontSize: "13px",
+                  color: "#0f172a",
+                  outline: "none",
+                  resize: "vertical",
+                  fontFamily: "inherit"
+                }}
+              />
+              <p style={{ fontSize: "11px", color: "#94a3b8", marginTop: "4px" }}>
+                This custom message will be saved into the audit log and included in email notifications.
+              </p>
+            </div>
+
+            <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px" }}>
+              <button
+                className="admin-btn admin-btn-details"
+                onClick={() => setCustomMsgModal(null)}
+                disabled={isSubmittingCustomMsg}
+                style={{ padding: "8px 16px", fontSize: "13px" }}
+              >
+                Cancel
+              </button>
+              <button
+                className={`admin-btn ${customMsgModal.type.includes("DECLINE") ? "admin-btn-decline" : "admin-btn-approve"}`}
+                onClick={handleConfirmCustomMsgAction}
+                disabled={isSubmittingCustomMsg}
+                style={{ padding: "8px 20px", fontSize: "13px", fontWeight: "700" }}
+              >
+                {isSubmittingCustomMsg ? "Processing..." : "Confirm & Save to Log"}
+              </button>
+            </div>
           </div>
         </div>
       )}

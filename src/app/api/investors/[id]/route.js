@@ -5,8 +5,9 @@ export async function PATCH(request, { params }) {
   try {
     const { id } = await params;
     const body = await request.json();
+    const { customMessage, adminEmail, adminName, ...investorFields } = body;
 
-    const updated = await updateInvestor(id, body);
+    const updated = await updateInvestor(id, investorFields, customMessage || "", { email: adminEmail, name: adminName });
     if (!updated) {
       return NextResponse.json({ error: "Investor not found" }, { status: 404 });
     }
