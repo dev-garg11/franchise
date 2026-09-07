@@ -6,8 +6,11 @@ import Link from "next/link";
 import {
   Building, Users, FileText, CheckCircle2, XCircle, LogOut,
   Home, Edit3, Eye, LayoutDashboard, Mail, Phone, MapPin,
-  IndianRupee, PlusCircle, Globe, Award, Sparkles, CheckSquare
+  IndianRupee, PlusCircle, Globe, Award, Sparkles, CheckSquare,
+  ShieldCheck, Search, Trash2, RefreshCw
 } from "lucide-react";
+import Pagination from "@/components/Pagination";
+import { logActivity } from "@/lib/logger";
 import { clearBrandsCache } from "@/lib/brandsCache";
 import { BRAND_CATEGORIES, BRAND_SECTORS_MAP, ALL_INDIAN_STATES } from "@/lib/brandConstants";
 import { DISTRICTS_BY_STATE } from "@/lib/districtsData";
@@ -51,13 +54,66 @@ const isNew = (dateString) => {
   return diffDays <= 3; // within last 3 days
 };
 
-export default function BrandPanel() {
+export default function BrandPanel({ initialTab = "dashboard" }) {
   const router = useRouter();
   const [authorized, setAuthorized] = useState(false);
   const [brand, setBrand] = useState(null);
   const [leads, setLeads] = useState([]);
-  const [activeTab, setActiveTab] = useState("dashboard"); // dashboard, edit-brand, leads
+  const [activeTab, setActiveTab] = useState(initialTab); // dashboard, edit-brand, leads, logs
   const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (initialTab) {
+      setActiveTab(initialTab);
+    }
+  }, [initialTab]);
+
+  // Brand Logs State
+  const [brandLogs, setBrandLogs] = useState([]);
+  const [logsLoading, setLogsLoading] = useState(false);
+  const [logSearch, setLogSearch] = useState("");
+  const [logPage, setLogPage] = useState(1);
+  const logsPerPage = 10;
+
+  const fetchBrandLogs = async () => {
+    const email = localStorage.getItem("brandEmail");
+    if (!email) return;
+    setLogsLoading(true);
+    try {
+      const query = new URLSearchParams();
+      query.set("panel", "brand");
+      query.set("userEmail", email);
+      if (logSearch) query.set("search", logSearch);
+      const res = await fetch(`/api/logs?${query.toString()}`);
+      if (res.ok) {
+        const data = await res.json();
+        setBrandLogs(data);
+      }
+    } catch (err) {
+      console.error("Failed to fetch brand logs:", err);
+    } finally {
+      setLogsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (activeTab === "logs") {
+      fetchBrandLogs();
+    }
+  }, [activeTab, logSearch]);
+
+  const handleClearBrandLogs = async () => {
+    const email = localStorage.getItem("brandEmail");
+    if (!confirm("Are you sure you want to clear your activity history?")) return;
+    try {
+      const res = await fetch(`/api/logs?clearAll=true&panel=brand&userEmail=${encodeURIComponent(email)}`, { method: "DELETE" });
+      if (res.ok) {
+        fetchBrandLogs();
+      }
+    } catch (err) {
+      console.error("Failed to clear brand logs:", err);
+    }
+  };
 
   // Form Edit State
   const [formFields, setFormFields] = useState({
@@ -357,31 +413,44 @@ export default function BrandPanel() {
           <div style={{ padding: "0 28px" }}>
             <ul className="admin-nav" style={{ marginTop: 0 }}>
               <li className="admin-nav-item">
-                <div
+                <Link
+                  href="/brand-panel"
                   className={`admin-nav-link ${activeTab === "dashboard" ? "active" : ""}`}
                   onClick={() => setActiveTab("dashboard")}
                 >
                   <LayoutDashboard size={18} />
                   Overview Dashboard
-                </div>
+                </Link>
               </li>
               <li className="admin-nav-item">
-                <div
+                <Link
+                  href="/brand-panel/edit-brand"
                   className={`admin-nav-link ${activeTab === "edit-brand" ? "active" : ""}`}
                   onClick={() => setActiveTab("edit-brand")}
                 >
                   <PlusCircle size={18} />
                   {brand ? "Edit Brand Listing" : "Add Brand Listing"}
-                </div>
+                </Link>
               </li>
               <li className="admin-nav-item">
-                <div
+                <Link
+                  href="/brand-panel/leads"
                   className={`admin-nav-link ${activeTab === "leads" ? "active" : ""}`}
                   onClick={() => setActiveTab("leads")}
                 >
                   <Users size={18} />
                   Investor Leads ({leads.length})
-                </div>
+                </Link>
+              </li>
+              <li className="admin-nav-item">
+                <Link
+                  href="/brand-panel/logs"
+                  className={`admin-nav-link ${activeTab === "logs" ? "active" : ""}`}
+                  onClick={() => setActiveTab("logs")}
+                >
+                  <ShieldCheck size={18} />
+                  Activity Logs
+                </Link>
               </li>
             </ul>
           </div>
@@ -404,9 +473,10 @@ export default function BrandPanel() {
               {activeTab === "dashboard" && "Brand Overview Dashboard"}
               {activeTab === "edit-brand" && (brand ? "Edit Directory Listing" : "Add Brand Directory Listing")}
               {activeTab === "leads" && "Franchise Leads Directory"}
+              {activeTab === "logs" && "Brand Activity Logs & History"}
             </h1>
             <p style={{ color: "var(--text-muted)", fontSize: "14px", marginTop: "4px" }}>
-              Manage your brand specifications. Admin approval is required for directory publication.
+              {activeTab === "logs" ? "Review all recent activity, profile updates, and lead interactions for your brand." : "Manage your brand specifications. Admin approval is required for directory publication."}
             </p>
           </div>
 
@@ -872,6 +942,104 @@ export default function BrandPanel() {
                       ))}
                     </tbody>
                   </table>
+                )}
+              </div>
+            )}
+
+            {/* Brand Logs View */}
+            {activeTab === "logs" && (
+              <div>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px", flexWrap: "wrap", gap: "16px" }}>
+                  <div className="search-box" style={{ width: "320px", margin: 0 }}>
+                    <Search size={16} />
+                    <input
+                      type="text"
+                      placeholder="Search activity history..."
+                      value={logSearch}
+                      onChange={(e) => { setLogSearch(e.target.value); setLogPage(1); }}
+                    />
+                  </div>
+                  <div style={{ display: "flex", gap: "10px" }}>
+                    <button
+                      onClick={fetchBrandLogs}
+                      className="btn btn-outline"
+                      style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "13px" }}
+                    >
+                      <RefreshCw size={14} className={logsLoading ? "spinning" : ""} /> Refresh
+                    </button>
+                    <button
+                      onClick={handleClearBrandLogs}
+                      className="btn"
+                      style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "13px", background: "var(--danger)", color: "white", border: "none" }}
+                    >
+                      <Trash2 size={14} /> Clear History
+                    </button>
+                  </div>
+                </div>
+
+                {logsLoading ? (
+                  <div className="flex-center" style={{ minHeight: "200px", flexDirection: "column", gap: "12px" }}>
+                    <div className="spinner"></div>
+                    <p style={{ color: "var(--text-muted)" }}>Loading brand activity logs...</p>
+                  </div>
+                ) : (
+                  <>
+                    <div style={{ overflowX: "auto", background: "white", borderRadius: "12px", border: "1px solid var(--border-color)" }}>
+                      <table className="admin-table" style={{ margin: 0 }}>
+                        <thead>
+                          <tr>
+                            <th style={{ width: "170px" }}>Timestamp</th>
+                            <th style={{ width: "160px" }}>Action</th>
+                            <th>Activity Description</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {brandLogs.length === 0 ? (
+                            <tr>
+                              <td colSpan="3" style={{ textAlign: "center", padding: "40px 20px", color: "var(--text-muted)" }}>
+                                No activity logs recorded yet.
+                              </td>
+                            </tr>
+                          ) : (
+                            brandLogs.slice((logPage - 1) * logsPerPage, logPage * logsPerPage).map((logItem) => (
+                              <tr key={logItem.id || logItem._id}>
+                                <td style={{ fontSize: "12px", color: "var(--text-muted)", whiteSpace: "nowrap" }}>
+                                  {new Date(logItem.createdAt).toLocaleString("en-IN", {
+                                    dateStyle: "medium",
+                                    timeStyle: "short"
+                                  })}
+                                </td>
+                                <td>
+                                  <span style={{
+                                    fontSize: "11px",
+                                    fontWeight: "600",
+                                    fontFamily: "monospace",
+                                    background: "rgba(16, 185, 129, 0.1)",
+                                    color: "#10b981",
+                                    padding: "2px 6px",
+                                    borderRadius: "4px"
+                                  }}>
+                                    {logItem.action}
+                                  </span>
+                                </td>
+                                <td style={{ fontSize: "13px", color: "var(--dark)", fontWeight: "500" }}>
+                                  {logItem.description}
+                                </td>
+                              </tr>
+                            ))
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+
+                    <Pagination
+                      totalItems={brandLogs.length}
+                      itemsPerPage={logsPerPage}
+                      currentPage={logPage}
+                      onPageChange={(p) => setLogPage(p)}
+                      onItemsPerPageChange={() => {}}
+                    />
+                  </>
                 )}
               </div>
             )}

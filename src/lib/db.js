@@ -8,6 +8,7 @@ import User from "@/models/User";
 import Blog from "@/models/Blog";
 import Service from "@/models/Service";
 import Advertisement from "@/models/Advertisement";
+import Log from "@/models/Log";
 import bcrypt from "bcryptjs";
 import {
   sendBrandRegistrationEmail,
@@ -803,5 +804,90 @@ export async function getAdvertisementById(id) {
     return null;
   }
 }
+
+export async function createLog(logData) {
+  await dbConnect();
+  try {
+    const newLog = await Log.create({
+      panel: logData.panel || "admin",
+      action: logData.action || "SYSTEM_EVENT",
+      description: logData.description || "",
+      userEmail: logData.userEmail || "",
+      userName: logData.userName || "",
+      role: logData.role || "",
+      targetId: logData.targetId || "",
+      targetType: logData.targetType || "",
+      details: logData.details || null,
+      createdAt: new Date()
+    });
+    return {
+      ...newLog.toObject(),
+      id: newLog._id.toString()
+    };
+  } catch (error) {
+    console.error("Error creating log entry in DB:", error);
+    return null;
+  }
+}
+
+export async function getLogs(filter = {}) {
+  await dbConnect();
+  try {
+    const query = {};
+    if (filter.panel && filter.panel !== "all") {
+      query.panel = filter.panel;
+    }
+    if (filter.userEmail) {
+      query.userEmail = filter.userEmail;
+    }
+    if (filter.search) {
+      const searchRegex = new RegExp(filter.search, "i");
+      query.$or = [
+        { action: searchRegex },
+        { description: searchRegex },
+        { userEmail: searchRegex },
+        { userName: searchRegex },
+        { targetType: searchRegex }
+      ];
+    }
+    const limitNum = filter.limit ? parseInt(filter.limit) : 500;
+    const logs = await Log.find(query).sort({ createdAt: -1 }).limit(limitNum).lean();
+    return logs.map(l => ({
+      ...l,
+      id: l._id.toString()
+    }));
+  } catch (error) {
+    console.error("Error fetching logs from DB:", error);
+    return [];
+  }
+}
+
+export async function deleteLog(id) {
+  await dbConnect();
+  try {
+    const query = mongoose.Types.ObjectId.isValid(id) ? { _id: id } : null;
+    if (!query) return false;
+    const res = await Log.deleteOne(query);
+    return res.deletedCount > 0;
+  } catch (error) {
+    console.error("Error deleting log from DB:", error);
+    return false;
+  }
+}
+
+export async function clearLogs(panel = null, userEmail = null) {
+  await dbConnect();
+  try {
+    const query = {};
+    if (panel && panel !== "all") query.panel = panel;
+    if (userEmail) query.userEmail = userEmail;
+    const res = await Log.deleteMany(query);
+    return res.deletedCount;
+  } catch (error) {
+    console.error("Error clearing logs from DB:", error);
+    return 0;
+  }
+}
+
 
 

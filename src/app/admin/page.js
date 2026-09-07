@@ -6,10 +6,11 @@ import Link from "next/link";
 import {
   Building, Users, FileText, CheckCircle, CheckCircle2, XCircle, Trash2, LogOut,
   Home, Search, LayoutDashboard, ShieldCheck, Mail, Phone, MapPin,
-  UploadCloud, Eye, Edit3, Wrench, Megaphone, Image as ImageIcon
+  UploadCloud, Eye, Edit3, Wrench, Megaphone, Image as ImageIcon, RefreshCw, Filter, Clock
 } from "lucide-react";
 import Pagination from "@/components/Pagination";
 import { clearBrandsCache } from "@/lib/brandsCache";
+import { logActivity } from "@/lib/logger";
 import { REGISTRATION_INVESTMENT_OPTIONS, getFilteredMaxLimits } from "@/lib/investmentData";
 import { BRAND_CATEGORIES, BRAND_SECTORS_MAP, ALL_INDIAN_STATES } from "@/lib/brandConstants";
 import { DISTRICTS_BY_STATE } from "@/lib/districtsData";
@@ -51,10 +52,84 @@ const stripHtmlTags = (str) => {
     .trim();
 };
 
-export default function AdminDashboard() {
+export default function AdminDashboard({ initialTab = "dashboard" }) {
   const router = useRouter();
   const [authorized, setAuthorized] = useState(false);
-  const [activeTab, setActiveTab] = useState("dashboard"); // dashboard, brands, investors
+  const [activeTab, setActiveTab] = useState(initialTab); // dashboard, brands, investors, blogs, services, ads, logs
+
+  useEffect(() => {
+    if (initialTab) {
+      setActiveTab(initialTab);
+    }
+  }, [initialTab]);
+
+  // Activity Logs State
+  const [logs, setLogs] = useState([]);
+  const [logsLoading, setLogsLoading] = useState(false);
+  const [logPanelFilter, setLogPanelFilter] = useState("all");
+  const [logSearch, setLogSearch] = useState("");
+  const [logPage, setLogPage] = useState(1);
+  const logsPerPage = 10;
+
+  const fetchLogs = async () => {
+    setLogsLoading(true);
+    try {
+      const query = new URLSearchParams();
+      if (logPanelFilter && logPanelFilter !== "all") query.set("panel", logPanelFilter);
+      if (logSearch) query.set("search", logSearch);
+      const res = await fetch(`/api/logs?${query.toString()}`);
+      if (res.ok) {
+        const data = await res.json();
+        setLogs(data);
+      }
+    } catch (err) {
+      console.error("Failed to fetch logs:", err);
+    } finally {
+      setLogsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (activeTab === "logs") {
+      fetchLogs();
+    }
+  }, [activeTab, logPanelFilter, logSearch]);
+
+  const handleDeleteLog = async (id) => {
+    if (!confirm("Are you sure you want to delete this log entry?")) return;
+    try {
+      const res = await fetch(`/api/logs?id=${id}`, { method: "DELETE" });
+      if (res.ok) {
+        setLogs(logs.filter(l => l.id !== id && l._id !== id));
+        logActivity({
+          panel: "admin",
+          action: "LOG_DELETED",
+          description: `Deleted audit log entry #${id}`
+        });
+      }
+    } catch (err) {
+      console.error("Failed to delete log:", err);
+    }
+  };
+
+  const handleClearAllLogs = async () => {
+    const panelText = logPanelFilter === "all" ? "all panels" : logPanelFilter;
+    if (!confirm(`Are you sure you want to clear all logs for ${panelText}? This action cannot be undone.`)) return;
+    try {
+      const query = logPanelFilter !== "all" ? `?clearAll=true&panel=${logPanelFilter}` : `?clearAll=true`;
+      const res = await fetch(`/api/logs${query}`, { method: "DELETE" });
+      if (res.ok) {
+        fetchLogs();
+        logActivity({
+          panel: "admin",
+          action: "LOGS_CLEARED",
+          description: `Cleared activity logs for ${panelText}`
+        });
+      }
+    } catch (err) {
+      console.error("Failed to clear logs:", err);
+    }
+  };
 
   // Data State
   const [brands, setBrands] = useState([]);
@@ -1020,16 +1095,18 @@ export default function AdminDashboard() {
           <div style={{ padding: "0 28px" }}>
             <ul className="admin-nav" style={{ marginTop: 0 }}>
               <li className="admin-nav-item">
-                <div
+                <Link
+                  href="/admin"
                   className={`admin-nav-link ${activeTab === "dashboard" ? "active" : ""}`}
                   onClick={() => { setActiveTab("dashboard"); setSearchTerm(""); }}
                 >
                   <LayoutDashboard size={18} />
                   Dashboard Overview
-                </div>
+                </Link>
               </li>
               <li className="admin-nav-item">
-                <div
+                <Link
+                  href="/admin/brands"
                   className={`admin-nav-link ${activeTab === "brands" ? "active" : ""}`}
                   onClick={() => { setActiveTab("brands"); setSearchTerm(""); }}
                 >
@@ -1040,43 +1117,57 @@ export default function AdminDashboard() {
                       {pendingBrandsCount}
                     </span>
                   )}
-                </div>
+                </Link>
               </li>
               <li className="admin-nav-item">
-                <div
+                <Link
+                  href="/admin/investors"
                   className={`admin-nav-link ${activeTab === "investors" ? "active" : ""}`}
                   onClick={() => { setActiveTab("investors"); setSearchTerm(""); }}
                 >
                   <Users size={18} />
                   Investor Leads ({investors.length})
-                </div>
+                </Link>
               </li>
               <li className="admin-nav-item">
-                <div
+                <Link
+                  href="/admin/blogs"
                   className={`admin-nav-link ${activeTab === "blogs" ? "active" : ""}`}
                   onClick={() => { setActiveTab("blogs"); setSearchTerm(""); }}
                 >
                   <FileText size={18} />
                   Manage Blogs ({blogs.length})
-                </div>
+                </Link>
               </li>
               <li className="admin-nav-item">
-                <div
+                <Link
+                  href="/admin/services"
                   className={`admin-nav-link ${activeTab === "services" ? "active" : ""}`}
                   onClick={() => { setActiveTab("services"); setSearchTerm(""); }}
                 >
                   <Wrench size={18} />
                   Manage Services ({services.length})
-                </div>
+                </Link>
               </li>
               <li className="admin-nav-item">
-                <div
+                <Link
+                  href="/admin/ads"
                   className={`admin-nav-link ${activeTab === "ads" ? "active" : ""}`}
                   onClick={() => { setActiveTab("ads"); setSearchTerm(""); }}
                 >
                   <Megaphone size={18} />
                   Manage Ads ({ads.length})
-                </div>
+                </Link>
+              </li>
+              <li className="admin-nav-item">
+                <Link
+                  href="/admin/logs"
+                  className={`admin-nav-link ${activeTab === "logs" ? "active" : ""}`}
+                  onClick={() => { setActiveTab("logs"); setSearchTerm(""); }}
+                >
+                  <ShieldCheck size={18} />
+                  Activity & Audit Logs
+                </Link>
               </li>
             </ul>
           </div>
@@ -1102,9 +1193,10 @@ export default function AdminDashboard() {
               {activeTab === "blogs" && "Manage Blog Articles"}
               {activeTab === "services" && "Manage Company Services"}
               {activeTab === "ads" && "Manage Advertising Space"}
+              {activeTab === "logs" && "Activity & Audit Logs"}
             </h1>
             <p style={{ color: "var(--text-muted)", fontSize: "14px", marginTop: "4px" }}>
-              {activeTab === "blogs" ? "Create, publish, edit, and delete informational blog posts." : activeTab === "services" ? "Create, publish, edit, and delete managed company services." : activeTab === "ads" ? "Create, publish, toggle, and delete promotional ad banners." : "Welcome back, Administrator. Review pending listings submitted by brand owners."}
+              {activeTab === "blogs" ? "Create, publish, edit, and delete informational blog posts." : activeTab === "services" ? "Create, publish, edit, and delete managed company services." : activeTab === "ads" ? "Create, publish, toggle, and delete promotional ad banners." : activeTab === "logs" ? "Audit and monitor all platform activities, admin operations, brand updates, and investor leads." : "Welcome back, Administrator. Review pending listings submitted by brand owners."}
             </p>
           </div>
 
@@ -1922,6 +2014,215 @@ export default function AdminDashboard() {
                   onPageChange={(p) => setAdsPage(p)}
                   onItemsPerPageChange={(size) => { setAdsPerPage(size); setAdsPage(1); }}
                 />
+              </div>
+            )}
+
+            {/* Activity Logs Tab View */}
+            {activeTab === "logs" && (
+              <div>
+                {/* Log Stats Overview */}
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "16px", marginBottom: "24px" }}>
+                  <div style={{ background: "white", padding: "16px 20px", borderRadius: "12px", border: "1px solid var(--border-color)", display: "flex", alignItems: "center", gap: "14px" }}>
+                    <div style={{ width: "42px", height: "42px", borderRadius: "10px", background: "rgba(139, 92, 246, 0.1)", color: "#8b5cf6", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                      <ShieldCheck size={22} />
+                    </div>
+                    <div>
+                      <div style={{ fontSize: "22px", fontWeight: "700", color: "var(--dark)" }}>{logs.length}</div>
+                      <div style={{ fontSize: "12px", color: "var(--text-muted)", fontWeight: "500" }}>Total Audit Logs</div>
+                    </div>
+                  </div>
+                  <div style={{ background: "white", padding: "16px 20px", borderRadius: "12px", border: "1px solid var(--border-color)", display: "flex", alignItems: "center", gap: "14px" }}>
+                    <div style={{ width: "42px", height: "42px", borderRadius: "10px", background: "rgba(59, 130, 246, 0.1)", color: "#3b82f6", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                      <Building size={22} />
+                    </div>
+                    <div>
+                      <div style={{ fontSize: "22px", fontWeight: "700", color: "var(--dark)" }}>
+                        {logs.filter(l => l.panel === "admin").length}
+                      </div>
+                      <div style={{ fontSize: "12px", color: "var(--text-muted)", fontWeight: "500" }}>Admin Actions</div>
+                    </div>
+                  </div>
+                  <div style={{ background: "white", padding: "16px 20px", borderRadius: "12px", border: "1px solid var(--border-color)", display: "flex", alignItems: "center", gap: "14px" }}>
+                    <div style={{ width: "42px", height: "42px", borderRadius: "10px", background: "rgba(16, 185, 129, 0.1)", color: "#10b981", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                      <Building size={22} />
+                    </div>
+                    <div>
+                      <div style={{ fontSize: "22px", fontWeight: "700", color: "var(--dark)" }}>
+                        {logs.filter(l => l.panel === "brand").length}
+                      </div>
+                      <div style={{ fontSize: "12px", color: "var(--text-muted)", fontWeight: "500" }}>Brand Logs</div>
+                    </div>
+                  </div>
+                  <div style={{ background: "white", padding: "16px 20px", borderRadius: "12px", border: "1px solid var(--border-color)", display: "flex", alignItems: "center", gap: "14px" }}>
+                    <div style={{ width: "42px", height: "42px", borderRadius: "10px", background: "rgba(245, 158, 11, 0.1)", color: "#f59e0b", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                      <Users size={22} />
+                    </div>
+                    <div>
+                      <div style={{ fontSize: "22px", fontWeight: "700", color: "var(--dark)" }}>
+                        {logs.filter(l => l.panel === "investor").length}
+                      </div>
+                      <div style={{ fontSize: "12px", color: "var(--text-muted)", fontWeight: "500" }}>Investor Logs</div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Log Controls & Filter Toolbar */}
+                <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "space-between", alignItems: "center", gap: "16px", marginBottom: "20px" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "12px", flex: 1, minWidth: "280px" }}>
+                    <div className="search-box" style={{ flex: 1, margin: 0 }}>
+                      <Search size={16} />
+                      <input
+                        type="text"
+                        placeholder="Search by action, email, description..."
+                        value={logSearch}
+                        onChange={(e) => { setLogSearch(e.target.value); setLogPage(1); }}
+                      />
+                    </div>
+                    <select
+                      value={logPanelFilter}
+                      onChange={(e) => { setLogPanelFilter(e.target.value); setLogPage(1); }}
+                      style={{
+                        padding: "9px 14px",
+                        borderRadius: "8px",
+                        border: "1px solid var(--border-color)",
+                        fontSize: "13px",
+                        background: "white",
+                        color: "var(--text-color)",
+                        outline: "none",
+                        cursor: "pointer"
+                      }}
+                    >
+                      <option value="all">All Panels</option>
+                      <option value="admin">Admin Panel</option>
+                      <option value="brand">Brand Panel</option>
+                      <option value="investor">Investor Panel</option>
+                    </select>
+                  </div>
+
+                  <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                    <button
+                      onClick={fetchLogs}
+                      className="btn btn-outline"
+                      style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "13px", padding: "8px 14px" }}
+                      title="Refresh Logs"
+                    >
+                      <RefreshCw size={14} className={logsLoading ? "spinning" : ""} /> Refresh
+                    </button>
+                    <button
+                      onClick={handleClearAllLogs}
+                      className="btn"
+                      style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "13px", padding: "8px 14px", background: "var(--danger)", color: "white", border: "none" }}
+                    >
+                      <Trash2 size={14} /> Clear Logs
+                    </button>
+                  </div>
+                </div>
+
+                {/* Log Entries Table */}
+                {logsLoading ? (
+                  <div className="flex-center" style={{ minHeight: "200px", flexDirection: "column", gap: "12px" }}>
+                    <div className="spinner"></div>
+                    <p style={{ color: "var(--text-muted)" }}>Loading audit records...</p>
+                  </div>
+                ) : (
+                  <>
+                    <div style={{ overflowX: "auto", background: "white", borderRadius: "12px", border: "1px solid var(--border-color)" }}>
+                      <table className="admin-table" style={{ margin: 0 }}>
+                        <thead>
+                          <tr>
+                            <th style={{ width: "170px" }}>Timestamp</th>
+                            <th style={{ width: "100px" }}>Panel</th>
+                            <th style={{ width: "170px" }}>Action</th>
+                            <th>User / Email</th>
+                            <th>Description</th>
+                            <th style={{ textAlign: "right", width: "80px" }}>Action</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {logs.length === 0 ? (
+                            <tr>
+                              <td colSpan="6" style={{ textAlign: "center", padding: "40px 20px", color: "var(--text-muted)" }}>
+                                No log records found matching your filters.
+                              </td>
+                            </tr>
+                          ) : (
+                            logs.slice((logPage - 1) * logsPerPage, logPage * logsPerPage).map((logItem) => {
+                              const panelBadgeStyle = logItem.panel === "admin"
+                                ? { background: "rgba(139, 92, 246, 0.1)", color: "#8b5cf6" }
+                                : logItem.panel === "brand"
+                                ? { background: "rgba(16, 185, 129, 0.1)", color: "#10b981" }
+                                : { background: "rgba(245, 158, 11, 0.1)", color: "#f59e0b" };
+
+                              return (
+                                <tr key={logItem.id || logItem._id}>
+                                  <td style={{ fontSize: "12px", color: "var(--text-muted)", whiteSpace: "nowrap" }}>
+                                    {new Date(logItem.createdAt).toLocaleString("en-IN", {
+                                      dateStyle: "medium",
+                                      timeStyle: "short"
+                                    })}
+                                  </td>
+                                  <td>
+                                    <span style={{
+                                      fontSize: "10px",
+                                      fontWeight: "700",
+                                      textTransform: "uppercase",
+                                      padding: "3px 8px",
+                                      borderRadius: "4px",
+                                      ...panelBadgeStyle
+                                    }}>
+                                      {logItem.panel}
+                                    </span>
+                                  </td>
+                                  <td>
+                                    <span style={{
+                                      fontSize: "11px",
+                                      fontWeight: "600",
+                                      fontFamily: "monospace",
+                                      background: "#f1f5f9",
+                                      color: "#334155",
+                                      padding: "2px 6px",
+                                      borderRadius: "4px"
+                                    }}>
+                                      {logItem.action}
+                                    </span>
+                                  </td>
+                                  <td style={{ fontSize: "13px" }}>
+                                    <div style={{ fontWeight: "600", color: "var(--dark)" }}>
+                                      {logItem.userName || logItem.userEmail || "System"}
+                                    </div>
+                                    {logItem.userEmail && (
+                                      <div style={{ fontSize: "11px", color: "var(--text-muted)" }}>{logItem.userEmail}</div>
+                                    )}
+                                  </td>
+                                  <td style={{ fontSize: "13px", color: "var(--text-color)" }}>
+                                    {logItem.description}
+                                  </td>
+                                  <td style={{ textAlign: "right" }}>
+                                    <button
+                                      className="admin-btn admin-btn-delete"
+                                      onClick={() => handleDeleteLog(logItem.id || logItem._id)}
+                                      title="Delete Log Record"
+                                    >
+                                      <Trash2 size={13} />
+                                    </button>
+                                  </td>
+                                </tr>
+                              );
+                            })
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+
+                    <Pagination
+                      totalItems={logs.length}
+                      itemsPerPage={logsPerPage}
+                      currentPage={logPage}
+                      onPageChange={(p) => setLogPage(p)}
+                      onItemsPerPageChange={() => {}}
+                    />
+                  </>
+                )}
               </div>
             )}
           </>

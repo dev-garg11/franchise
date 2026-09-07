@@ -6,8 +6,11 @@ import Link from "next/link";
 import {
   Building, Users, FileText, CheckCircle, HelpCircle, LogOut,
   Home, Search, LayoutDashboard, PlusCircle, User, Briefcase,
-  MapPin, IndianRupee, MessageSquare, Send, CheckCircle2
+  MapPin, IndianRupee, MessageSquare, Send, CheckCircle2,
+  ShieldCheck, Trash2, RefreshCw
 } from "lucide-react";
+import Pagination from "@/components/Pagination";
+import { logActivity } from "@/lib/logger";
 import { ALL_INDIAN_STATES } from "@/lib/brandConstants";
 
 const INVESTMENT_OPTIONS = [
@@ -24,13 +27,66 @@ const INVESTMENT_OPTIONS = [
   "Above Rs. 5 Crore"
 ];
 
-export default function InvestorPanel() {
+export default function InvestorPanel({ initialTab = "dashboard" }) {
   const router = useRouter();
   const [authorized, setAuthorized] = useState(false);
   const [investor, setInvestor] = useState(null);
   const [brands, setBrands] = useState([]);
-  const [activeTab, setActiveTab] = useState("dashboard"); // dashboard, recommendations, enquiries, consultancy
+  const [activeTab, setActiveTab] = useState(initialTab); // dashboard, recommendations, enquiries, consultancy, logs
   const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (initialTab) {
+      setActiveTab(initialTab);
+    }
+  }, [initialTab]);
+
+  // Investor Logs State
+  const [investorLogs, setInvestorLogs] = useState([]);
+  const [logsLoading, setLogsLoading] = useState(false);
+  const [logSearch, setLogSearch] = useState("");
+  const [logPage, setLogPage] = useState(1);
+  const logsPerPage = 10;
+
+  const fetchInvestorLogs = async () => {
+    const email = localStorage.getItem("investorEmail");
+    if (!email) return;
+    setLogsLoading(true);
+    try {
+      const query = new URLSearchParams();
+      query.set("panel", "investor");
+      query.set("userEmail", email);
+      if (logSearch) query.set("search", logSearch);
+      const res = await fetch(`/api/logs?${query.toString()}`);
+      if (res.ok) {
+        const data = await res.json();
+        setInvestorLogs(data);
+      }
+    } catch (err) {
+      console.error("Failed to fetch investor logs:", err);
+    } finally {
+      setLogsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (activeTab === "logs") {
+      fetchInvestorLogs();
+    }
+  }, [activeTab, logSearch]);
+
+  const handleClearInvestorLogs = async () => {
+    const email = localStorage.getItem("investorEmail");
+    if (!confirm("Are you sure you want to clear your activity history?")) return;
+    try {
+      const res = await fetch(`/api/logs?clearAll=true&panel=investor&userEmail=${encodeURIComponent(email)}`, { method: "DELETE" });
+      if (res.ok) {
+        fetchInvestorLogs();
+      }
+    } catch (err) {
+      console.error("Failed to clear investor logs:", err);
+    }
+  };
 
   // Enquiry state
   const [enquiries, setEnquiries] = useState([]);
@@ -251,40 +307,54 @@ export default function InvestorPanel() {
           <div style={{ padding: "0 28px" }}>
             <ul className="admin-nav" style={{ marginTop: 0 }}>
               <li className="admin-nav-item">
-                <div
+                <Link
+                  href="/investor-panel"
                   className={`admin-nav-link ${activeTab === "dashboard" ? "active" : ""}`}
                   onClick={() => setActiveTab("dashboard")}
                 >
                   <LayoutDashboard size={18} />
                   My Profile Dashboard
-                </div>
+                </Link>
               </li>
               <li className="admin-nav-item">
-                <div
+                <Link
+                  href="/investor-panel/recommendations"
                   className={`admin-nav-link ${activeTab === "recommendations" ? "active" : ""}`}
                   onClick={() => setActiveTab("recommendations")}
                 >
                   <Briefcase size={18} />
                   Matched Opportunities ({recommendations.length})
-                </div>
+                </Link>
               </li>
               <li className="admin-nav-item">
-                <div
+                <Link
+                  href="/investor-panel/enquiries"
                   className={`admin-nav-link ${activeTab === "enquiries" ? "active" : ""}`}
                   onClick={() => setActiveTab("enquiries")}
                 >
                   <FileText size={18} />
                   My Lead Records & Applications ({enquiries.length})
-                </div>
+                </Link>
               </li>
               <li className="admin-nav-item">
-                <div
+                <Link
+                  href="/investor-panel/consultancy"
                   className={`admin-nav-link ${activeTab === "consultancy" ? "active" : ""}`}
                   onClick={() => setActiveTab("consultancy")}
                 >
                   <MessageSquare size={18} />
                   Consultancy Desk
-                </div>
+                </Link>
+              </li>
+              <li className="admin-nav-item">
+                <Link
+                  href="/investor-panel/logs"
+                  className={`admin-nav-link ${activeTab === "logs" ? "active" : ""}`}
+                  onClick={() => setActiveTab("logs")}
+                >
+                  <ShieldCheck size={18} />
+                  Activity Logs
+                </Link>
               </li>
             </ul>
           </div>
@@ -308,9 +378,10 @@ export default function InvestorPanel() {
               {activeTab === "recommendations" && "Curated Matches For You"}
               {activeTab === "enquiries" && "Investor Lead Records & Applications"}
               {activeTab === "consultancy" && "Corporate Business Desk"}
+              {activeTab === "logs" && "Investor Activity Logs & History"}
             </h1>
             <p style={{ color: "var(--text-muted)", fontSize: "14px", marginTop: "4px" }}>
-              Welcome back, <strong>{investor.name}</strong>. Monitor matches and lead records.
+              {activeTab === "logs" ? "Review all your recent franchise enquiries, advisory requests, and activity logs." : <>Welcome back, <strong>{investor.name}</strong>. Monitor matches and lead records.</>}
             </p>
           </div>
 
@@ -620,6 +691,104 @@ export default function InvestorPanel() {
                     </div>
                   </div>
                 </div>
+              </div>
+            )}
+
+            {/* Investor Logs View */}
+            {activeTab === "logs" && (
+              <div>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px", flexWrap: "wrap", gap: "16px" }}>
+                  <div className="search-box" style={{ width: "320px", margin: 0 }}>
+                    <Search size={16} />
+                    <input
+                      type="text"
+                      placeholder="Search activity history..."
+                      value={logSearch}
+                      onChange={(e) => { setLogSearch(e.target.value); setLogPage(1); }}
+                    />
+                  </div>
+                  <div style={{ display: "flex", gap: "10px" }}>
+                    <button
+                      onClick={fetchInvestorLogs}
+                      className="btn btn-outline"
+                      style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "13px" }}
+                    >
+                      <RefreshCw size={14} className={logsLoading ? "spinning" : ""} /> Refresh
+                    </button>
+                    <button
+                      onClick={handleClearInvestorLogs}
+                      className="btn"
+                      style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "13px", background: "var(--danger)", color: "white", border: "none" }}
+                    >
+                      <Trash2 size={14} /> Clear History
+                    </button>
+                  </div>
+                </div>
+
+                {logsLoading ? (
+                  <div className="flex-center" style={{ minHeight: "200px", flexDirection: "column", gap: "12px" }}>
+                    <div className="spinner"></div>
+                    <p style={{ color: "var(--text-muted)" }}>Loading investor activity logs...</p>
+                  </div>
+                ) : (
+                  <>
+                    <div style={{ overflowX: "auto", background: "white", borderRadius: "12px", border: "1px solid var(--border-color)" }}>
+                      <table className="admin-table" style={{ margin: 0 }}>
+                        <thead>
+                          <tr>
+                            <th style={{ width: "170px" }}>Timestamp</th>
+                            <th style={{ width: "160px" }}>Action</th>
+                            <th>Activity Description</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {investorLogs.length === 0 ? (
+                            <tr>
+                              <td colSpan="3" style={{ textAlign: "center", padding: "40px 20px", color: "var(--text-muted)" }}>
+                                No activity logs recorded yet.
+                              </td>
+                            </tr>
+                          ) : (
+                            investorLogs.slice((logPage - 1) * logsPerPage, logPage * logsPerPage).map((logItem) => (
+                              <tr key={logItem.id || logItem._id}>
+                                <td style={{ fontSize: "12px", color: "var(--text-muted)", whiteSpace: "nowrap" }}>
+                                  {new Date(logItem.createdAt).toLocaleString("en-IN", {
+                                    dateStyle: "medium",
+                                    timeStyle: "short"
+                                  })}
+                                </td>
+                                <td>
+                                  <span style={{
+                                    fontSize: "11px",
+                                    fontWeight: "600",
+                                    fontFamily: "monospace",
+                                    background: "rgba(245, 158, 11, 0.1)",
+                                    color: "#f59e0b",
+                                    padding: "2px 6px",
+                                    borderRadius: "4px"
+                                  }}>
+                                    {logItem.action}
+                                  </span>
+                                </td>
+                                <td style={{ fontSize: "13px", color: "var(--dark)", fontWeight: "500" }}>
+                                  {logItem.description}
+                                </td>
+                              </tr>
+                            ))
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+
+                    <Pagination
+                      totalItems={investorLogs.length}
+                      itemsPerPage={logsPerPage}
+                      currentPage={logPage}
+                      onPageChange={(p) => setLogPage(p)}
+                      onItemsPerPageChange={() => {}}
+                    />
+                  </>
+                )}
               </div>
             )}
           </>
