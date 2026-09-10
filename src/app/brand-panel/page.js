@@ -70,10 +70,15 @@ export default function BrandPanel({ initialTab = "dashboard" }) {
 
   // Brand Logs State
   const [brandLogs, setBrandLogs] = useState([]);
+  const [totalBrandLogs, setTotalBrandLogs] = useState(0);
   const [logsLoading, setLogsLoading] = useState(false);
   const [logSearch, setLogSearch] = useState("");
   const [logPage, setLogPage] = useState(1);
-  const logsPerPage = 10;
+  const [logsPerPage, setLogsPerPage] = useState(10);
+
+  // Leads Pagination State
+  const [leadsPage, setLeadsPage] = useState(1);
+  const [leadsPerPage, setLeadsPerPage] = useState(10);
 
   const fetchBrandLogs = async () => {
     const email = localStorage.getItem("brandEmail");
@@ -83,11 +88,19 @@ export default function BrandPanel({ initialTab = "dashboard" }) {
       const query = new URLSearchParams();
       query.set("panel", "brand");
       query.set("userEmail", email);
+      query.set("page", logPage);
+      query.set("limit", logsPerPage);
       if (logSearch) query.set("search", logSearch);
       const res = await fetch(`/api/logs?${query.toString()}`);
       if (res.ok) {
         const data = await res.json();
-        setBrandLogs(data);
+        if (data.data) {
+          setBrandLogs(data.data);
+          setTotalBrandLogs(data.total);
+        } else {
+          setBrandLogs(data);
+          setTotalBrandLogs(data.length);
+        }
       }
     } catch (err) {
       console.error("Failed to fetch brand logs:", err);
@@ -100,7 +113,7 @@ export default function BrandPanel({ initialTab = "dashboard" }) {
     if (activeTab === "logs") {
       fetchBrandLogs();
     }
-  }, [activeTab, logSearch]);
+  }, [activeTab, logPage, logsPerPage, logSearch]);
 
   const handleClearBrandLogs = async () => {
     const email = localStorage.getItem("brandEmail");
@@ -898,50 +911,59 @@ export default function BrandPanel({ initialTab = "dashboard" }) {
                     <p style={{ fontSize: "12px", marginTop: "4px" }}>Enquiries from the homepage modal directory will populate here instantly.</p>
                   </div>
                 ) : (
-                  <table className="admin-table">
-                    <thead>
-                      <tr>
-                        <th>Investor Name</th>
-                        <th>Contact Email</th>
-                        <th>Phone Number</th>
-                        <th>Property Available</th>
-                        <th>Preferred Location</th>
-                        <th>Date Received</th>
-                        <th>Message Details</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {leads.map((l) => (
-                        <tr key={l.id}>
-                          <td style={{ fontWeight: "700" }}>
-                            <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                              <span>{l.name}</span>
-                              {isNew(l.createdAt) && (
-                                <span style={{
-                                  background: "var(--primary)",
-                                  color: "white",
-                                  fontSize: "10px",
-                                  fontWeight: "800",
-                                  padding: "2px 6px",
-                                  borderRadius: "4px",
-                                  textTransform: "uppercase",
-                                  letterSpacing: "0.05em"
-                                }}>NEW</span>
-                              )}
-                            </div>
-                          </td>
-                          <td>{l.email}</td>
-                          <td>{l.phone}</td>
-                          <td>{l.propertyAvailable} {l.propertyArea && `(${l.propertyArea})`}</td>
-                          <td>{l.preferredLocation}</td>
-                          <td style={{ fontSize: "13px", color: "var(--text-muted)" }}>
-                            {l.createdAt ? new Date(l.createdAt).toLocaleDateString("en-IN", { day: 'numeric', month: 'short', year: 'numeric' }) : "N/A"}
-                          </td>
-                          <td style={{ fontSize: "12px", color: "var(--text-muted)", maxWidth: "250px" }}>{l.comments}</td>
+                  <>
+                    <table className="admin-table">
+                      <thead>
+                        <tr>
+                          <th>Investor Name</th>
+                          <th>Contact Email</th>
+                          <th>Phone Number</th>
+                          <th>Property Available</th>
+                          <th>Preferred Location</th>
+                          <th>Date Received</th>
+                          <th>Message Details</th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                      </thead>
+                      <tbody>
+                        {leads.slice((leadsPage - 1) * leadsPerPage, leadsPage * leadsPerPage).map((l) => (
+                          <tr key={l.id}>
+                            <td style={{ fontWeight: "700" }}>
+                              <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                                <span>{l.name}</span>
+                                {isNew(l.createdAt) && (
+                                  <span style={{
+                                    background: "var(--primary)",
+                                    color: "white",
+                                    fontSize: "10px",
+                                    fontWeight: "800",
+                                    padding: "2px 6px",
+                                    borderRadius: "4px",
+                                    textTransform: "uppercase",
+                                    letterSpacing: "0.05em"
+                                  }}>NEW</span>
+                                )}
+                              </div>
+                            </td>
+                            <td>{l.email}</td>
+                            <td>{l.phone}</td>
+                            <td>{l.propertyAvailable} {l.propertyArea && `(${l.propertyArea})`}</td>
+                            <td>{l.preferredLocation}</td>
+                            <td style={{ fontSize: "13px", color: "var(--text-muted)" }}>
+                              {l.createdAt ? new Date(l.createdAt).toLocaleDateString("en-IN", { day: 'numeric', month: 'short', year: 'numeric' }) : "N/A"}
+                            </td>
+                            <td style={{ fontSize: "12px", color: "var(--text-muted)", maxWidth: "250px" }}>{l.comments}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                    <Pagination
+                      totalItems={leads.length}
+                      itemsPerPage={leadsPerPage}
+                      currentPage={leadsPage}
+                      onPageChange={(p) => setLeadsPage(p)}
+                      onItemsPerPageChange={(size) => { setLeadsPerPage(size); setLeadsPage(1); }}
+                    />
+                  </>
                 )}
               </div>
             )}
@@ -1001,7 +1023,7 @@ export default function BrandPanel({ initialTab = "dashboard" }) {
                               </td>
                             </tr>
                           ) : (
-                            brandLogs.slice((logPage - 1) * logsPerPage, logPage * logsPerPage).map((logItem) => (
+                            brandLogs.map((logItem) => (
                               <tr key={logItem.id || logItem._id}>
                                 <td style={{ fontSize: "12px", color: "var(--text-muted)", whiteSpace: "nowrap" }}>
                                   {new Date(logItem.createdAt).toLocaleString("en-IN", {
@@ -1033,11 +1055,11 @@ export default function BrandPanel({ initialTab = "dashboard" }) {
                     </div>
 
                     <Pagination
-                      totalItems={brandLogs.length}
+                      totalItems={totalBrandLogs}
                       itemsPerPage={logsPerPage}
                       currentPage={logPage}
                       onPageChange={(p) => setLogPage(p)}
-                      onItemsPerPageChange={() => {}}
+                      onItemsPerPageChange={(size) => { setLogsPerPage(size); setLogPage(1); }}
                     />
                   </>
                 )}

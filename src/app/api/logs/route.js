@@ -7,9 +7,28 @@ export async function GET(request) {
     const panel = searchParams.get("panel") || "all";
     const userEmail = searchParams.get("userEmail") || "";
     const search = searchParams.get("search") || "";
-    const limit = searchParams.get("limit") || "500";
+    const pageParam = searchParams.get("page");
+    const limitParam = searchParams.get("limit");
 
-    const logs = await getLogs({ panel, userEmail, search, limit });
+    const logs = await getLogs({ panel, userEmail, search, limit: "10000" });
+    const total = logs.length;
+
+    if (pageParam !== null || limitParam !== null) {
+      const page = Math.max(1, parseInt(pageParam || "1", 10));
+      const limit = Math.max(1, parseInt(limitParam || "10", 10));
+      const start = (page - 1) * limit;
+      const paginatedData = logs.slice(start, start + limit);
+      const totalPages = Math.ceil(total / limit) || 1;
+
+      return NextResponse.json({
+        data: paginatedData,
+        total,
+        page,
+        limit,
+        totalPages
+      });
+    }
+
     return NextResponse.json(logs);
   } catch (error) {
     console.error("GET /api/logs error:", error);

@@ -43,10 +43,15 @@ export default function InvestorPanel({ initialTab = "dashboard" }) {
 
   // Investor Logs State
   const [investorLogs, setInvestorLogs] = useState([]);
+  const [totalInvestorLogs, setTotalInvestorLogs] = useState(0);
   const [logsLoading, setLogsLoading] = useState(false);
   const [logSearch, setLogSearch] = useState("");
   const [logPage, setLogPage] = useState(1);
-  const logsPerPage = 10;
+  const [logsPerPage, setLogsPerPage] = useState(10);
+
+  // Enquiries Pagination State
+  const [enquiriesPage, setEnquiriesPage] = useState(1);
+  const [enquiriesPerPage, setEnquiriesPerPage] = useState(10);
 
   const fetchInvestorLogs = async () => {
     const email = localStorage.getItem("investorEmail");
@@ -56,11 +61,19 @@ export default function InvestorPanel({ initialTab = "dashboard" }) {
       const query = new URLSearchParams();
       query.set("panel", "investor");
       query.set("userEmail", email);
+      query.set("page", logPage);
+      query.set("limit", logsPerPage);
       if (logSearch) query.set("search", logSearch);
       const res = await fetch(`/api/logs?${query.toString()}`);
       if (res.ok) {
         const data = await res.json();
-        setInvestorLogs(data);
+        if (data.data) {
+          setInvestorLogs(data.data);
+          setTotalInvestorLogs(data.total);
+        } else {
+          setInvestorLogs(data);
+          setTotalInvestorLogs(data.length);
+        }
       }
     } catch (err) {
       console.error("Failed to fetch investor logs:", err);
@@ -73,7 +86,7 @@ export default function InvestorPanel({ initialTab = "dashboard" }) {
     if (activeTab === "logs") {
       fetchInvestorLogs();
     }
-  }, [activeTab, logSearch]);
+  }, [activeTab, logPage, logsPerPage, logSearch]);
 
   const handleClearInvestorLogs = async () => {
     const email = localStorage.getItem("investorEmail");
@@ -574,45 +587,54 @@ export default function InvestorPanel({ initialTab = "dashboard" }) {
                     <p style={{ fontSize: "12px", marginTop: "4px" }}>Submit enquiries from homepage opportunities or brand proposals to record leads.</p>
                   </div>
                 ) : (
-                  <table className="admin-table">
-                    <thead>
-                      <tr>
-                        <th>Brand Details</th>
-                        <th>Target Area Size</th>
-                        <th>Application Date</th>
-                        <th>Notes / Lead Details</th>
-                        <th>Status</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {enquiries.map((enq) => {
-                        let brandName = enq.brandName || enq.targetBrand;
-                        if (!brandName && enq.comments) {
-                          const match1 = enq.comments.match(/Enquiry submitted for Brand: (.*?)(?:\.|$)/i);
-                          const match2 = enq.comments.match(/Interested in Franchise: (.*?)(?:\.|$)/i);
-                          const match3 = enq.comments.match(/Brand: (.*?)(?:\.|$)/i);
-                          if (match1) brandName = match1[1];
-                          else if (match2) brandName = match2[1];
-                          else if (match3) brandName = match3[1];
-                        }
-                        if (!brandName) brandName = enq.category ? `${enq.category} Franchise` : "Franchise Lead Record";
+                  <>
+                    <table className="admin-table">
+                      <thead>
+                        <tr>
+                          <th>Brand Details</th>
+                          <th>Target Area Size</th>
+                          <th>Application Date</th>
+                          <th>Notes / Lead Details</th>
+                          <th>Status</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {enquiries.slice((enquiriesPage - 1) * enquiriesPerPage, enquiriesPage * enquiriesPerPage).map((enq) => {
+                          let brandName = enq.brandName || enq.targetBrand;
+                          if (!brandName && enq.comments) {
+                            const match1 = enq.comments.match(/Enquiry submitted for Brand: (.*?)(?:\.|$)/i);
+                            const match2 = enq.comments.match(/Interested in Franchise: (.*?)(?:\.|$)/i);
+                            const match3 = enq.comments.match(/Brand: (.*?)(?:\.|$)/i);
+                            if (match1) brandName = match1[1];
+                            else if (match2) brandName = match2[1];
+                            else if (match3) brandName = match3[1];
+                          }
+                          if (!brandName) brandName = enq.category ? `${enq.category} Franchise` : "Franchise Lead Record";
 
-                        return (
-                          <tr key={enq.id || enq._id}>
-                            <td style={{ fontWeight: "700" }}>{brandName}</td>
-                            <td>{enq.propertyArea || enq.preferredLocation || enq.city || "Not specified"}</td>
-                            <td>{new Date(enq.appliedAt || enq.createdAt || Date.now()).toLocaleDateString("en-IN", { day: 'numeric', month: 'short', year: 'numeric' })}</td>
-                            <td style={{ fontSize: "12px", color: "var(--text-muted)", maxWidth: "300px" }}>{enq.comments || enq.notes || "Lead record submitted"}</td>
-                            <td>
-                              <span className="status-badge approved" style={{ background: "rgba(16,185,129,0.08)", color: "var(--success)" }}>
-                                {enq.status || "Contacted"}
-                              </span>
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
+                          return (
+                            <tr key={enq.id || enq._id}>
+                              <td style={{ fontWeight: "700" }}>{brandName}</td>
+                              <td>{enq.propertyArea || enq.preferredLocation || enq.city || "Not specified"}</td>
+                              <td>{new Date(enq.appliedAt || enq.createdAt || Date.now()).toLocaleDateString("en-IN", { day: 'numeric', month: 'short', year: 'numeric' })}</td>
+                              <td style={{ fontSize: "12px", color: "var(--text-muted)", maxWidth: "300px" }}>{enq.comments || enq.notes || "Lead record submitted"}</td>
+                              <td>
+                                <span className="status-badge approved" style={{ background: "rgba(16,185,129,0.08)", color: "var(--success)" }}>
+                                  {enq.status || "Contacted"}
+                                </span>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                    <Pagination
+                      totalItems={enquiries.length}
+                      itemsPerPage={enquiriesPerPage}
+                      currentPage={enquiriesPage}
+                      onPageChange={(p) => setEnquiriesPage(p)}
+                      onItemsPerPageChange={(size) => { setEnquiriesPerPage(size); setEnquiriesPage(1); }}
+                    />
+                  </>
                 )}
               </div>
             )}
@@ -749,7 +771,7 @@ export default function InvestorPanel({ initialTab = "dashboard" }) {
                               </td>
                             </tr>
                           ) : (
-                            investorLogs.slice((logPage - 1) * logsPerPage, logPage * logsPerPage).map((logItem) => (
+                            investorLogs.map((logItem) => (
                               <tr key={logItem.id || logItem._id}>
                                 <td style={{ fontSize: "12px", color: "var(--text-muted)", whiteSpace: "nowrap" }}>
                                   {new Date(logItem.createdAt).toLocaleString("en-IN", {
@@ -781,11 +803,11 @@ export default function InvestorPanel({ initialTab = "dashboard" }) {
                     </div>
 
                     <Pagination
-                      totalItems={investorLogs.length}
+                      totalItems={totalInvestorLogs}
                       itemsPerPage={logsPerPage}
                       currentPage={logPage}
                       onPageChange={(p) => setLogPage(p)}
-                      onItemsPerPageChange={() => {}}
+                      onItemsPerPageChange={(size) => { setLogsPerPage(size); setLogPage(1); }}
                     />
                   </>
                 )}

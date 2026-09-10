@@ -65,11 +65,12 @@ export default function AdminDashboard({ initialTab = "dashboard" }) {
 
   // Activity Logs State
   const [logs, setLogs] = useState([]);
+  const [totalLogs, setTotalLogs] = useState(0);
   const [logsLoading, setLogsLoading] = useState(false);
   const [logPanelFilter, setLogPanelFilter] = useState("all");
   const [logSearch, setLogSearch] = useState("");
   const [logPage, setLogPage] = useState(1);
-  const logsPerPage = 10;
+  const [logsPerPage, setLogsPerPage] = useState(10);
 
   // Custom Message Action Modal State
   const [customMsgModal, setCustomMsgModal] = useState(null); // { isOpen: boolean, type: string, targetItem: object, extraPayload?: object }
@@ -80,12 +81,20 @@ export default function AdminDashboard({ initialTab = "dashboard" }) {
     setLogsLoading(true);
     try {
       const query = new URLSearchParams();
+      query.set("page", logPage);
+      query.set("limit", logsPerPage);
       if (logPanelFilter && logPanelFilter !== "all") query.set("panel", logPanelFilter);
       if (logSearch) query.set("search", logSearch);
       const res = await fetch(`/api/logs?${query.toString()}`);
       if (res.ok) {
         const data = await res.json();
-        setLogs(data);
+        if (data.data) {
+          setLogs(data.data);
+          setTotalLogs(data.total);
+        } else {
+          setLogs(data);
+          setTotalLogs(data.length);
+        }
       }
     } catch (err) {
       console.error("Failed to fetch logs:", err);
@@ -98,7 +107,7 @@ export default function AdminDashboard({ initialTab = "dashboard" }) {
     if (activeTab === "logs") {
       fetchLogs();
     }
-  }, [activeTab, logPanelFilter, logSearch]);
+  }, [activeTab, logPage, logsPerPage, logPanelFilter, logSearch]);
 
   const handleDeleteLog = async (id) => {
     if (!confirm("Are you sure you want to delete this log entry?")) return;
@@ -138,10 +147,17 @@ export default function AdminDashboard({ initialTab = "dashboard" }) {
 
   // Data State
   const [brands, setBrands] = useState([]);
+  const [totalBrands, setTotalBrands] = useState(0);
+  const [pendingBrandsCount, setPendingBrandsCount] = useState(0);
   const [investors, setInvestors] = useState([]);
+  const [totalInvestors, setTotalInvestors] = useState(0);
   const [blogs, setBlogs] = useState([]);
+  const [totalBlogs, setTotalBlogs] = useState(0);
   const [services, setServices] = useState([]);
+  const [totalServices, setTotalServices] = useState(0);
   const [ads, setAds] = useState([]);
+  const [totalAds, setTotalAds] = useState(0);
+  const [allBrandsForSelect, setAllBrandsForSelect] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
 
@@ -357,6 +373,149 @@ export default function AdminDashboard({ initialTab = "dashboard" }) {
   const [adsPage, setAdsPage] = useState(1);
   const [adsPerPage, setAdsPerPage] = useState(10);
 
+  // Tab AJAX Fetchers
+  const fetchBrandsTab = async () => {
+    try {
+      const query = new URLSearchParams();
+      query.set("page", brandsPage);
+      query.set("limit", brandsPerPage);
+      if (searchTerm) query.set("search", searchTerm);
+      const res = await fetch(`/api/brands?${query.toString()}`);
+      if (res.ok) {
+        const result = await res.json();
+        if (result.data) {
+          setBrands(result.data);
+          setTotalBrands(result.total);
+        } else {
+          setBrands(result);
+          setTotalBrands(result.length);
+        }
+      }
+    } catch (err) {
+      console.error("Failed to fetch brands tab:", err);
+    }
+  };
+
+  const fetchInvestorsTab = async () => {
+    try {
+      const query = new URLSearchParams();
+      query.set("page", investorsPage);
+      query.set("limit", investorsPerPage);
+      if (searchTerm) query.set("search", searchTerm);
+      if (filterBrand) query.set("brand", filterBrand);
+      if (filterCategory) query.set("category", filterCategory);
+      if (filterStatus) query.set("status", filterStatus);
+      const res = await fetch(`/api/investors?${query.toString()}`);
+      if (res.ok) {
+        const result = await res.json();
+        if (result.data) {
+          setInvestors(result.data);
+          setTotalInvestors(result.total);
+        } else {
+          setInvestors(result);
+          setTotalInvestors(result.length);
+        }
+      }
+    } catch (err) {
+      console.error("Failed to fetch investors tab:", err);
+    }
+  };
+
+  const fetchBlogsTab = async () => {
+    try {
+      const query = new URLSearchParams();
+      query.set("page", blogsPage);
+      query.set("limit", blogsPerPage);
+      if (searchTerm) query.set("search", searchTerm);
+      const res = await fetch(`/api/blogs?${query.toString()}`);
+      if (res.ok) {
+        const result = await res.json();
+        if (result.data) {
+          setBlogs(result.data);
+          setTotalBlogs(result.total);
+        } else {
+          setBlogs(result);
+          setTotalBlogs(result.length);
+        }
+      }
+    } catch (err) {
+      console.error("Failed to fetch blogs tab:", err);
+    }
+  };
+
+  const fetchServicesTab = async () => {
+    try {
+      const query = new URLSearchParams();
+      query.set("page", servicesPage);
+      query.set("limit", servicesPerPage);
+      if (searchTerm) query.set("search", searchTerm);
+      const res = await fetch(`/api/services?${query.toString()}`);
+      if (res.ok) {
+        const result = await res.json();
+        if (result.data) {
+          setServices(result.data);
+          setTotalServices(result.total);
+        } else {
+          setServices(result);
+          setTotalServices(result.length);
+        }
+      }
+    } catch (err) {
+      console.error("Failed to fetch services tab:", err);
+    }
+  };
+
+  const fetchAdsTab = async () => {
+    try {
+      const query = new URLSearchParams();
+      query.set("page", adsPage);
+      query.set("limit", adsPerPage);
+      if (searchTerm) query.set("search", searchTerm);
+      const res = await fetch(`/api/advertisements?${query.toString()}`);
+      if (res.ok) {
+        const result = await res.json();
+        if (result.data) {
+          setAds(result.data);
+          setTotalAds(result.total);
+        } else {
+          setAds(result);
+          setTotalAds(result.length);
+        }
+      }
+    } catch (err) {
+      console.error("Failed to fetch ads tab:", err);
+    }
+  };
+
+  useEffect(() => {
+    setBrandsPage(1);
+    setInvestorsPage(1);
+    setBlogsPage(1);
+    setServicesPage(1);
+    setAdsPage(1);
+    setLogPage(1);
+  }, [searchTerm, filterBrand, filterCategory, filterStatus, logPanelFilter, logSearch]);
+
+  useEffect(() => {
+    if (activeTab === "brands") fetchBrandsTab();
+  }, [activeTab, brandsPage, brandsPerPage, searchTerm]);
+
+  useEffect(() => {
+    if (activeTab === "investors") fetchInvestorsTab();
+  }, [activeTab, investorsPage, investorsPerPage, searchTerm, filterBrand, filterCategory, filterStatus]);
+
+  useEffect(() => {
+    if (activeTab === "blogs") fetchBlogsTab();
+  }, [activeTab, blogsPage, blogsPerPage, searchTerm]);
+
+  useEffect(() => {
+    if (activeTab === "services") fetchServicesTab();
+  }, [activeTab, servicesPage, servicesPerPage, searchTerm]);
+
+  useEffect(() => {
+    if (activeTab === "ads") fetchAdsTab();
+  }, [activeTab, adsPage, adsPerPage, searchTerm]);
+
   // Helper function to check if investor's selected sectors match brand category
   const isInvestorSectorMatch = (inv, brand) => {
     if (!brand) return true;
@@ -536,7 +695,6 @@ export default function AdminDashboard({ initialTab = "dashboard" }) {
     }
   }, [router]);
 
-  // Fetch all brands, investors, blogs, services, and advertisements
   const fetchData = async () => {
     setLoading(true);
     try {
@@ -550,26 +708,38 @@ export default function AdminDashboard({ initialTab = "dashboard" }) {
 
       if (brandsRes.ok) {
         const brandsData = await brandsRes.json();
-        setBrands(brandsData);
+        const list = Array.isArray(brandsData) ? brandsData : brandsData.data || [];
+        setAllBrandsForSelect(list);
+        setTotalBrands(list.length);
+        setPendingBrandsCount(list.filter(b => b.status === "Pending").length);
+        if (activeTab === "dashboard") setBrands(list);
       }
       if (investorsRes.ok) {
         const investorsData = await investorsRes.json();
-        setInvestors(investorsData);
+        const list = Array.isArray(investorsData) ? investorsData : investorsData.data || [];
+        setTotalInvestors(list.length);
+        if (activeTab === "dashboard") setInvestors(list);
       }
       if (blogsRes.ok) {
         const blogsData = await blogsRes.json();
-        setBlogs(blogsData);
+        const list = Array.isArray(blogsData) ? blogsData : blogsData.data || [];
+        setTotalBlogs(list.length);
+        if (activeTab === "dashboard") setBlogs(list);
       }
       if (servicesRes.ok) {
         const servicesData = await servicesRes.json();
-        setServices(servicesData);
+        const list = Array.isArray(servicesData) ? servicesData : servicesData.data || [];
+        setTotalServices(list.length);
+        if (activeTab === "dashboard") setServices(list);
       }
       if (adsRes.ok) {
         const adsData = await adsRes.json();
-        setAds(adsData);
+        const list = Array.isArray(adsData) ? adsData : adsData.data || [];
+        setTotalAds(list.length);
+        if (activeTab === "dashboard") setAds(list);
       }
     } catch (error) {
-      console.error("Error loading data:", error);
+      console.error("Error loading overview data:", error);
     } finally {
       setLoading(false);
     }
@@ -1045,63 +1215,15 @@ export default function AdminDashboard({ initialTab = "dashboard" }) {
   }
 
   // Counts
-  const totalBrandsCount = brands.length;
-  const pendingBrandsCount = brands.filter(b => b.status === "Pending").length;
-  const totalInvestorsCount = investors.length;
+  const totalBrandsCount = totalBrands;
+  const totalInvestorsCount = totalInvestors;
 
-  // Filtered Lists & Paginated Data Slices
-  const filteredBrands = brands.filter(b => {
-    const term = (searchTerm || "").toLowerCase();
-    if (!term) return true;
-    const nameMatch = (b.name || "").toLowerCase().includes(term);
-    const companyMatch = (b.company || "").toLowerCase().includes(term);
-    const categoryMatch = (b.category || "").toLowerCase().includes(term);
-    const emailMatch = (b.email || (b.user && b.user.email) || "").toLowerCase().includes(term);
-    return nameMatch || companyMatch || categoryMatch || emailMatch;
-  });
-  const paginatedBrands = filteredBrands.slice((brandsPage - 1) * brandsPerPage, brandsPage * brandsPerPage);
-
-  const filteredInvestors = investors.filter(i => {
-    // 1. Search by name, email, phone or target location
-    const searchLower = searchTerm.toLowerCase();
-    const matchesSearch = !searchTerm ? true : (
-      (i.name && i.name.toLowerCase().includes(searchLower)) ||
-      (i.email && i.email.toLowerCase().includes(searchLower)) ||
-      (i.phone && i.phone.includes(searchTerm)) ||
-      (i.preferredLocation && i.preferredLocation.toLowerCase().includes(searchLower))
-    );
-
-    // 2. Filter by Brand (both assignedBrands array or applied brandId/brandName if saved as application)
-    const matchesBrand = !filterBrand ? true : (
-      (i.brandId && i.brandId === filterBrand) ||
-      (i.brandName && i.brandName.toLowerCase().includes(filterBrand.toLowerCase())) ||
-      (i.assignedBrands && i.assignedBrands.includes(filterBrand))
-    );
-
-    // 3. Filter by Category
-    const matchesCategory = !filterCategory ? true : (
-      (i.category && i.category.toLowerCase() === filterCategory.toLowerCase()) ||
-      (i.industries && i.industries.some(ind => ind.toLowerCase() === filterCategory.toLowerCase()))
-    );
-
-    // 4. Filter by Status
-    const displayStatus = i.status || "Pending";
-    const matchesStatus = !filterStatus ? true : (
-      displayStatus.toLowerCase() === filterStatus.toLowerCase()
-    );
-
-    return matchesSearch && matchesBrand && matchesCategory && matchesStatus;
-  });
-  const paginatedInvestors = filteredInvestors.slice((investorsPage - 1) * investorsPerPage, investorsPage * investorsPerPage);
-
-  const filteredBlogs = blogs.filter(blog => blog.title.toLowerCase().includes(searchTerm.toLowerCase()));
-  const paginatedBlogs = filteredBlogs.slice((blogsPage - 1) * blogsPerPage, blogsPage * blogsPerPage);
-
-  const filteredServices = services.filter(service => service.title.toLowerCase().includes(searchTerm.toLowerCase()));
-  const paginatedServices = filteredServices.slice((servicesPage - 1) * servicesPerPage, servicesPage * servicesPerPage);
-
-  const filteredAds = ads.filter(ad => ad.title.toLowerCase().includes(searchTerm.toLowerCase()));
-  const paginatedAds = filteredAds.slice((adsPage - 1) * adsPerPage, adsPage * adsPerPage);
+  // Paginated Data Slices (fetched server-side via AJAX)
+  const paginatedBrands = brands;
+  const paginatedInvestors = investors;
+  const paginatedBlogs = blogs;
+  const paginatedServices = services;
+  const paginatedAds = ads;
 
   return (
     <div className="admin-layout">
@@ -1146,7 +1268,7 @@ export default function AdminDashboard({ initialTab = "dashboard" }) {
                   onClick={() => { setActiveTab("brands"); setSearchTerm(""); }}
                 >
                   <Building size={18} />
-                  Manage Brands ({brands.length})
+                  Manage Brands ({totalBrands})
                   {pendingBrandsCount > 0 && (
                     <span style={{ background: "var(--secondary)", color: "white", padding: "2px 6px", borderRadius: "50%", fontSize: "10px", marginLeft: "auto" }}>
                       {pendingBrandsCount}
@@ -1161,7 +1283,7 @@ export default function AdminDashboard({ initialTab = "dashboard" }) {
                   onClick={() => { setActiveTab("investors"); setSearchTerm(""); }}
                 >
                   <Users size={18} />
-                  Investor Leads ({investors.length})
+                  Investor Leads ({totalInvestors})
                 </Link>
               </li>
               <li className="admin-nav-item">
@@ -1171,7 +1293,7 @@ export default function AdminDashboard({ initialTab = "dashboard" }) {
                   onClick={() => { setActiveTab("blogs"); setSearchTerm(""); }}
                 >
                   <FileText size={18} />
-                  Manage Blogs ({blogs.length})
+                  Manage Blogs ({totalBlogs})
                 </Link>
               </li>
               <li className="admin-nav-item">
@@ -1181,7 +1303,7 @@ export default function AdminDashboard({ initialTab = "dashboard" }) {
                   onClick={() => { setActiveTab("services"); setSearchTerm(""); }}
                 >
                   <Wrench size={18} />
-                  Manage Services ({services.length})
+                  Manage Services ({totalServices})
                 </Link>
               </li>
               <li className="admin-nav-item">
@@ -1191,7 +1313,7 @@ export default function AdminDashboard({ initialTab = "dashboard" }) {
                   onClick={() => { setActiveTab("ads"); setSearchTerm(""); }}
                 >
                   <Megaphone size={18} />
-                  Manage Ads ({ads.length})
+                  Manage Ads ({totalAds})
                 </Link>
               </li>
               <li className="admin-nav-item">
@@ -1286,7 +1408,7 @@ export default function AdminDashboard({ initialTab = "dashboard" }) {
                       <FileText size={24} />
                     </div>
                     <div className="stat-info">
-                      <h3>{blogs.length}</h3>
+                      <h3>{totalBlogs}</h3>
                       <p>Total Blog Posts</p>
                     </div>
                   </div>
@@ -1296,7 +1418,7 @@ export default function AdminDashboard({ initialTab = "dashboard" }) {
                       <Wrench size={24} />
                     </div>
                     <div className="stat-info">
-                      <h3>{services.length}</h3>
+                      <h3>{totalServices}</h3>
                       <p>Managed Services</p>
                     </div>
                   </div>
@@ -1306,7 +1428,7 @@ export default function AdminDashboard({ initialTab = "dashboard" }) {
                       <Megaphone size={24} />
                     </div>
                     <div className="stat-info">
-                      <h3>{ads.filter(a => a.isActive).length}</h3>
+                      <h3>{totalAds}</h3>
                       <p>Active Ad Banners</p>
                     </div>
                   </div>
@@ -1438,7 +1560,7 @@ export default function AdminDashboard({ initialTab = "dashboard" }) {
                     </tr>
                   </thead>
                   <tbody>
-                    {filteredBrands.length === 0 ? (
+                    {brands.length === 0 ? (
                       <tr>
                         <td colSpan="8" style={{ textAlign: "center", padding: "30px", color: "var(--text-muted)" }}>
                           No brands match search queries.
@@ -1525,7 +1647,7 @@ export default function AdminDashboard({ initialTab = "dashboard" }) {
                 </table>
 
                 <Pagination
-                  totalItems={filteredBrands.length}
+                  totalItems={totalBrands}
                   itemsPerPage={brandsPerPage}
                   currentPage={brandsPage}
                   onPageChange={(p) => setBrandsPage(p)}
@@ -1568,7 +1690,7 @@ export default function AdminDashboard({ initialTab = "dashboard" }) {
                       style={{ padding: "6px 12px", borderRadius: "6px", border: "1px solid var(--light-border)", fontSize: "13px", background: "white", minWidth: "150px" }}
                     >
                       <option value="">All Brands</option>
-                      {brands.map(b => (
+                      {(allBrandsForSelect.length > 0 ? allBrandsForSelect : brands).map(b => (
                         <option key={b.id || b._id} value={b.id || b._id}>{b.name}</option>
                       ))}
                     </select>
@@ -1639,7 +1761,7 @@ export default function AdminDashboard({ initialTab = "dashboard" }) {
                     </tr>
                   </thead>
                   <tbody>
-                    {filteredInvestors.length === 0 ? (
+                    {investors.length === 0 ? (
                       <tr>
                         <td colSpan="9" style={{ textAlign: "center", padding: "30px", color: "var(--text-muted)" }}>
                           No investor profiles match queries.
@@ -1755,7 +1877,7 @@ export default function AdminDashboard({ initialTab = "dashboard" }) {
                 </table>
 
                 <Pagination
-                  totalItems={filteredInvestors.length}
+                  totalItems={totalInvestors}
                   itemsPerPage={investorsPerPage}
                   currentPage={investorsPage}
                   onPageChange={(p) => setInvestorsPage(p)}
@@ -1796,7 +1918,7 @@ export default function AdminDashboard({ initialTab = "dashboard" }) {
                     </tr>
                   </thead>
                   <tbody>
-                    {filteredBlogs.length === 0 ? (
+                    {blogs.length === 0 ? (
                       <tr>
                         <td colSpan="5" style={{ textAlign: "center", padding: "30px", color: "var(--text-muted)" }}>
                           No blog posts found. Click "Create New Blog" to publish one.
@@ -1843,7 +1965,7 @@ export default function AdminDashboard({ initialTab = "dashboard" }) {
                 </table>
 
                 <Pagination
-                  totalItems={filteredBlogs.length}
+                  totalItems={totalBlogs}
                   itemsPerPage={blogsPerPage}
                   currentPage={blogsPage}
                   onPageChange={(p) => setBlogsPage(p)}
@@ -1884,7 +2006,7 @@ export default function AdminDashboard({ initialTab = "dashboard" }) {
                     </tr>
                   </thead>
                   <tbody>
-                    {filteredServices.length === 0 ? (
+                    {services.length === 0 ? (
                       <tr>
                         <td colSpan="5" style={{ textAlign: "center", padding: "30px", color: "var(--text-muted)" }}>
                           No services found. Click "Create New Service" to add one.
@@ -1931,7 +2053,7 @@ export default function AdminDashboard({ initialTab = "dashboard" }) {
                 </table>
 
                 <Pagination
-                  totalItems={filteredServices.length}
+                  totalItems={totalServices}
                   itemsPerPage={servicesPerPage}
                   currentPage={servicesPage}
                   onPageChange={(p) => setServicesPage(p)}
@@ -1978,7 +2100,7 @@ export default function AdminDashboard({ initialTab = "dashboard" }) {
                     </tr>
                   </thead>
                   <tbody>
-                    {filteredAds.length === 0 ? (
+                    {ads.length === 0 ? (
                       <tr>
                         <td colSpan="7" style={{ textAlign: "center", padding: "30px", color: "var(--text-muted)" }}>
                           No ad banners found. Click "Create New Ad Banner" to add one.
@@ -2043,7 +2165,7 @@ export default function AdminDashboard({ initialTab = "dashboard" }) {
                 </table>
 
                 <Pagination
-                  totalItems={filteredAds.length}
+                  totalItems={totalAds}
                   itemsPerPage={adsPerPage}
                   currentPage={adsPage}
                   onPageChange={(p) => setAdsPage(p)}
@@ -2103,28 +2225,40 @@ export default function AdminDashboard({ initialTab = "dashboard" }) {
 
                 {/* Log Controls & Filter Toolbar */}
                 <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "space-between", alignItems: "center", gap: "16px", marginBottom: "20px" }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: "12px", flex: 1, minWidth: "280px" }}>
-                    <div className="search-box" style={{ flex: 1, margin: 0 }}>
-                      <Search size={16} />
+                  <div style={{ display: "flex", alignItems: "center", gap: "12px", flex: 1, minWidth: "300px", maxWidth: "650px" }}>
+                    <div className="search-box" style={{ flex: 1, margin: 0, height: "42px" }}>
+                      <Search size={18} />
                       <input
                         type="text"
                         placeholder="Search by action, email, description..."
                         value={logSearch}
                         onChange={(e) => { setLogSearch(e.target.value); setLogPage(1); }}
                       />
+                      {logSearch && (
+                        <button
+                          onClick={() => { setLogSearch(""); setLogPage(1); }}
+                          style={{ background: "none", border: "none", color: "#94a3b8", cursor: "pointer", padding: "0 2px", display: "flex", alignItems: "center" }}
+                          title="Clear search"
+                        >
+                          <X size={15} />
+                        </button>
+                      )}
                     </div>
                     <select
                       value={logPanelFilter}
                       onChange={(e) => { setLogPanelFilter(e.target.value); setLogPage(1); }}
                       style={{
-                        padding: "9px 14px",
-                        borderRadius: "8px",
-                        border: "1px solid var(--border-color)",
-                        fontSize: "13px",
-                        background: "white",
-                        color: "var(--text-color)",
+                        height: "42px",
+                        padding: "0 14px",
+                        borderRadius: "10px",
+                        border: "1.5px solid var(--border-color, #e2e8f0)",
+                        fontSize: "13.5px",
+                        fontWeight: "500",
+                        background: "#f8fafc",
+                        color: "var(--dark, #0f172a)",
                         outline: "none",
-                        cursor: "pointer"
+                        cursor: "pointer",
+                        transition: "all 0.2s ease"
                       }}
                     >
                       <option value="all">All Panels</option>
@@ -2181,7 +2315,7 @@ export default function AdminDashboard({ initialTab = "dashboard" }) {
                               </td>
                             </tr>
                           ) : (
-                            logs.slice((logPage - 1) * logsPerPage, logPage * logsPerPage).map((logItem) => {
+                            logs.map((logItem) => {
                               const panelBadgeStyle = logItem.panel === "admin"
                                 ? { background: "rgba(139, 92, 246, 0.1)", color: "#8b5cf6" }
                                 : logItem.panel === "brand"
@@ -2250,11 +2384,11 @@ export default function AdminDashboard({ initialTab = "dashboard" }) {
                     </div>
 
                     <Pagination
-                      totalItems={logs.length}
+                      totalItems={totalLogs}
                       itemsPerPage={logsPerPage}
                       currentPage={logPage}
                       onPageChange={(p) => setLogPage(p)}
-                      onItemsPerPageChange={() => {}}
+                      onItemsPerPageChange={(size) => { setLogsPerPage(size); setLogPage(1); }}
                     />
                   </>
                 )}
