@@ -7,6 +7,7 @@ import {
     Search, MapPin, IndianRupee, RotateCcw, Building, Users, Star,
     CheckCircle, ChevronRight, Mail, Phone, Globe, HelpCircle, Filter, Sparkles, MessageCircle, X
 } from "lucide-react";
+import SEOGeoTags from "@/components/SEOGeoTags";
 import { ProductSkeletonGrid } from "@/components/SkeletonLoader";
 import { useApprovedBrands } from "@/lib/brandsCache";
 import { DISTRICTS_BY_STATE, ALL_DISTRICTS } from "@/lib/districtsData";
@@ -630,7 +631,7 @@ function BrandsDirectoryPage() {
                                                 transition: "transform 0.3s ease, box-shadow 0.3s ease"
                                             }}
                                         >
-                                            <div className="franchise-card-image" style={{ height: "180px", overflow: "hidden", position: "relative" }}>
+                                            <div className="franchise-card-image" style={{ height: "180px", overflow: "hidden", position: "relative", background: "#ffffff", display: "flex", alignItems: "center", justifyContent: "center" }}>
                                                 <div className="franchise-badge" style={{
                                                     position: "absolute",
                                                     top: "12px",
@@ -649,7 +650,7 @@ function BrandsDirectoryPage() {
                                                 <img
                                                     src={brand.image || "https://images.unsplash.com/photo-1524178232363-1fb2b075b655?auto=format&fit=crop&q=80&w=400"}
                                                     alt={brand.name}
-                                                    style={{ width: "100%", height: "100%", objectFit: "cover", transition: "transform 0.5s ease" }}
+                                                    style={{ width: "100%", height: "100%", objectFit: "contain", objectPosition: "center", transition: "transform 0.5s ease" }}
                                                 />
                                             </div>
                                             <div className="franchise-card-content" style={{ padding: "20px", display: "flex", flexDirection: "column", flexGrow: 1 }}>
@@ -725,6 +726,9 @@ function BrandsDirectoryPage() {
                                 ) : null}
                             </>
                         )}
+
+                        {/* DYNAMIC SEO + GEO TAGS */}
+                        <SEOGeoTags categoryName={selectedCategory !== "All Industries" && selectedCategory !== "" ? selectedCategory : "Business"} basePath="/brands" />
                     </main>
                 </div>
             </div>

@@ -2,6 +2,7 @@
 
 import { useState, useEffect, use } from "react";
 import Link from "next/link";
+import SEOGeoTags from "@/components/SEOGeoTags";
 import {
     ArrowLeft,
     MessageCircle,
@@ -197,7 +198,7 @@ export default function ServiceDetailPage({ params }) {
                                 <img
                                     src={service.image || "https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?auto=format&fit=crop&q=80&w=1200"}
                                     alt={service.title}
-                                    style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                                    style={{ width: "100%", height: "100%", objectFit: "contain", objectPosition: "center", display: "block", backgroundColor: "#ffffff" }}
                                 />
                             </div>
 
@@ -378,6 +379,156 @@ export default function ServiceDetailPage({ params }) {
                         </div>
                     </div>
 
+                    {/* DYNAMIC FAQ SECTION WITH ACCORDION */}
+                    <div style={{ marginTop: "50px", borderTop: "1px solid var(--border-color)", paddingTop: "40px" }}>
+                        <h3 style={{ fontSize: "22px", fontWeight: "800", color: "#0f172a", marginBottom: "20px" }}>
+                            Frequently Asked Questions about {service.title}
+                        </h3>
+                        <div className="faq-accordion-container" style={{ display: "flex", flexDirection: "column" }}>
+                            <details className="faq-details">
+                                <summary className="faq-summary">
+                                    <span>What is included in the {service.title} service?</span>
+                                    <span className="faq-icon">+</span>
+                                </summary>
+                                <div className="faq-content">
+                                    <p>This service includes comprehensive end-to-end advisory, verified industry expertise, and customized solutions tailored to your operational needs.</p>
+                                </div>
+                            </details>
+                            <details className="faq-details">
+                                <summary className="faq-summary">
+                                    <span>How do I get started with {service.title}?</span>
+                                    <span className="faq-icon">+</span>
+                                </summary>
+                                <div className="faq-content">
+                                    <p>You can get started by clicking "Inquire via WhatsApp" to connect directly with our consultants or by filling out the Contact Support Form.</p>
+                                </div>
+                            </details>
+                            <details className="faq-details">
+                                <summary className="faq-summary">
+                                    <span>Is confidentiality maintained?</span>
+                                    <span className="faq-icon">+</span>
+                                </summary>
+                                <div className="faq-content">
+                                    <p>Yes, we operate under strict NDA protocols to ensure 100% confidentiality of all your business plans and operational data.</p>
+                                </div>
+                            </details>
+                            <details className="faq-details">
+                                <summary className="faq-summary">
+                                    <span>Who are these advisory services designed for?</span>
+                                    <span className="faq-icon">+</span>
+                                </summary>
+                                <div className="faq-content">
+                                    <p>Our services are designed for single-unit investors, multi-unit regional franchisees, and corporate brand owners looking for strategic growth.</p>
+                                </div>
+                            </details>
+                            <details className="faq-details">
+                                <summary className="faq-summary">
+                                    <span>Do you offer custom packages for {service.title}?</span>
+                                    <span className="faq-icon">+</span>
+                                </summary>
+                                <div className="faq-content">
+                                    <p>Yes, we can tailor our {service.title} offerings based on your specific business goals and operational size.</p>
+                                </div>
+                            </details>
+                        </div>
+                    </div>
+
+                    {/* JSON-LD FOR SEO, GEO, AND AEO */}
+                    <script
+                        type="application/ld+json"
+                        dangerouslySetInnerHTML={{
+                            __html: JSON.stringify({
+                                "@context": "https://schema.org",
+                                "@graph": [
+                                    {
+                                        "@type": "Service",
+                                        "name": service.title,
+                                        "description": "Tailored business advisory and franchise solutions designed by industry experts to help you scale seamlessly.",
+                                        "image": service.image,
+                                        "provider": {
+                                            "@type": "Organization",
+                                            "name": "Franchise Roots",
+                                            "address": {
+                                                "@type": "PostalAddress",
+                                                "addressLocality": "Chandigarh",
+                                                "addressRegion": "UT",
+                                                "addressCountry": "IN"
+                                            }
+                                        }
+                                    },
+                                    {
+                                        "@type": "FAQPage",
+                                        "mainEntity": [
+                                            {
+                                                "@type": "Question",
+                                                "name": `What is included in the ${service.title} service?`,
+                                                "acceptedAnswer": {
+                                                    "@type": "Answer",
+                                                    "text": `This service includes comprehensive end-to-end advisory, verified industry expertise, and customized solutions tailored to your operational needs.`
+                                                }
+                                            },
+                                            {
+                                                "@type": "Question",
+                                                "name": `How do I get started with ${service.title}?`,
+                                                "acceptedAnswer": {
+                                                    "@type": "Answer",
+                                                    "text": `You can get started by clicking "Inquire via WhatsApp" to connect directly with our consultants or by filling out the Contact Support Form.`
+                                                }
+                                            },
+                                            {
+                                                "@type": "Question",
+                                                "name": `Is confidentiality maintained?`,
+                                                "acceptedAnswer": {
+                                                    "@type": "Answer",
+                                                    "text": `Yes, we operate under strict NDA protocols to ensure 100% confidentiality of all your business plans and operational data.`
+                                                }
+                                            },
+                                            {
+                                                "@type": "Question",
+                                                "name": `Who are these advisory services designed for?`,
+                                                "acceptedAnswer": {
+                                                    "@type": "Answer",
+                                                    "text": `Our services are designed for single-unit investors, multi-unit regional franchisees, and corporate brand owners looking for strategic growth.`
+                                                }
+                                            },
+                                            {
+                                                "@type": "Question",
+                                                "name": `Do you offer custom packages for ${service.title}?`,
+                                                "acceptedAnswer": {
+                                                    "@type": "Answer",
+                                                    "text": "Yes, our advisory experts create specialized packages tailored perfectly to your budget and growth targets."
+                                                }
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "@type": "BreadcrumbList",
+                                        "itemListElement": [
+                                            {
+                                                "@type": "ListItem",
+                                                "position": 1,
+                                                "name": "Home",
+                                                "item": "https://www.franchiseroots.com"
+                                            },
+                                            {
+                                                "@type": "ListItem",
+                                                "position": 2,
+                                                "name": "Services",
+                                                "item": "https://www.franchiseroots.com/services"
+                                            },
+                                            {
+                                                "@type": "ListItem",
+                                                "position": 3,
+                                                "name": service.title,
+                                                "item": `https://www.franchiseroots.com/services/${service._id || service.id}`
+                                            }
+                                        ]
+                                    }
+                                ]
+                            })
+                        }}
+                    />
+
                     {/* Other Services Section */}
                     {otherServices.length > 0 && (
                         <div style={{ marginTop: "70px", paddingTop: "50px", borderTop: "1px solid var(--border-color)" }}>
@@ -421,7 +572,7 @@ export default function ServiceDetailPage({ params }) {
                                                 <img
                                                     src={item.image || "https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?auto=format&fit=crop&q=80&w=600"}
                                                     alt={item.title}
-                                                    style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                                                    style={{ width: "100%", height: "100%", objectFit: "contain", objectPosition: "center", display: "block", backgroundColor: "#ffffff" }}
                                                 />
                                             </div>
                                             <div style={{ padding: "20px", display: "flex", flexDirection: "column", flexGrow: 1, justifyContent: "space-between" }}>
@@ -459,6 +610,9 @@ export default function ServiceDetailPage({ params }) {
                             </div>
                         </div>
                     )}
+
+                    {/* DYNAMIC SEO + GEO TAGS */}
+                    {service && <SEOGeoTags categoryName={service.title} basePath="/services" />}
                 </div>
             </main>
 
@@ -470,6 +624,50 @@ export default function ServiceDetailPage({ params }) {
                     .service-content-grid {
                         grid-template-columns: 1fr !important;
                     }
+                }
+                .faq-accordion-container {
+                    gap: 12px;
+                }
+                .faq-details {
+                    background: #ffffff;
+                    border: 1px solid var(--border-color);
+                    border-radius: 12px;
+                    overflow: hidden;
+                    transition: all 0.3s ease;
+                }
+                .faq-details[open] {
+                    border-color: #cbd5e1;
+                    box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+                }
+                .faq-summary {
+                    list-style: none;
+                    padding: 18px 20px;
+                    cursor: pointer;
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    font-weight: 700;
+                    font-size: 15.5px;
+                    color: #0f172a;
+                    outline: none;
+                }
+                .faq-summary::-webkit-details-marker {
+                    display: none;
+                }
+                .faq-icon {
+                    font-size: 20px;
+                    font-weight: 400;
+                    color: var(--primary);
+                    transition: transform 0.3s ease;
+                }
+                .faq-details[open] .faq-icon {
+                    transform: rotate(45deg);
+                }
+                .faq-content {
+                    padding: 0 20px 20px 20px;
+                    color: #475569;
+                    font-size: 14.5px;
+                    line-height: 1.6;
                 }
             `}</style>
         </div>

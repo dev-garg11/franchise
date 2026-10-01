@@ -1469,7 +1469,7 @@ export default function AdminDashboard({ initialTab = "dashboard" }) {
                                   <img
                                     src={b.image || "https://images.unsplash.com/photo-1524178232363-1fb2b075b655?auto=format&fit=crop&q=80&w=100"}
                                     alt={b.name}
-                                    style={{ width: "36px", height: "36px", borderRadius: "8px", objectFit: "cover", flexShrink: 0, border: "1px solid var(--border-color)" }}
+                                    style={{ width: "36px", height: "36px", borderRadius: "8px", objectFit: "contain", objectPosition: "center", display: "block", backgroundColor: "#ffffff", flexShrink: 0, border: "1px solid var(--border-color)" }}
                                   />
                                   <span>{b.name}</span>
                                 </div>
@@ -1572,32 +1572,32 @@ export default function AdminDashboard({ initialTab = "dashboard" }) {
                         return (
                           <tr key={b.id}>
                             <td>
-                               <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                                 <img
-                                   src={b.image || "https://images.unsplash.com/photo-1524178232363-1fb2b075b655?auto=format&fit=crop&q=80&w=100"}
-                                   alt={b.name}
-                                   style={{ width: "40px", height: "40px", borderRadius: "8px", objectFit: "cover", flexShrink: 0, border: "1px solid var(--border-color)" }}
-                                 />
-                                 <div>
-                                   <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                                     <span style={{ fontWeight: "700" }}>{b.name}</span>
-                                     {isNew(b.createdAt) && (
-                                       <span style={{
-                                         background: "var(--primary)",
-                                         color: "white",
-                                         fontSize: "10px",
-                                         fontWeight: "800",
-                                         padding: "2px 6px",
-                                         borderRadius: "4px",
-                                         textTransform: "uppercase",
-                                         letterSpacing: "0.05em"
-                                       }}>NEW</span>
-                                     )}
-                                   </div>
-                                   <div style={{ fontSize: "12px", color: "var(--text-muted)" }}>{b.company}</div>
-                                 </div>
-                               </div>
-                             </td>
+                              <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                                <img
+                                  src={b.image || "https://images.unsplash.com/photo-1524178232363-1fb2b075b655?auto=format&fit=crop&q=80&w=100"}
+                                  alt={b.name}
+                                  style={{ width: "40px", height: "40px", borderRadius: "8px", objectFit: "contain", objectPosition: "center", display: "block", backgroundColor: "#ffffff", flexShrink: 0, border: "1px solid var(--border-color)" }}
+                                />
+                                <div>
+                                  <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                                    <span style={{ fontWeight: "700" }}>{b.name}</span>
+                                    {isNew(b.createdAt) && (
+                                      <span style={{
+                                        background: "var(--primary)",
+                                        color: "white",
+                                        fontSize: "10px",
+                                        fontWeight: "800",
+                                        padding: "2px 6px",
+                                        borderRadius: "4px",
+                                        textTransform: "uppercase",
+                                        letterSpacing: "0.05em"
+                                      }}>NEW</span>
+                                    )}
+                                  </div>
+                                  <div style={{ fontSize: "12px", color: "var(--text-muted)" }}>{b.company}</div>
+                                </div>
+                              </div>
+                            </td>
                             <td>{b.category}</td>
                             <td style={{ fontWeight: "600" }}>
                               {b.investment_range || formatLakhs(b.minInvestment)} - {b.max_investment_limit || formatLakhs(b.maxInvestment)}
@@ -1931,7 +1931,7 @@ export default function AdminDashboard({ initialTab = "dashboard" }) {
                             <img
                               src={blog.image || "https://images.unsplash.com/photo-1546074177-ffedd79d494d?auto=format&fit=crop&q=80&w=150"}
                               alt={blog.title}
-                              style={{ width: "80px", height: "50px", borderRadius: "6px", objectFit: "cover", border: "1px solid var(--border-color)" }}
+                              style={{ width: "80px", height: "50px", borderRadius: "6px", objectFit: "contain", objectPosition: "center", display: "block", backgroundColor: "#ffffff", border: "1px solid var(--border-color)" }}
                             />
                           </td>
                           <td>
@@ -2019,7 +2019,7 @@ export default function AdminDashboard({ initialTab = "dashboard" }) {
                             <img
                               src={service.image || "https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?auto=format&fit=crop&q=80&w=150"}
                               alt={service.title}
-                              style={{ width: "80px", height: "50px", borderRadius: "6px", objectFit: "cover", border: "1px solid var(--border-color)" }}
+                              style={{ width: "80px", height: "50px", borderRadius: "6px", objectFit: "contain", objectPosition: "center", display: "block", backgroundColor: "#ffffff", border: "1px solid var(--border-color)" }}
                             />
                           </td>
                           <td>
@@ -2113,7 +2113,7 @@ export default function AdminDashboard({ initialTab = "dashboard" }) {
                             <img
                               src={ad.image || "https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&q=80&w=150"}
                               alt={ad.title}
-                              style={{ width: "100px", height: "55px", borderRadius: "8px", objectFit: "cover", border: "1px solid var(--border-color)" }}
+                              style={{ width: "100px", height: "55px", borderRadius: "8px", objectFit: "contain", objectPosition: "center", display: "block", backgroundColor: "#ffffff", border: "1px solid var(--border-color)" }}
                             />
                           </td>
                           <td>
@@ -2319,8 +2319,8 @@ export default function AdminDashboard({ initialTab = "dashboard" }) {
                               const panelBadgeStyle = logItem.panel === "admin"
                                 ? { background: "rgba(139, 92, 246, 0.1)", color: "#8b5cf6" }
                                 : logItem.panel === "brand"
-                                ? { background: "rgba(16, 185, 129, 0.1)", color: "#10b981" }
-                                : { background: "rgba(245, 158, 11, 0.1)", color: "#f59e0b" };
+                                  ? { background: "rgba(16, 185, 129, 0.1)", color: "#10b981" }
+                                  : { background: "rgba(245, 158, 11, 0.1)", color: "#f59e0b" };
 
                               return (
                                 <tr key={logItem.id || logItem._id}>
@@ -2411,7 +2411,7 @@ export default function AdminDashboard({ initialTab = "dashboard" }) {
                 <img
                   src={selectedItem.image || "https://images.unsplash.com/photo-1524178232363-1fb2b075b655?auto=format&fit=crop&q=80&w=400"}
                   alt={selectedItem.name}
-                  style={{ width: "80px", height: "80px", borderRadius: "8px", objectFit: "cover" }}
+                  style={{ width: "80px", height: "80px", borderRadius: "8px", objectFit: "contain", objectPosition: "center", display: "block", backgroundColor: "#ffffff" }}
                 />
                 <div>
                   <h4 style={{ fontSize: "16px", fontWeight: "700" }}>{selectedItem.company}</h4>
@@ -2929,9 +2929,12 @@ export default function AdminDashboard({ initialTab = "dashboard" }) {
                     <label>Contact Phone</label>
                     <input
                       type="tel"
+                      inputMode="numeric"
+                      maxLength={10}
+                      pattern="[0-9]{10}"
                       className="form-input"
                       value={adminBrandForm.phone}
-                      onChange={(e) => setAdminBrandForm({ ...adminBrandForm, phone: e.target.value })}
+                      onChange={(e) => setAdminBrandForm({ ...adminBrandForm, phone: e.target.value.replace(/\D/g, '').slice(0, 10) })}
                     />
                   </div>
                   <div className="form-group">
@@ -2962,7 +2965,7 @@ export default function AdminDashboard({ initialTab = "dashboard" }) {
                         <img
                           src={adminBrandForm.image}
                           alt="Brand Preview"
-                          style={{ width: "80px", height: "80px", borderRadius: "8px", objectFit: "cover", border: "1px solid #cbd5e1" }}
+                          style={{ width: "80px", height: "80px", borderRadius: "8px", objectFit: "contain", objectPosition: "center", display: "block", backgroundColor: "#ffffff", border: "1px solid #cbd5e1" }}
                         />
                         <div>
                           <span style={{ fontSize: "13px", fontWeight: "600", display: "block", color: "#0f172a", marginBottom: "4px" }}>
@@ -3179,7 +3182,7 @@ export default function AdminDashboard({ initialTab = "dashboard" }) {
                       <img
                         src={blogForm.image}
                         alt="Preview"
-                        style={{ width: "100%", maxHeight: "200px", objectFit: "cover" }}
+                        style={{ width: "100%", maxHeight: "200px", objectFit: "contain", objectPosition: "center", display: "block", backgroundColor: "#ffffff" }}
                       />
                       <button
                         type="button"
@@ -3292,7 +3295,7 @@ export default function AdminDashboard({ initialTab = "dashboard" }) {
                       <img
                         src={serviceForm.image}
                         alt="Preview"
-                        style={{ width: "100%", maxHeight: "200px", objectFit: "cover" }}
+                        style={{ width: "100%", maxHeight: "200px", objectFit: "contain", objectPosition: "center", display: "block", backgroundColor: "#ffffff" }}
                       />
                       <button
                         type="button"
@@ -3468,7 +3471,7 @@ export default function AdminDashboard({ initialTab = "dashboard" }) {
                   </label>
                   {adForm.image ? (
                     <div style={{ position: "relative", width: "100%", height: "160px", borderRadius: "10px", overflow: "hidden", border: "1px solid var(--border-color)" }}>
-                      <img src={adForm.image} alt="Ad Preview" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                      <img src={adForm.image} alt="Ad Preview" style={{ width: "100%", height: "100%", objectFit: "contain", objectPosition: "center", display: "block", backgroundColor: "#ffffff" }} />
                       <button
                         type="button"
                         onClick={handleRemoveAdImage}
@@ -3543,8 +3546,8 @@ export default function AdminDashboard({ initialTab = "dashboard" }) {
                   customMsgModal.type.includes("DECLINE")
                     ? "Provide reason for declining (e.g. Incomplete details, invalid contact info, policy mismatch)..."
                     : customMsgModal.type.includes("ASSIGN")
-                    ? "Add a note regarding this investor assignment for audit logs and email notification..."
-                    : "Add custom note or welcome message for this approval..."
+                      ? "Add a note regarding this investor assignment for audit logs and email notification..."
+                      : "Add custom note or welcome message for this approval..."
                 }
                 style={{
                   width: "100%",

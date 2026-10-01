@@ -72,6 +72,12 @@ export default function InvestorRegistration() {
           max_investment_limit: maxVal,
         };
       });
+    } else if (name === "phone") {
+      const sanitized = value.replace(/\D/g, '').slice(0, 10);
+      setFormData((prev) => ({
+        ...prev,
+        phone: sanitized,
+      }));
     } else {
       setFormData((prev) => ({
         ...prev,
@@ -110,6 +116,25 @@ export default function InvestorRegistration() {
       return;
     }
 
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(formData.email)) {
+      setError("Please enter a valid email address.");
+      setLoading(false);
+      return;
+    }
+
+    if (formData.phone.length !== 10 || !/^\d{10}$/.test(formData.phone)) {
+      setError("Phone number must be exactly 10 digits.");
+      setLoading(false);
+      return;
+    }
+
+    if (formData.password.length < 6) {
+      setError("Password must be at least 6 characters.");
+      setLoading(false);
+      return;
+    }
+
     if (formData.pincode.length !== 6 || !/^\d{6}$/.test(formData.pincode)) {
       setError("Pincode must be exactly 6 digits.");
       setLoading(false);
@@ -119,7 +144,7 @@ export default function InvestorRegistration() {
     const rangeIndex = INVESTMENT_OPTIONS.indexOf(formData.investment_range);
     const maxIndex = INVESTMENT_OPTIONS.indexOf(formData.max_investment_limit);
     if (maxIndex < rangeIndex) {
-      setError("Max Investment Limit should not be lower than the selected Investment Range.");
+      setError("Maximum investment must be greater than or equal to minimum investment.");
       setLoading(false);
       return;
     }
@@ -221,6 +246,9 @@ export default function InvestorRegistration() {
                   type="tel"
                   name="phone"
                   required
+                  maxLength={10}
+                  inputMode="numeric"
+                  pattern="[0-9]{10}"
                   placeholder="10-digit mobile"
                   value={formData.phone}
                   onChange={handleChange}

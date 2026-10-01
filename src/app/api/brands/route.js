@@ -56,11 +56,35 @@ export async function GET(request) {
 
 export async function POST(request) {
   try {
-    const body = await request.json();
-    
-    // Simple validation
-    if (!body.name || !body.email || !body.phone) {
-      return NextResponse.json({ error: "Missing required fields (name, email, phone)" }, { status: 400 });
+    const rawBody = await request.json();
+    const body = {};
+    for (const key in rawBody) {
+      body[key] = typeof rawBody[key] === "string" ? rawBody[key].trim() : rawBody[key];
+    }
+
+    // Validation
+    if (!body.name || !body.email || !body.phone || !body.password || !body.pincode || !body.investment_range || !body.max_investment_limit) {
+      return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
+    }
+
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(body.email)) {
+      return NextResponse.json({ error: "Please enter a valid email address." }, { status: 400 });
+    }
+
+    if (body.phone.length !== 10 || !/^\d{10}$/.test(body.phone)) {
+      return NextResponse.json({ error: "Phone number must be exactly 10 digits." }, { status: 400 });
+    }
+
+    if (body.password.length < 6) {
+      return NextResponse.json({ error: "Password must be at least 6 characters." }, { status: 400 });
+    }
+
+    if (body.pincode.length !== 6 || !/^\d{6}$/.test(body.pincode)) {
+      return NextResponse.json({ error: "Pincode must be exactly 6 digits." }, { status: 400 });
+    }
+
+    if (body.maxInvestment < body.minInvestment) {
+      return NextResponse.json({ error: "Maximum investment must be greater than or equal to minimum investment." }, { status: 400 });
     }
 
     const saved = await saveBrand(body);

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { 
+import {
   Award, Shield, MapPin, Sparkles, Building2, CheckCircle2, ChevronRight,
   Send, HelpCircle, Check, Search, Filter, RotateCcw, Building, Users, Star,
   IndianRupee, Lock, Crown, Layers, ArrowUpRight, MessageCircle, X
@@ -10,6 +10,7 @@ import {
 import { useApprovedBrands } from "@/lib/brandsCache";
 import { BRAND_CATEGORIES, ALL_INDIAN_STATES } from "@/lib/brandConstants";
 import { ProductSkeletonGrid } from "@/components/SkeletonLoader";
+import SEOGeoTags from "@/components/SEOGeoTags";
 
 const MASTER_BENEFITS = [
   {
@@ -83,7 +84,7 @@ export default function MasterFranchisingPage() {
 
     if (searchTerm) {
       const q = searchTerm.toLowerCase();
-      result = result.filter(b => 
+      result = result.filter(b =>
         b.name.toLowerCase().includes(q) ||
         (b.company && b.company.toLowerCase().includes(q)) ||
         (b.category && b.category.toLowerCase().includes(q)) ||
@@ -116,7 +117,7 @@ export default function MasterFranchisingPage() {
   const handleApplyClick = (brand) => {
     setSelectedBrand(brand);
     setEnquirySubmitted(false);
-    
+
     // Auto-fill investor details if logged in
     if (typeof window !== "undefined") {
       const isLoggedIn = localStorage.getItem("investorLoggedIn") === "true";
@@ -175,7 +176,7 @@ export default function MasterFranchisingPage() {
 
   return (
     <div style={{ background: "#f8fafc", minHeight: "100vh", paddingBottom: "60px" }}>
-      
+
       {/* Hero Header Section */}
       <div style={{
         background: "linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #312e81 100%)",
@@ -219,16 +220,16 @@ export default function MasterFranchisingPage() {
               Own complete territorial exclusivity for leading brand networks. Collect upfront franchisee sign-up fees and recurring monthly royalty shares across your entire designated state or region.
             </p>
             <div style={{ display: "flex", gap: "16px", flexWrap: "wrap" }}>
-              <button 
+              <button
                 onClick={() => handleApplyClick(null)}
-                className="btn btn-primary" 
+                className="btn btn-primary"
                 style={{ padding: "14px 28px", fontSize: "15px", fontWeight: "700", display: "inline-flex", alignItems: "center", gap: "8px" }}
               >
                 <Crown size={18} /> Apply for Master Rights
               </button>
-              <a 
-                href="#master-listings" 
-                className="btn btn-outline" 
+              <a
+                href="#master-listings"
+                className="btn btn-outline"
                 style={{ padding: "14px 28px", fontSize: "15px", color: "white", borderColor: "rgba(255, 255, 255, 0.3)" }}
               >
                 Explore Master Brands
@@ -239,7 +240,7 @@ export default function MasterFranchisingPage() {
       </div>
 
       <div className="container" style={{ maxWidth: "1280px", marginTop: "-40px", position: "relative", zIndex: 10 }}>
-        
+
         {/* Value Proposition Cards */}
         <div style={{
           display: "grid",
@@ -283,7 +284,7 @@ export default function MasterFranchisingPage() {
 
         {/* Master Franchise Listings Section */}
         <div id="master-listings" style={{ marginBottom: "30px" }}>
-          
+
           {/* Header & Filter Toolbar */}
           <div style={{
             background: "white",
@@ -302,10 +303,10 @@ export default function MasterFranchisingPage() {
                   Select a brand to request exclusive state-level master rights and royalty structures.
                 </p>
               </div>
-              
-              <button 
-                onClick={handleReset} 
-                className="btn btn-outline" 
+
+              <button
+                onClick={handleReset}
+                className="btn btn-outline"
                 style={{ fontSize: "13px", padding: "8px 16px", display: "inline-flex", alignItems: "center", gap: "6px" }}
               >
                 <RotateCcw size={14} /> Reset Filters
@@ -314,11 +315,11 @@ export default function MasterFranchisingPage() {
 
             {/* Filter Inputs Grid */}
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "16px" }}>
-              
+
               {/* Keyword Search */}
               <div style={{ position: "relative" }}>
                 <Search size={16} style={{ position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)", color: "#94a3b8" }} />
-                <input 
+                <input
                   type="text"
                   placeholder="Search Master Brands..."
                   value={searchTerm}
@@ -330,7 +331,7 @@ export default function MasterFranchisingPage() {
 
               {/* Industry Filter */}
               <div>
-                <select 
+                <select
                   value={selectedCategory}
                   onChange={(e) => setSelectedCategory(e.target.value)}
                   className="form-input"
@@ -345,7 +346,7 @@ export default function MasterFranchisingPage() {
 
               {/* State Filter */}
               <div>
-                <select 
+                <select
                   value={selectedState}
                   onChange={(e) => setSelectedState(e.target.value)}
                   className="form-input"
@@ -360,7 +361,7 @@ export default function MasterFranchisingPage() {
 
               {/* Territory Exclusivity Type */}
               <div>
-                <select 
+                <select
                   value={selectedTerritory}
                   onChange={(e) => setSelectedTerritory(e.target.value)}
                   className="form-input"
@@ -412,15 +413,15 @@ export default function MasterFranchisingPage() {
                   flexDirection: "column",
                   transition: "transform 0.2s ease, box-shadow 0.2s ease"
                 }} className="master-card-hover">
-                  
+
                   {/* Card Header Image */}
                   <div style={{ position: "relative", height: "180px", background: "#0f172a" }}>
-                    <img 
-                      src={brand.image || "https://images.unsplash.com/photo-1524178232363-1fb2b075b655?auto=format&fit=crop&q=80&w=600"} 
+                    <img
+                      src={brand.image || "https://images.unsplash.com/photo-1524178232363-1fb2b075b655?auto=format&fit=crop&q=80&w=600"}
                       alt={brand.name}
-                      style={{ width: "100%", height: "100%", objectFit: "cover", opacity: 0.85 }}
+                      style={{ width: "100%", height: "100%", objectFit: "contain", objectPosition: "center", display: "block", backgroundColor: "#ffffff", opacity: 0.85 }}
                     />
-                    
+
                     <div style={{
                       position: "absolute",
                       top: "14px",
@@ -518,7 +519,7 @@ export default function MasterFranchisingPage() {
 
                     {/* Action Button */}
                     <div style={{ marginTop: "auto" }}>
-                      <Link 
+                      <Link
                         href={`/brands/${brand.id || brand._id}`}
                         className="btn btn-primary"
                         style={{
@@ -547,7 +548,10 @@ export default function MasterFranchisingPage() {
 
       </div>
 
-
+      {/* DYNAMIC SEO + GEO TAGS */}
+      <div className="container" style={{ maxWidth: "1280px", marginTop: "40px" }}>
+        <SEOGeoTags categoryName="Master Brand" basePath="/master-franchising" />
+      </div>
 
     </div>
   );

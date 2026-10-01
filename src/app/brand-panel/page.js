@@ -516,7 +516,7 @@ export default function BrandPanel({ initialTab = "dashboard" }) {
                         <img
                           src={brand.image || "https://images.unsplash.com/photo-1524178232363-1fb2b075b655?auto=format&fit=crop&q=80&w=400"}
                           alt={brand.name}
-                          style={{ width: "80px", height: "80px", borderRadius: "10px", objectFit: "cover" }}
+                          style={{ width: "80px", height: "80px", borderRadius: "10px", objectFit: "contain", objectPosition: "center", display: "block", backgroundColor: "#ffffff" }}
                         />
                         <div>
                           <h3 style={{ fontSize: "20px" }}>{brand.name}</h3>
@@ -822,7 +822,7 @@ export default function BrandPanel({ initialTab = "dashboard" }) {
                           <img
                             src={formFields.image}
                             alt="Cover Preview"
-                            style={{ width: "70px", height: "70px", borderRadius: "10px", objectFit: "cover", border: "2px solid var(--primary)" }}
+                            style={{ width: "70px", height: "70px", borderRadius: "10px", objectFit: "contain", objectPosition: "center", display: "block", backgroundColor: "#ffffff", border: "2px solid var(--primary)" }}
                           />
                         ) : (
                           <div style={{ width: "70px", height: "70px", borderRadius: "10px", background: "#e2e8f0", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "11px", color: "#64748b", textAlign: "center" }}>
@@ -867,11 +867,14 @@ export default function BrandPanel({ initialTab = "dashboard" }) {
                       <label>Mobile Contact</label>
                       <input
                         type="tel"
+                        inputMode="numeric"
+                        maxLength={10}
+                        pattern="[0-9]{10}"
                         required
                         className="form-input"
                         placeholder="Phone number"
                         value={formFields.phone}
-                        onChange={(e) => setFormFields({ ...formFields, phone: e.target.value })}
+                        onChange={(e) => setFormFields({ ...formFields, phone: e.target.value.replace(/\D/g, '').slice(0, 10) })}
                         style={{ background: "#f8fafc" }}
                       />
                     </div>

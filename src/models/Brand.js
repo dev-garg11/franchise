@@ -130,6 +130,33 @@ const BrandSchema = new mongoose.Schema({
     createdAt: {
         type: Date,
         default: Date.now
+    },
+    // ADVANCED SEO, GEO, AEO, FAQS, AND SCHEMA
+    seoData: {
+        seoTitle: { type: String, trim: true, default: '' },
+        metaDescription: { type: String, trim: true, default: '' },
+        focusKeyword: { type: String, trim: true, default: '' },
+        secondaryKeywords: { type: String, trim: true, default: '' },
+        canonicalUrl: { type: String, trim: true, default: '' },
+        ogTitle: { type: String, trim: true, default: '' },
+        ogDescription: { type: String, trim: true, default: '' },
+        ogImage: { type: String, trim: true, default: '' },
+        geoTitle: { type: String, trim: true, default: '' },
+        geoDescription: { type: String, trim: true, default: '' },
+        aeoContent: { type: String, trim: true, default: '' }
+    },
+    faqs: [{
+        question: { type: String, trim: true },
+        answer: { type: String, trim: true }
+    }],
+    schemaData: {
+        type: mongoose.Schema.Types.Mixed,
+        default: {}
+    },
+    seoStatus: {
+        type: String,
+        enum: ['Pending Review', 'Approved', 'Rejected'],
+        default: 'Pending Review'
     }
 });
 

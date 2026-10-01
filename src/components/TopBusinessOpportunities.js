@@ -69,7 +69,7 @@ export default function TopBusinessOpportunities({ brands = [], loading = false,
     const minInv = brand.minInvestment || 0;
     const maxInv = brand.maxInvestment || 0;
     const invStr = brand.investment_range || (minInv ? `${formatLakhs(minInv)} - ${formatLakhs(maxInv)}` : "₹2L - ₹5 Lakhs");
-    
+
     let type = "Distributorship";
     if (minInv && minInv <= 500000) {
       type = "Low Investment (< ₹5L)";
@@ -188,11 +188,11 @@ export default function TopBusinessOpportunities({ brands = [], loading = false,
                 }}
               >
                 {/* Image Banner */}
-                <div style={{ position: "relative", height: "160px" }}>
+                <div style={{ position: "relative", height: "160px", background: "#ffffff", display: "flex", alignItems: "center", justifyContent: "center" }}>
                   <img
                     src={biz.image}
                     alt={biz.title}
-                    style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                    style={{ width: "100%", height: "100%", objectFit: "contain", objectPosition: "center" }}
                   />
                   <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, rgba(15,23,42,0.85) 0%, transparent 60%)" }}></div>
 

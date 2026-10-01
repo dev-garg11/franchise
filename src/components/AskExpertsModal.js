@@ -55,11 +55,19 @@ export default function AskExpertsModal({ isOpen, onClose, initialMode = "buy" }
   if (!isOpen) return null;
 
   const handleBuyChange = (e) => {
-    setBuyData({ ...buyData, [e.target.name]: e.target.value });
+    let val = e.target.value;
+    if (e.target.name === "phone") {
+      val = val.replace(/\D/g, '').slice(0, 10);
+    }
+    setBuyData({ ...buyData, [e.target.name]: val });
   };
 
   const handleExpandChange = (e) => {
-    setExpandData({ ...expandData, [e.target.name]: e.target.value });
+    let val = e.target.value;
+    if (e.target.name === "phone") {
+      val = val.replace(/\D/g, '').slice(0, 10);
+    }
+    setExpandData({ ...expandData, [e.target.name]: val });
   };
 
   const generateWhatsAppLink = () => {
@@ -378,9 +386,12 @@ export default function AskExpertsModal({ isOpen, onClose, initialMode = "buy" }
                     <Phone size={16} style={{ position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)", color: "#94a3b8" }} />
                     <input
                       type="tel"
+                      inputMode="numeric"
+                      maxLength={10}
+                      pattern="[0-9]{10}"
                       name="phone"
                       required
-                      placeholder="e.g. +91 9876543210"
+                      placeholder="e.g. 9876543210"
                       value={expandData.phone}
                       onChange={handleExpandChange}
                       style={{ width: "100%", padding: "10px 12px 10px 36px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "14px", outline: "none", color: "#0f172a", backgroundColor: "#fff" }}
@@ -526,9 +537,12 @@ export default function AskExpertsModal({ isOpen, onClose, initialMode = "buy" }
                     <Phone size={16} style={{ position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)", color: "#94a3b8" }} />
                     <input
                       type="tel"
+                      inputMode="numeric"
+                      maxLength={10}
+                      pattern="[0-9]{10}"
                       name="phone"
                       required
-                      placeholder="e.g. +91 9876543210"
+                      placeholder="e.g. 9876543210"
                       value={buyData.phone}
                       onChange={handleBuyChange}
                       style={{ width: "100%", padding: "10px 12px 10px 36px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "14px", outline: "none", color: "#0f172a", backgroundColor: "#fff" }}

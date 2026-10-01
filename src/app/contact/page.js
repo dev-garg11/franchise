@@ -18,9 +18,15 @@ export default function ContactUs() {
 
     const handleChange = (e) => {
         const { name, value } = e.target;
+
+        let finalValue = value;
+        if (name === "phone") {
+            finalValue = value.replace(/\D/g, '').slice(0, 10);
+        }
+
         setFormData((prev) => ({
             ...prev,
-            [name]: value
+            [name]: finalValue
         }));
     };
 
@@ -281,6 +287,9 @@ export default function ContactUs() {
                                         <label style={{ fontSize: "12.5px", fontWeight: "700", color: "var(--text-dark)" }}>Mobile / Phone <span style={{ color: "var(--danger)" }}>*</span></label>
                                         <input
                                             type="tel"
+                                            inputMode="numeric"
+                                            maxLength={10}
+                                            pattern="[0-9]{10}"
                                             required
                                             name="phone"
                                             value={formData.phone}

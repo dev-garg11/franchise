@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { Wrench, ArrowRight, MessageCircle, Building2, CheckCircle2, ShieldCheck, Sparkles, Search } from "lucide-react";
+import SEOGeoTags from "@/components/SEOGeoTags";
 
 export default function ServicesPage() {
     const [services, setServices] = useState([]);
@@ -123,7 +124,7 @@ export default function ServicesPage() {
                                         <img
                                             src={service.image || "https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?auto=format&fit=crop&q=80&w=600"}
                                             alt={service.title}
-                                            style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                                            style={{ width: "100%", height: "100%", objectFit: "contain", objectPosition: "center", display: "block", backgroundColor: "#ffffff" }}
                                         />
                                     </div>
                                     <div style={{ padding: "28px", display: "flex", flexDirection: "column", flex: 1, justifyContent: "space-between" }}>
@@ -176,6 +177,9 @@ export default function ServicesPage() {
                             ))}
                         </div>
                     )}
+
+                    {/* DYNAMIC SEO + GEO TAGS */}
+                    <SEOGeoTags categoryName="Advisory Services" basePath="/services" />
                 </div>
             </main>
         </div>

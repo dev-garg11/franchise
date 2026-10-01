@@ -538,12 +538,12 @@ export default function InvestorPanel({ initialTab = "dashboard" }) {
                   <div className="grid-auto">
                     {recommendations.map((brand) => (
                       <div key={brand.id} className="franchise-card" style={{ background: "white" }}>
-                        <div className="franchise-card-image" style={{ height: "130px" }}>
+                        <div className="franchise-card-image" style={{ height: "130px", background: "#ffffff", display: "flex", alignItems: "center", justifyContent: "center" }}>
                           <div className="franchise-badge">{brand.hq}</div>
                           <img
                             src={brand.image || "https://images.unsplash.com/photo-1524178232363-1fb2b075b655?auto=format&fit=crop&q=80&w=400"}
                             alt={brand.name}
-                            style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                            style={{ width: "100%", height: "100%", objectFit: "contain", objectPosition: "center" }}
                           />
                         </div>
                         <div className="franchise-card-content" style={{ padding: "16px" }}>
@@ -830,7 +830,7 @@ export default function InvestorPanel({ initialTab = "dashboard" }) {
                 <img
                   src={selectedBrand.image || "https://images.unsplash.com/photo-1524178232363-1fb2b075b655?auto=format&fit=crop&q=80&w=400"}
                   alt={selectedBrand.name}
-                  style={{ width: "100px", height: "100px", borderRadius: "10px", objectFit: "cover" }}
+                  style={{ width: "100px", height: "100px", borderRadius: "10px", objectFit: "contain", objectPosition: "center", background: "#ffffff" }}
                 />
                 <div>
                   <span className="status-badge approved" style={{ marginBottom: "8px" }}>Verified Concept</span>
@@ -907,10 +907,13 @@ export default function InvestorPanel({ initialTab = "dashboard" }) {
                         <label style={{ fontSize: "11.5px" }}>Phone Number</label>
                         <input
                           type="tel"
+                          inputMode="numeric"
+                          maxLength={10}
+                          pattern="[0-9]{10}"
                           required
                           className="form-input"
                           value={applyForm.phone}
-                          onChange={(e) => setApplyForm({ ...applyForm, phone: e.target.value })}
+                          onChange={(e) => setApplyForm({ ...applyForm, phone: e.target.value.replace(/\D/g, '').slice(0, 10) })}
                           style={{ background: "#ffffff" }}
                         />
                       </div>

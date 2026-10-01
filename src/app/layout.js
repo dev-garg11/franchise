@@ -13,6 +13,9 @@ export const metadata = {
     locale: "en_IN",
     type: "website",
   },
+  alternates: {
+    canonical: "https://www.franchiseroots.com",
+  }
 };
 
 export default function RootLayout({ children }) {

@@ -31,7 +31,6 @@ export default function Footer() {
       position: 'relative',
       overflow: 'hidden'
     }}>
-      {/* Decorative Blob */}
       <div style={{
         position: 'absolute',
         bottom: '-100px',
@@ -43,6 +42,34 @@ export default function Footer() {
         filter: 'blur(80px)',
         pointerEvents: 'none'
       }}></div>
+
+      {/* CONSISTENT BUSINESS DATA STRUCTURE (JSON-LD) */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "Organization",
+            "name": "Franchise Roots",
+            "url": "https://www.franchiseroots.com",
+            "logo": "https://www.franchiseroots.com/logo-footer.png",
+            "contactPoint": {
+              "@type": "ContactPoint",
+              "telephone": "+91-9815489999",
+              "contactType": "customer service",
+              "email": "info@franchiseroots.com",
+              "areaServed": "IN",
+              "availableLanguage": ["en", "hi"]
+            },
+            "address": {
+              "@type": "PostalAddress",
+              "streetAddress": "SCO 64-65, 4th Floor, Sub. City Center, Sector 34A",
+              "addressLocality": "Chandigarh",
+              "addressCountry": "IN"
+            }
+          })
+        }}
+      />
 
       <div className="container">
         <div className="footer-grid">

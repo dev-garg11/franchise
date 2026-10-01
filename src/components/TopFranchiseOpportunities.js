@@ -86,126 +86,126 @@ export default function TopFranchiseOpportunities({ brands = [], loading = false
           </div>
         ) : (
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(340px, 1fr))", gap: "24px" }}>
-          {displayBrands.map((brand) => (
-            <div
-              key={brand.id || brand._id}
-              className="top-opportunity-card"
-              style={{
-                background: "#ffffff",
-                borderRadius: "16px",
-                overflow: "hidden",
-                border: "1px solid #e2e8f0",
-                boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.05)",
-                display: "flex",
-                flexDirection: "column",
-                transition: "transform 0.25s ease, box-shadow 0.25s ease"
-              }}
-            >
-              {/* Image & Badge Header */}
-              <div style={{ position: "relative", height: "180px", overflow: "hidden" }}>
-                <img
-                  src={brand.image || "https://images.unsplash.com/photo-1542744173-8e7e53415bb0?auto=format&fit=crop&q=80&w=600"}
-                  alt={brand.name}
-                  style={{ width: "100%", height: "100%", objectFit: "cover" }}
-                />
-                <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, rgba(15,23,42,0.8) 0%, transparent 60%)" }}></div>
-                
-                {/* Badge */}
-                <div style={{ position: "absolute", top: "14px", left: "14px", background: "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)", color: "#ffffff", padding: "4px 12px", borderRadius: "20px", fontSize: "11px", fontWeight: "800", textTransform: "uppercase", letterSpacing: "0.5px" }}>
-                  {brand.badge}
+            {displayBrands.map((brand) => (
+              <div
+                key={brand.id || brand._id}
+                className="top-opportunity-card"
+                style={{
+                  background: "#ffffff",
+                  borderRadius: "16px",
+                  overflow: "hidden",
+                  border: "1px solid #e2e8f0",
+                  boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.05)",
+                  display: "flex",
+                  flexDirection: "column",
+                  transition: "transform 0.25s ease, box-shadow 0.25s ease"
+                }}
+              >
+                {/* Image & Badge Header */}
+                <div style={{ position: "relative", height: "180px", overflow: "hidden", background: "#ffffff", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <img
+                    src={brand.image || "https://images.unsplash.com/photo-1542744173-8e7e53415bb0?auto=format&fit=crop&q=80&w=600"}
+                    alt={brand.name}
+                    style={{ width: "100%", height: "100%", objectFit: "contain", objectPosition: "center" }}
+                  />
+                  <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, rgba(15,23,42,0.8) 0%, transparent 60%)" }}></div>
+
+                  {/* Badge */}
+                  <div style={{ position: "absolute", top: "14px", left: "14px", background: "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)", color: "#ffffff", padding: "4px 12px", borderRadius: "20px", fontSize: "11px", fontWeight: "800", textTransform: "uppercase", letterSpacing: "0.5px" }}>
+                    {brand.badge}
+                  </div>
+
+                  <div style={{ position: "absolute", bottom: "12px", left: "16px", right: "16px", display: "flex", justifyContent: "space-between", alignItems: "flex-end", color: "#ffffff" }}>
+                    <div>
+                      <span style={{ fontSize: "11px", textTransform: "uppercase", letterSpacing: "1px", background: "rgba(255,255,255,0.2)", backdropFilter: "blur(4px)", padding: "2px 8px", borderRadius: "4px", fontWeight: "700" }}>
+                        {brand.category}
+                      </span>
+                      <h3 style={{ fontSize: "20px", fontWeight: "700", margin: "4px 0 0 0", textShadow: "0 2px 4px rgba(0,0,0,0.5)" }}>
+                        {brand.name}
+                      </h3>
+                    </div>
+                  </div>
                 </div>
 
-                <div style={{ position: "absolute", bottom: "12px", left: "16px", right: "16px", display: "flex", justifyContent: "space-between", alignItems: "flex-end", color: "#ffffff" }}>
-                  <div>
-                    <span style={{ fontSize: "11px", textTransform: "uppercase", letterSpacing: "1px", background: "rgba(255,255,255,0.2)", backdropFilter: "blur(4px)", padding: "2px 8px", borderRadius: "4px", fontWeight: "700" }}>
-                      {brand.category}
-                    </span>
-                    <h3 style={{ fontSize: "20px", fontWeight: "700", margin: "4px 0 0 0", textShadow: "0 2px 4px rgba(0,0,0,0.5)" }}>
-                      {brand.name}
-                    </h3>
+                {/* Content Details */}
+                <div style={{ padding: "20px", display: "flex", flexDirection: "column", flexGrow: 1 }}>
+                  <p
+                    style={{ fontSize: "13px", color: "#64748b", margin: "0 0 16px 0", height: "38px", overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" }}
+                    dangerouslySetInnerHTML={{ __html: brand.description || "" }}
+                  />
+
+
+                  {/* Key Metrics Table */}
+                  <div style={{ background: "#f8fafc", borderRadius: "10px", padding: "12px 14px", display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px", marginBottom: "18px", border: "1px solid #f1f5f9" }}>
+                    <div>
+                      <span style={{ fontSize: "11px", color: "#94a3b8", display: "block", fontWeight: "600" }}>MIN INVESTMENT</span>
+                      <span style={{ fontSize: "15px", fontWeight: "800", color: "#2563eb" }}>
+                        {formatCurrency(brand.minInvestment)}
+                      </span>
+                    </div>
+                    <div>
+                      <span style={{ fontSize: "11px", color: "#94a3b8", display: "block", fontWeight: "600" }}>SPACE NEEDED</span>
+                      <span style={{ fontSize: "13px", fontWeight: "700", color: "#1e293b" }}>
+                        {brand.areaRequired || "200-500 Sq.Ft"}
+                      </span>
+                    </div>
+                    <div>
+                      <span style={{ fontSize: "11px", color: "#94a3b8", display: "block", fontWeight: "600" }}>EST. PAYBACK (ROI)</span>
+                      <span style={{ fontSize: "13px", fontWeight: "700", color: "#16a34a" }}>
+                        {brand.roi || "12-18 Months"}
+                      </span>
+                    </div>
+                    <div>
+                      <span style={{ fontSize: "11px", color: "#94a3b8", display: "block", fontWeight: "600" }}>ROYALTY FEE</span>
+                      <span style={{ fontSize: "13px", fontWeight: "700", color: "#475569" }}>
+                        {brand.royaltyFee || "0%"}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Action buttons */}
+                  <div style={{ marginTop: "auto", display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
+                    <Link
+                      href={`/brands/${brand.id || brand._id}`}
+                      style={{
+                        padding: "10px",
+                        borderRadius: "8px",
+                        border: "1px solid #cbd5e1",
+                        background: "#ffffff",
+                        color: "#0f172a",
+                        fontWeight: "700",
+                        fontSize: "13px",
+                        textDecoration: "none",
+                        textAlign: "center"
+                      }}
+                    >
+                      View Details
+                    </Link>
+
+                    <button
+                      onClick={() => handleWhatsAppEnquiry(brand)}
+                      style={{
+                        padding: "10px",
+                        borderRadius: "8px",
+                        border: "none",
+                        background: "#25D366",
+                        color: "#ffffff",
+                        fontWeight: "700",
+                        fontSize: "13px",
+                        cursor: "pointer",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        gap: "6px"
+                      }}
+                    >
+                      <MessageCircle size={16} /> WhatsApp
+                    </button>
                   </div>
                 </div>
               </div>
-
-              {/* Content Details */}
-              <div style={{ padding: "20px", display: "flex", flexDirection: "column", flexGrow: 1 }}>
-                <p
-                  style={{ fontSize: "13px", color: "#64748b", margin: "0 0 16px 0", height: "38px", overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" }}
-                  dangerouslySetInnerHTML={{ __html: brand.description || "" }}
-                />
-
-
-                {/* Key Metrics Table */}
-                <div style={{ background: "#f8fafc", borderRadius: "10px", padding: "12px 14px", display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px", marginBottom: "18px", border: "1px solid #f1f5f9" }}>
-                  <div>
-                    <span style={{ fontSize: "11px", color: "#94a3b8", display: "block", fontWeight: "600" }}>MIN INVESTMENT</span>
-                    <span style={{ fontSize: "15px", fontWeight: "800", color: "#2563eb" }}>
-                      {formatCurrency(brand.minInvestment)}
-                    </span>
-                  </div>
-                  <div>
-                    <span style={{ fontSize: "11px", color: "#94a3b8", display: "block", fontWeight: "600" }}>SPACE NEEDED</span>
-                    <span style={{ fontSize: "13px", fontWeight: "700", color: "#1e293b" }}>
-                      {brand.areaRequired || "200-500 Sq.Ft"}
-                    </span>
-                  </div>
-                  <div>
-                    <span style={{ fontSize: "11px", color: "#94a3b8", display: "block", fontWeight: "600" }}>EST. PAYBACK (ROI)</span>
-                    <span style={{ fontSize: "13px", fontWeight: "700", color: "#16a34a" }}>
-                      {brand.roi || "12-18 Months"}
-                    </span>
-                  </div>
-                  <div>
-                    <span style={{ fontSize: "11px", color: "#94a3b8", display: "block", fontWeight: "600" }}>ROYALTY FEE</span>
-                    <span style={{ fontSize: "13px", fontWeight: "700", color: "#475569" }}>
-                      {brand.royaltyFee || "0%"}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Action buttons */}
-                <div style={{ marginTop: "auto", display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
-                  <Link
-                    href={`/brands/${brand.id || brand._id}`}
-                    style={{
-                      padding: "10px",
-                      borderRadius: "8px",
-                      border: "1px solid #cbd5e1",
-                      background: "#ffffff",
-                      color: "#0f172a",
-                      fontWeight: "700",
-                      fontSize: "13px",
-                      textDecoration: "none",
-                      textAlign: "center"
-                    }}
-                  >
-                    View Details
-                  </Link>
-
-                  <button
-                    onClick={() => handleWhatsAppEnquiry(brand)}
-                    style={{
-                      padding: "10px",
-                      borderRadius: "8px",
-                      border: "none",
-                      background: "#25D366",
-                      color: "#ffffff",
-                      fontWeight: "700",
-                      fontSize: "13px",
-                      cursor: "pointer",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      gap: "6px"
-                    }}
-                  >
-                    <MessageCircle size={16} /> WhatsApp
-                  </button>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
         )}
 
         {/* Footer CTA */}

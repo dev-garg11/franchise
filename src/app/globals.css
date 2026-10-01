@@ -995,13 +995,14 @@ button {
 .slider-image {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
+  object-position: center;
+  background-color: #ffffff;
+  display: block;
   transition: var(--transition-slow);
 }
 
-.slider-card:hover .slider-image {
-  transform: scale(1.08);
-}
+
 
 .slider-overlay-gradient {
   position: absolute;
@@ -1155,20 +1156,23 @@ button {
 .franchise-card-image {
   height: 220px;
   position: relative;
-  background-color: #F1F5F9;
+  background-color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   overflow: hidden;
 }
 
 .franchise-card-image img {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
+  object-position: center;
+  display: block;
   transition: var(--transition-slow);
 }
 
-.franchise-card:hover .franchise-card-image img {
-  transform: scale(1.08);
-}
+
 
 .franchise-badge {
   position: absolute;
@@ -2449,19 +2453,24 @@ button {
   .nav-container {
     margin-left: 16px;
   }
+
   .nav-links {
     gap: 14px;
   }
+
   .nav-link {
     font-size: 13.5px;
   }
+
   .nav-actions {
     gap: 8px;
   }
+
   .desktop-only-auth {
     padding: 8px 12px !important;
     font-size: 13px !important;
   }
+
   .add-brand-btn-premium {
     padding: 8px 14px !important;
     font-size: 13px !important;
@@ -3232,8 +3241,10 @@ button {
   width: 60px;
   height: 60px;
   border-radius: 8px;
-  object-fit: cover;
-  background-color: #F1F5F9;
+  object-fit: contain;
+  object-position: center;
+  background-color: #ffffff;
+  display: block;
   flex-shrink: 0;
 }
 
@@ -4114,6 +4125,7 @@ button {
     transform: scale(1);
     opacity: 0.7;
   }
+
   100% {
     transform: scale(1.6);
     opacity: 0;
@@ -4177,6 +4189,7 @@ button {
 
 /* Mobile Responsiveness Improvements for Modals, Logos & Header */
 @media (max-width: 768px) {
+
   .header-container img,
   .header-logo-img {
     height: 36px !important;
@@ -4280,18 +4293,17 @@ button {
   0% {
     background-position: -200% 0;
   }
+
   100% {
     background-position: 200% 0;
   }
 }
 
 .skeleton-box {
-  background: linear-gradient(
-    90deg,
-    #e2e8f0 25%,
-    #f1f5f9 37%,
-    #e2e8f0 63%
-  );
+  background: linear-gradient(90deg,
+      #e2e8f0 25%,
+      #f1f5f9 37%,
+      #e2e8f0 63%);
   background-size: 200% 100%;
   animation: skeleton-shimmer 1.5s infinite ease-in-out;
   border-radius: 8px;
@@ -4466,8 +4478,15 @@ button {
 }
 
 @keyframes badge-pulse {
-  0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.08); }
+
+  0%,
+  100% {
+    transform: scale(1);
+  }
+
+  50% {
+    transform: scale(1.08);
+  }
 }
 
 .fi-utility-right {
@@ -4500,7 +4519,7 @@ button {
 
 /* 2. Main Hero & Search Banner Container */
 .fi-hero-section {
-  background: 
+  background:
     linear-gradient(135deg, rgba(6, 11, 28, 0.92) 0%, rgba(13, 27, 62, 0.86) 50%, rgba(4, 8, 20, 0.95) 100%),
     radial-gradient(rgba(255, 255, 255, 0.08) 1.2px, transparent 1.2px),
     url('https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&q=80&w=2000');
@@ -4569,13 +4588,25 @@ button {
 }
 
 @keyframes orb-pulse {
-  0% { transform: scale(0.9) translate(0, 0); opacity: 0.6; }
-  100% { transform: scale(1.15) translate(20px, -20px); opacity: 0.95; }
+  0% {
+    transform: scale(0.9) translate(0, 0);
+    opacity: 0.6;
+  }
+
+  100% {
+    transform: scale(1.15) translate(20px, -20px);
+    opacity: 0.95;
+  }
 }
 
 @keyframes aura-float {
-  0% { transform: translate(0, 0) scale(1); }
-  100% { transform: translate(-30px, 30px) scale(1.1); }
+  0% {
+    transform: translate(0, 0) scale(1);
+  }
+
+  100% {
+    transform: translate(-30px, 30px) scale(1.1);
+  }
 }
 
 .fi-hero-grid {
@@ -4949,10 +4980,12 @@ button {
     transform: scale(0.95);
     box-shadow: 0 0 0 0 rgba(37, 211, 102, 0.7);
   }
+
   70% {
     transform: scale(1);
     box-shadow: 0 0 0 6px rgba(37, 211, 102, 0);
   }
+
   100% {
     transform: scale(0.95);
     box-shadow: 0 0 0 0 rgba(37, 211, 102, 0);
@@ -5261,19 +5294,21 @@ button {
   position: relative;
   height: 170px;
   overflow: hidden;
-  background: #0f172a;
+  background: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .fi-brand-img-box img {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
+  object-position: center;
   transition: transform 0.6s ease;
 }
 
-.fi-brand-card-item:hover .fi-brand-img-box img {
-  transform: scale(1.1);
-}
+
 
 .fi-brand-cat-badge {
   position: absolute;
@@ -5362,8 +5397,13 @@ button {
 
 /* Skeleton Loading Shimmer */
 @keyframes skeleton-shimmer {
-  0% { background-position: -200px 0; }
-  100% { background-position: calc(200px + 100%) 0; }
+  0% {
+    background-position: -200px 0;
+  }
+
+  100% {
+    background-position: calc(200px + 100%) 0;
+  }
 }
 
 .skeleton-box {
@@ -5374,5 +5414,3 @@ button {
   animation: skeleton-shimmer 1.5s infinite linear;
   border-radius: 6px;
 }
-
-

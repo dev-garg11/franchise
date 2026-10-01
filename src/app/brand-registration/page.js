@@ -2,9 +2,9 @@
 
 import { useState, useRef } from "react";
 import Link from "next/link";
-import { 
+import {
   CheckCircle2, ChevronRight, Phone, Globe, ShieldCheck, Mail, Lock,
-  UploadCloud, FileImage, ShieldAlert, CheckCircle, RefreshCw, Scissors, 
+  UploadCloud, FileImage, ShieldAlert, CheckCircle, RefreshCw, Scissors,
   RotateCw, ZoomIn, Trash2, Download, AlertCircle, Info, Sparkles, Building
 } from "lucide-react";
 import { clearBrandsCache } from "@/lib/brandsCache";
@@ -125,6 +125,12 @@ export default function BrandRegistration() {
         hq: value,
         location: availableDistricts[0] || "",
       }));
+    } else if (name === "phone") {
+      const sanitized = value.replace(/\D/g, '').slice(0, 10);
+      setFormData((prev) => ({
+        ...prev,
+        phone: sanitized,
+      }));
     } else {
       setFormData((prev) => ({
         ...prev,
@@ -141,7 +147,7 @@ export default function BrandRegistration() {
       img.onload = () => {
         const canvas = document.createElement("canvas");
         const ctx = canvas.getContext("2d");
-        
+
         // Target canvas dimension (optimizing size)
         const maxDim = 800;
         let width = img.width;
@@ -155,7 +161,7 @@ export default function BrandRegistration() {
             height = maxDim;
           }
         }
-        
+
         // Handle rotation sizes
         if (rotationAngle === 90 || rotationAngle === 270) {
           canvas.width = height;
@@ -164,20 +170,20 @@ export default function BrandRegistration() {
           canvas.width = width;
           canvas.height = height;
         }
-        
+
         ctx.translate(canvas.width / 2, canvas.height / 2);
         ctx.rotate((rotationAngle * Math.PI) / 180);
         ctx.scale(zoomScale, zoomScale);
         ctx.drawImage(img, -width / 2, -height / 2, width, height);
-        
+
         // Convert to dataURL
         const base64 = canvas.toDataURL("image/jpeg", 0.85);
-        
+
         setFormData(prev => ({
           ...prev,
           image: base64
         }));
-        
+
         setImageMeta(prev => ({
           ...prev,
           width: canvas.width,
@@ -205,7 +211,7 @@ export default function BrandRegistration() {
     e.preventDefault();
     e.stopPropagation();
     setDragActive(false);
-    
+
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
       handleFile(e.dataTransfer.files[0]);
     }
@@ -330,6 +336,25 @@ export default function BrandRegistration() {
       return;
     }
 
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(formData.email)) {
+      setError("Please enter a valid email address.");
+      setLoading(false);
+      return;
+    }
+
+    if (formData.phone.length !== 10 || !/^\d{10}$/.test(formData.phone)) {
+      setError("Phone number must be exactly 10 digits.");
+      setLoading(false);
+      return;
+    }
+
+    if (formData.password.length < 6) {
+      setError("Password must be at least 6 characters.");
+      setLoading(false);
+      return;
+    }
+
     if (formData.pincode.length !== 6 || !/^\d{6}$/.test(formData.pincode)) {
       setError("Pincode must be exactly 6 digits.");
       setLoading(false);
@@ -339,7 +364,7 @@ export default function BrandRegistration() {
     const rangeIndex = INVESTMENT_OPTIONS.indexOf(formData.investment_range);
     const maxIndex = INVESTMENT_OPTIONS.indexOf(formData.max_investment_limit);
     if (maxIndex < rangeIndex) {
-      setError("Max Investment Limit cannot be lower than the selected Investment Range.");
+      setError("Maximum investment must be greater than or equal to minimum investment.");
       setLoading(false);
       return;
     }
@@ -542,13 +567,13 @@ export default function BrandRegistration() {
 
               <div className="form-group form-grid-full">
                 <label style={{ fontSize: "14px", fontWeight: "700", marginBottom: "8px", display: "block" }}>Brand Logo / Cover Image (Optional)</label>
-                
+
                 <div className="upload-section-wrapper">
                   <div className="upload-grid-container">
-                    
+
                     {/* SECTION 1 — IMAGE UPLOAD */}
                     <div className="upload-card-premium">
-                      <div 
+                      <div
                         className={`drop-zone-premium ${dragActive ? "drag-active" : ""}`}
                         onDragEnter={handleDrag}
                         onDragOver={handleDrag}
@@ -556,18 +581,18 @@ export default function BrandRegistration() {
                         onDrop={handleDrop}
                         onClick={triggerFileSelect}
                       >
-                        <input 
+                        <input
                           type="file"
                           ref={fileInputRef}
                           onChange={(e) => e.target.files?.[0] && handleFile(e.target.files[0])}
                           accept=".png,.jpg,.jpeg,.webp,.svg"
                           style={{ display: "none" }}
                         />
-                        
+
                         <div className="upload-icon-container">
                           <UploadCloud size={24} />
                         </div>
-                        
+
                         {uploadStatus === "uploading" ? (
                           <div style={{ width: "100%" }}>
                             <p style={{ fontSize: "13px", fontWeight: "700", color: "var(--text-dark)", marginBottom: "4px" }}>
@@ -629,13 +654,13 @@ export default function BrandRegistration() {
                     <div className="preview-card-premium">
                       <div>
                         <span className="tips-title" style={{ marginBottom: "12px" }}>🔴 Live Brand Preview</span>
-                        
+
                         <div className="preview-area-container">
                           {formData.image ? (
                             <>
-                              <img 
-                                src={formData.image} 
-                                alt="Preview" 
+                              <img
+                                src={formData.image}
+                                alt="Preview"
                                 className="preview-img-tag"
                                 style={{ transform: `scale(${zoom})` }}
                               />
@@ -679,7 +704,7 @@ export default function BrandRegistration() {
                               overflow: "hidden",
                               flexShrink: 0
                             }}>
-                              <img src={formData.image} style={{ width: "100%", height: "100%", objectFit: "cover" }} alt="Logo Thumb" />
+                              <img src={formData.image} style={{ width: "100%", height: "100%", objectFit: "contain", objectPosition: "center", display: "block", backgroundColor: "#ffffff" }} alt="Logo Thumb" />
                             </div>
                             <div style={{ display: "flex", flexDirection: "column", overflow: "hidden" }}>
                               <span style={{ fontSize: "12px", fontWeight: "800", color: "var(--text-dark)", textOverflow: "ellipsis", overflow: "hidden", whiteSpace: "nowrap" }}>
@@ -701,14 +726,14 @@ export default function BrandRegistration() {
                           {/* Zoom Slider */}
                           <div className="zoom-slider-container">
                             <ZoomIn size={12} />
-                            <input 
-                              type="range" 
-                              min="1" 
-                              max="2.5" 
-                              step="0.1" 
-                              value={zoom} 
+                            <input
+                              type="range"
+                              min="1"
+                              max="2.5"
+                              step="0.1"
+                              value={zoom}
                               onChange={handleZoomChange}
-                              className="zoom-slider-input" 
+                              className="zoom-slider-input"
                             />
                             <span>{(zoom * 100).toFixed(0)}%</span>
                           </div>
@@ -1016,6 +1041,9 @@ export default function BrandRegistration() {
                   type="tel"
                   name="phone"
                   required
+                  maxLength={10}
+                  inputMode="numeric"
+                  pattern="[0-9]{10}"
                   placeholder="10 digit mobile"
                   value={formData.phone}
                   onChange={handleChange}

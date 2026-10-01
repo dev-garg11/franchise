@@ -9,20 +9,30 @@ import {
   ArrowLeft,
   MapPin,
   Building,
+  Building2,
+  Store,
+  Users,
+  IndianRupee,
+  PieChart,
+  Navigation,
+  Mail,
+  Flag,
+  FileText,
+  ChevronRight,
+  Share2,
+  Heart,
+  Play,
   DollarSign,
   Award,
   ShieldCheck,
   Globe,
-  Users,
-  PieChart,
   Clock,
   Sparkles,
-  Share2,
   PhoneCall,
-  ChevronRight,
   TrendingUp,
   Briefcase
 } from "lucide-react";
+import SEOGeoTags from "@/components/SEOGeoTags";
 
 const formatLakhs = (val) => {
   if (!val && val !== 0) return "N/A";
@@ -96,7 +106,7 @@ export default function BrandDetailPage({ params }) {
           setRelatedBrands(filtered);
         }
       })
-      .catch(() => {});
+      .catch(() => { });
   }, [brandId]);
 
   const handleEnquirySubmit = async (e) => {
@@ -236,11 +246,11 @@ export default function BrandDetailPage({ params }) {
               }}
             >
               {/* Cover Banner Image */}
-              <div style={{ position: "relative", height: "260px", width: "100%", overflow: "hidden" }}>
+              <div style={{ position: "relative", height: "260px", width: "100%", overflow: "hidden", background: "#ffffff", display: "flex", alignItems: "center", justifyContent: "center" }}>
                 <img
                   src={brand.image || "https://images.unsplash.com/photo-1524178232363-1fb2b075b655?auto=format&fit=crop&q=80&w=1200"}
                   alt={brand.name}
-                  style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                  style={{ width: "100%", height: "100%", objectFit: "contain", objectPosition: "center" }}
                 />
                 <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, rgba(15,23,42,0.95) 0%, rgba(15,23,42,0.4) 60%, transparent 100%)" }}></div>
 
@@ -266,7 +276,8 @@ export default function BrandDetailPage({ params }) {
                         width: "90px",
                         height: "90px",
                         borderRadius: "20px",
-                        objectFit: "cover",
+                        objectFit: "contain",
+                        objectPosition: "center",
                         border: "3px solid #ffffff",
                         boxShadow: "0 8px 24px rgba(0,0,0,0.3)",
                         backgroundColor: "#ffffff"
@@ -560,10 +571,13 @@ export default function BrandDetailPage({ params }) {
                         <label style={{ fontSize: "12px", fontWeight: "700", color: "#334155", display: "block", marginBottom: "4px" }}>Phone Number *</label>
                         <input
                           type="tel"
+                          inputMode="numeric"
+                          maxLength={10}
+                          pattern="[0-9]{10}"
                           required
                           placeholder="10-digit mobile number"
                           value={enquiryForm.phone}
-                          onChange={(e) => setEnquiryForm({ ...enquiryForm, phone: e.target.value })}
+                          onChange={(e) => setEnquiryForm({ ...enquiryForm, phone: e.target.value.replace(/\D/g, '').slice(0, 10) })}
                           style={{ width: "100%", padding: "10px 14px", borderRadius: "10px", border: "1px solid #cbd5e1", fontSize: "14px" }}
                         />
                       </div>
@@ -630,6 +644,157 @@ export default function BrandDetailPage({ params }) {
               </div>
             </div>
 
+            {/* DYNAMIC FAQ SECTION WITH ACCORDION */}
+            <div style={{ marginTop: "60px" }}>
+              <h3 style={{ fontSize: "22px", fontWeight: "800", color: "#0f172a", marginBottom: "20px" }}>
+                Frequently Asked Questions about {brand.name}
+              </h3>
+              <div className="faq-accordion-container" style={{ display: "flex", flexDirection: "column" }}>
+                <details className="faq-details">
+                  <summary className="faq-summary">
+                    <span>What is the minimum investment required for a {brand.name} franchise?</span>
+                    <span className="faq-icon">+</span>
+                  </summary>
+                  <div className="faq-content">
+                    <p>The minimum investment required is {formatLakhs(brand.minInvestment)}.</p>
+                  </div>
+                </details>
+                <details className="faq-details">
+                  <summary className="faq-summary">
+                    <span>What is the area required to open a {brand.name} outlet?</span>
+                    <span className="faq-icon">+</span>
+                  </summary>
+                  <div className="faq-content">
+                    <p>To successfully open this franchise, an area of approximately {brand.areaRequired || "200 - 500 Sq.Ft"} is required.</p>
+                  </div>
+                </details>
+                <details className="faq-details">
+                  <summary className="faq-summary">
+                    <span>What is the royalty fee structure?</span>
+                    <span className="faq-icon">+</span>
+                  </summary>
+                  <div className="faq-content">
+                    <p>The current royalty fee for {brand.name} is set at {brand.royaltyFee || "0%"}.</p>
+                  </div>
+                </details>
+                <details className="faq-details">
+                  <summary className="faq-summary">
+                    <span>Does {brand.name} provide training and support?</span>
+                    <span className="faq-icon">+</span>
+                  </summary>
+                  <div className="faq-content">
+                    <p>{brand.trainingSupport === 'Yes' ? `Yes, ${brand.name} provides complete training and operational support for franchisees.` : `Detailed training programs and support levels vary. Please contact us for exact specifics regarding ${brand.name}.`}</p>
+                  </div>
+                </details>
+                <details className="faq-details">
+                  <summary className="faq-summary">
+                    <span>Are master franchise options available for {brand.name}?</span>
+                    <span className="faq-icon">+</span>
+                  </summary>
+                  <div className="faq-content">
+                    <p>{brand.masterFranchiseAvailable ? `Yes, master franchise options are available. The master investment range is ${brand.masterInvestmentRange || 'available upon contact'}.` : `Currently, ${brand.name} is focusing on standard franchise units. Connect with us to discuss special territorial rights.`}</p>
+                  </div>
+                </details>
+              </div>
+            </div>
+
+            {/* JSON-LD FOR SEO, GEO, AND AEO */}
+            <script
+              type="application/ld+json"
+              dangerouslySetInnerHTML={{
+                __html: JSON.stringify({
+                  "@context": "https://schema.org",
+                  "@graph": [
+                    {
+                      "@type": "LocalBusiness",
+                      "name": brand.name,
+                      "image": brand.image,
+                      "address": {
+                        "@type": "PostalAddress",
+                        "addressLocality": brand.hq || "India",
+                        "addressCountry": "IN"
+                      },
+                      "priceRange": `${brand.minInvestment} - ${brand.maxInvestment}`
+                    },
+                    {
+                      "@type": "FAQPage",
+                      "mainEntity": [
+                        {
+                          "@type": "Question",
+                          "name": `What is the minimum investment required for a ${brand.name} franchise?`,
+                          "acceptedAnswer": {
+                            "@type": "Answer",
+                            "text": `The minimum investment required is ${formatLakhs(brand.minInvestment)}.`
+                          }
+                        },
+                        {
+                          "@type": "Question",
+                          "name": `What is the area required to open a ${brand.name} outlet?`,
+                          "acceptedAnswer": {
+                            "@type": "Answer",
+                            "text": `To successfully open this franchise, an area of approximately ${brand.areaRequired || '200 - 500 Sq.Ft'} is required.`
+                          }
+                        },
+                        {
+                          "@type": "Question",
+                          "name": `What is the royalty fee structure?`,
+                          "acceptedAnswer": {
+                            "@type": "Answer",
+                            "text": `The current royalty fee for ${brand.name} is set at ${brand.royaltyFee || '0%'}.`
+                          }
+                        },
+                        {
+                          "@type": "Question",
+                          "name": `Does ${brand.name} provide training and support?`,
+                          "acceptedAnswer": {
+                            "@type": "Answer",
+                            "text": brand.trainingSupport === 'Yes' ? `Yes, ${brand.name} provides complete training and operational support for franchisees.` : `Detailed training programs and support levels vary. Please contact us for exact specifics regarding ${brand.name}.`
+                          }
+                        },
+                        {
+                          "@type": "Question",
+                          "name": `Are master franchise options available for ${brand.name}?`,
+                          "acceptedAnswer": {
+                            "@type": "Answer",
+                            "text": brand.masterFranchiseAvailable ? `Yes, master franchise options are available. The master investment range is ${brand.masterInvestmentRange || 'available upon contact'}.` : `Currently, ${brand.name} is focusing on standard franchise units. Connect with us to discuss special territorial rights.`
+                          }
+                        }
+                      ]
+                    },
+                    {
+                      "@type": "BreadcrumbList",
+                      "itemListElement": [
+                        {
+                          "@type": "ListItem",
+                          "position": 1,
+                          "name": "Home",
+                          "item": "https://www.franchiseroots.com"
+                        },
+                        {
+                          "@type": "ListItem",
+                          "position": 2,
+                          "name": "Brands",
+                          "item": "https://www.franchiseroots.com/brands"
+                        },
+                        {
+                          "@type": "ListItem",
+                          "position": 3,
+                          "name": brand.category || "Franchise",
+                          "item": `https://www.franchiseroots.com/brands?category=${encodeURIComponent(brand.category || "Business")}`
+                        },
+                        {
+                          "@type": "ListItem",
+                          "position": 4,
+                          "name": brand.name,
+                          "item": `https://www.franchiseroots.com/brands/${brand._id || brand.id}`
+                        }
+                      ]
+                    }
+                  ]
+                })
+              }}
+            />
+
             {/* RELATED BRANDS RECOMMENDATIONS */}
             {relatedBrands.length > 0 && (
               <div style={{ marginTop: "60px" }}>
@@ -650,11 +815,11 @@ export default function BrandDetailPage({ params }) {
                         flexDirection: "column"
                       }}
                     >
-                      <div style={{ height: "160px", position: "relative" }}>
+                      <div style={{ height: "160px", position: "relative", background: "#ffffff", display: "flex", alignItems: "center", justifyContent: "center" }}>
                         <img
                           src={rel.image || "https://images.unsplash.com/photo-1524178232363-1fb2b075b655?auto=format&fit=crop&q=80&w=600"}
                           alt={rel.name}
-                          style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                          style={{ width: "100%", height: "100%", objectFit: "contain", objectPosition: "center" }}
                         />
                         <span style={{ position: "absolute", top: "12px", right: "12px", background: "rgba(15,23,42,0.8)", color: "#fff", padding: "4px 10px", borderRadius: "12px", fontSize: "11px", fontWeight: "700" }}>
                           {rel.category || "General"}
@@ -686,6 +851,10 @@ export default function BrandDetailPage({ params }) {
                 </div>
               </div>
             )}
+
+            {/* DYNAMIC SEO + GEO TAGS */}
+            {brand && <SEOGeoTags categoryName={brand.category || "Franchise"} basePath="/brands" />}
+
           </div>
         )}
       </main>
@@ -699,6 +868,50 @@ export default function BrandDetailPage({ params }) {
           .brand-detail-grid {
             grid-template-columns: 1fr !important;
           }
+        }
+        .faq-accordion-container {
+          gap: 12px;
+        }
+        .faq-details {
+          background: #ffffff;
+          border: 1px solid #e2e8f0;
+          border-radius: 12px;
+          overflow: hidden;
+          transition: all 0.3s ease;
+        }
+        .faq-details[open] {
+          border-color: #cbd5e1;
+          box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+        }
+        .faq-summary {
+          list-style: none;
+          padding: 18px 20px;
+          cursor: pointer;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          font-weight: 700;
+          font-size: 15.5px;
+          color: #0f172a;
+          outline: none;
+        }
+        .faq-summary::-webkit-details-marker {
+          display: none;
+        }
+        .faq-icon {
+          font-size: 20px;
+          font-weight: 400;
+          color: var(--primary);
+          transition: transform 0.3s ease;
+        }
+        .faq-details[open] .faq-icon {
+          transform: rotate(45deg);
+        }
+        .faq-content {
+          padding: 0 20px 20px 20px;
+          color: #475569;
+          font-size: 14.5px;
+          line-height: 1.6;
         }
       `}</style>
     </div>

@@ -132,7 +132,7 @@ export default function BlogsPage() {
                                     <img
                                         src={featuredBlog.image || "https://images.unsplash.com/photo-1546074177-ffedd79d494d?auto=format&fit=crop&q=80&w=800"}
                                         alt={featuredBlog.title}
-                                        style={{ width: "100%", height: "100%", objectFit: "cover", transition: "transform 0.4s ease" }}
+                                        style={{ width: "100%", height: "100%", objectFit: "contain", objectPosition: "center", display: "block", backgroundColor: "#ffffff", transition: "transform 0.4s ease" }}
                                         className="blog-image"
                                     />
                                     <span style={{
@@ -199,7 +199,7 @@ export default function BlogsPage() {
                                         <img
                                             src={blog.image || "https://images.unsplash.com/photo-1546074177-ffedd79d494d?auto=format&fit=crop&q=80&w=400"}
                                             alt={blog.title}
-                                            style={{ width: "100%", height: "100%", objectFit: "cover", transition: "transform 0.4s ease" }}
+                                            style={{ width: "100%", height: "100%", objectFit: "contain", objectPosition: "center", display: "block", backgroundColor: "#ffffff", transition: "transform 0.4s ease" }}
                                             className="blog-image"
                                         />
                                     </div>

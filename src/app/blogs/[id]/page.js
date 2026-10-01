@@ -104,7 +104,7 @@ export default function BlogDetailPage({ params }) {
                         <img
                             src={blog.image || "https://images.unsplash.com/photo-1546074177-ffedd79d494d?auto=format&fit=crop&q=80&w=1200"}
                             alt={blog.title}
-                            style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                            style={{ width: "100%", height: "100%", objectFit: "contain", objectPosition: "center", display: "block", backgroundColor: "#ffffff" }}
                         />
                     </div>
 
@@ -149,58 +149,88 @@ export default function BlogDetailPage({ params }) {
                     </div>
                 </article>
 
+                {/* JSON-LD FOR ARTICLE/BLOG POST */}
+                <script
+                    type="application/ld+json"
+                    dangerouslySetInnerHTML={{
+                        __html: JSON.stringify({
+                            "@context": "https://schema.org",
+                            "@type": "Article",
+                            "headline": blog.title,
+                            "image": [
+                                blog.image || "https://images.unsplash.com/photo-1546074177-ffedd79d494d?auto=format&fit=crop&q=80&w=1200"
+                            ],
+                            "datePublished": new Date(blog.createdAt).toISOString(),
+                            "author": {
+                                "@type": "Organization",
+                                "name": "Franchise Roots"
+                            },
+                            "publisher": {
+                                "@type": "Organization",
+                                "name": "Franchise Roots",
+                                "logo": {
+                                    "@type": "ImageObject",
+                                    "url": "https://www.franchiseroots.com/logo-footer.png"
+                                }
+                            }
+                        })
+                    }}
+                />
+
                 {/* Suggestion list */}
-                {otherBlogs.length > 0 && (
-                    <div style={{ marginTop: "60px" }}>
-                        <h3 style={{ fontSize: "22px", fontWeight: "800", color: "var(--text-dark)", marginBottom: "24px", display: "flex", alignItems: "center", gap: "10px" }}>
-                            <BookOpen size={20} style={{ color: "var(--primary)" }} /> Reads You Might Like
-                        </h3>
-                        <div style={{
-                            display: "grid",
-                            gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))",
-                            gap: "24px"
-                        }}>
-                            {otherBlogs.map(item => (
-                                <Link
-                                    href={`/blogs/${item.id || item._id}`}
-                                    key={item.id || item._id}
-                                    style={{ textDecoration: "none", color: "inherit" }}
-                                >
-                                    <div
-                                        style={{
-                                            background: "white",
-                                            borderRadius: "16px",
-                                            border: "1px solid var(--border-color)",
-                                            overflow: "hidden",
-                                            transition: "all 0.3s ease",
-                                            height: "100%",
-                                            display: "flex",
-                                            flexDirection: "column"
-                                        }}
-                                        className="sugg-card"
+                {
+                    otherBlogs.length > 0 && (
+                        <div style={{ marginTop: "60px" }}>
+                            <h3 style={{ fontSize: "22px", fontWeight: "800", color: "var(--text-dark)", marginBottom: "24px", display: "flex", alignItems: "center", gap: "10px" }}>
+                                <BookOpen size={20} style={{ color: "var(--primary)" }} /> Reads You Might Like
+                            </h3>
+                            <div style={{
+                                display: "grid",
+                                gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))",
+                                gap: "24px"
+                            }}>
+                                {otherBlogs.map(item => (
+                                    <Link
+                                        href={`/blogs/${item.id || item._id}`}
+                                        key={item.id || item._id}
+                                        style={{ textDecoration: "none", color: "inherit" }}
                                     >
-                                        <div style={{ height: "140px", overflow: "hidden" }}>
-                                            <img
-                                                src={item.image || "https://images.unsplash.com/photo-1546074177-ffedd79d494d?auto=format&fit=crop&q=80&w=300"}
-                                                alt={item.title}
-                                                style={{ width: "100%", height: "100%", objectFit: "cover" }}
-                                            />
+                                        <div
+                                            style={{
+                                                background: "white",
+                                                borderRadius: "16px",
+                                                border: "1px solid var(--border-color)",
+                                                overflow: "hidden",
+                                                transition: "all 0.3s ease",
+                                                height: "100%",
+                                                display: "flex",
+                                                flexDirection: "column"
+                                            }}
+                                            className="sugg-card"
+                                        >
+                                            <div style={{ height: "140px", overflow: "hidden" }}>
+                                                <img
+                                                    src={item.image || "https://images.unsplash.com/photo-1546074177-ffedd79d494d?auto=format&fit=crop&q=80&w=300"}
+                                                    alt={item.title}
+                                                    style={{ width: "100%", height: "100%", objectFit: "contain", objectPosition: "center", display: "block", backgroundColor: "#ffffff" }}
+                                                />
+                                            </div>
+                                            <div style={{ padding: "18px", display: "flex", flexDirection: "column", flexGrow: 1 }}>
+                                                <h4 style={{ fontSize: "14.5px", fontWeight: "800", color: "var(--text-dark)", marginBottom: "8px", lineHeight: "1.4" }} className="sugg-title">
+                                                    {item.title}
+                                                </h4>
+                                                <p style={{ fontSize: "12px", color: "var(--text-muted)", marginTop: "auto" }}>
+                                                    {new Date(item.createdAt).toLocaleDateString("en-IN", { day: 'numeric', month: 'short', year: 'numeric' })}
+                                                </p>
+                                            </div>
                                         </div>
-                                        <div style={{ padding: "18px", display: "flex", flexDirection: "column", flexGrow: 1 }}>
-                                            <h4 style={{ fontSize: "14.5px", fontWeight: "800", color: "var(--text-dark)", marginBottom: "8px", lineHeight: "1.4" }} className="sugg-title">
-                                                {item.title}
-                                            </h4>
-                                            <p style={{ fontSize: "12px", color: "var(--text-muted)", marginTop: "auto" }}>
-                                                {new Date(item.createdAt).toLocaleDateString("en-IN", { day: 'numeric', month: 'short', year: 'numeric' })}
-                                            </p>
-                                        </div>
-                                    </div>
-                                </Link>
-                            ))}
+                                    </Link>
+                                ))}
+                            </div>
                         </div>
-                    </div>
-                )}
-            </div>
+                    )
+                }
+            </div >
 
             <style jsx global>{`
         .back-btn:hover {
@@ -215,6 +245,6 @@ export default function BlogDetailPage({ params }) {
           color: var(--primary) !important;
         }
       `}</style>
-        </div>
+        </div >
     );
 }

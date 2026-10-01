@@ -10,6 +10,7 @@ import {
   Phone, Globe, Eye, ChevronLeft, Send, Sparkles, ShieldAlert, MessageCircle,
   Filter, Layers, Briefcase, Crown
 } from "lucide-react";
+import SEOGeoTags from "@/components/SEOGeoTags";
 import TopFranchiseOpportunities from "@/components/TopFranchiseOpportunities";
 import TopBusinessOpportunities from "@/components/TopBusinessOpportunities";
 import { ProductSkeletonSlider } from "@/components/SkeletonLoader";
@@ -94,6 +95,10 @@ const FAQS = [
   {
     question: "How long does it take for brand operators to contact me?",
     answer: "Once you submit an enquiry, the lead is directly piped to the Brand Owner's dashboard inbox. Verified partners typically respond and share franchise brochures, royalty agreements, and site-selection reviews within 2 to 3 business days."
+  },
+  {
+    question: "Do you offer Master Franchising opportunities?",
+    answer: "Yes, many of our listed corporate brands offer exclusive master franchise rights. You can visit our dedicated 'Master Franchising' section to explore regional, state, and national level area developer opportunities."
   }
 ];
 
@@ -760,7 +765,7 @@ export default function Home() {
                   <img
                     src={ad.image || "https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&q=80&w=1200"}
                     alt={ad.title}
-                    style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }}
+                    style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "contain", objectPosition: "center", display: "block", backgroundColor: "#ffffff" }}
                   />
                   <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, rgba(15,23,42,0.95) 0%, rgba(15,23,42,0.4) 60%, transparent 100%)" }} />
 
@@ -1068,7 +1073,7 @@ export default function Home() {
                 <img
                   src={service.image || "https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?auto=format&fit=crop&q=80&w=600"}
                   alt={service.title}
-                  style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                  style={{ width: "100%", height: "100%", objectFit: "contain", objectPosition: "center", display: "block", backgroundColor: "#ffffff" }}
                 />
               </div>
               <div style={{ padding: "20px", display: "flex", flexDirection: "column", flex: 1, justifyContent: "space-between" }}>
@@ -1181,8 +1186,8 @@ export default function Home() {
               <p style={{ color: "#c7d2fe", fontSize: "15px", lineHeight: "1.6", marginBottom: "24px" }}>
                 Secure 100% exclusive master rights for your state. Earn sub-franchisee sign-up fees and recurring monthly royalty shares across leading brand networks.
               </p>
-              <Link 
-                href="/master-franchising" 
+              <Link
+                href="/master-franchising"
                 className="btn btn-primary"
                 style={{ padding: "14px 28px", fontSize: "15px", fontWeight: "700", display: "inline-flex", alignItems: "center", gap: "8px" }}
               >
@@ -1388,6 +1393,44 @@ export default function Home() {
           </div>
         </div>
       </section>
+
+      {/* DYNAMIC SEO + GEO TAGS */}
+      <section className="container" style={{ marginBottom: '80px' }}>
+        <SEOGeoTags categoryName={fiIndustry || "Business"} basePath="/brands" />
+      </section>
+
+      {/* JSON-LD FOR OVERALL WEBSITE, SEO, AND FAQS */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@graph": [
+              {
+                "@type": "WebSite",
+                "name": "Franchise Roots",
+                "url": "https://www.franchiseroots.com",
+                "description": "Premium and luxury business and franchise opportunities in India.",
+                "publisher": {
+                  "@type": "Organization",
+                  "name": "Franchise Roots"
+                }
+              },
+              {
+                "@type": "FAQPage",
+                "mainEntity": FAQS.map(faq => ({
+                  "@type": "Question",
+                  "name": faq.question,
+                  "acceptedAnswer": {
+                    "@type": "Answer",
+                    "text": faq.answer
+                  }
+                }))
+              }
+            ]
+          })
+        }}
+      />
     </div>
   );
 }
