@@ -6,8 +6,12 @@ import Blog from "@/models/Blog";
 export default async function sitemap() {
     const baseUrl = "https://www.franchiseroots.com";
 
-    // Connect to database
-    await connectToDatabase();
+    // Connect to database safely
+    try {
+        await connectToDatabase();
+    } catch (dbErr) {
+        console.error("Sitemap: Database connection error during build:", dbErr.message);
+    }
 
     // Fetch published brands mapping
     let brands = [];

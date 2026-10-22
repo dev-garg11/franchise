@@ -8,6 +8,7 @@ import AuthModal from "./AuthModal";
 
 import FloatingWhatsApp from "./FloatingWhatsApp";
 import AskExpertsModal from "./AskExpertsModal";
+import SeoAiAgentPopup from "./SeoAiAgentPopup";
 
 function AuthParamsHandler({ setIsAuthModalOpen, setAuthModalTab }) {
   const searchParams = useSearchParams();
@@ -88,6 +89,11 @@ export default function LayoutClientWrapper({ children }) {
       {/* Global Floating WhatsApp & Ask Experts Modal (rendered after mounted) */}
       {mounted && !isNoHeaderFooter && (
         <FloatingWhatsApp onOpenModal={() => { setAskExpertsMode("buy"); setIsAskExpertsOpen(true); }} />
+      )}
+
+      {/* Global FR AI Agent Popup (Fixed on left side, only in popup, not in menu) */}
+      {mounted && !isNoHeaderFooter && (
+        <SeoAiAgentPopup />
       )}
 
       {mounted && (
