@@ -14,6 +14,7 @@ import { logActivity } from "@/lib/logger";
 import { REGISTRATION_INVESTMENT_OPTIONS, getFilteredMaxLimits } from "@/lib/investmentData";
 import { BRAND_CATEGORIES, BRAND_SECTORS_MAP, ALL_INDIAN_STATES } from "@/lib/brandConstants";
 import { DISTRICTS_BY_STATE } from "@/lib/districtsData";
+import { decodeHtmlEntities, cleanBrandPlainText, sanitizeBrandHtml } from "@/lib/brandFormatters";
 
 const mapRangeToNumeric = (rangeStr, isMax = false) => {
   if (!rangeStr) return 0;
@@ -40,16 +41,7 @@ const isNew = (dateString) => {
 };
 
 const stripHtmlTags = (str) => {
-  if (!str) return "No description provided.";
-  return String(str)
-    .replace(/<[^>]*>?/gm, '')
-    .replace(/&nbsp;/gi, ' ')
-    .replace(/&amp;/gi, '&')
-    .replace(/&lt;/gi, '<')
-    .replace(/&gt;/gi, '>')
-    .replace(/&quot;/gi, '"')
-    .replace(/&#39;/gi, "'")
-    .trim();
+  return cleanBrandPlainText(str, {}, 250);
 };
 
 export default function AdminDashboard({ initialTab = "dashboard" }) {
@@ -2438,8 +2430,9 @@ export default function AdminDashboard({ initialTab = "dashboard" }) {
               <div style={{ marginBottom: "20px" }}>
                 <h4 style={{ fontSize: "14px", marginBottom: "6px" }}>Overview Description</h4>
                 <div
+                  className="brand-rich-description fck-content-wrapper"
                   style={{ fontSize: "13.5px", color: "var(--text-muted)", lineHeight: "1.6" }}
-                  dangerouslySetInnerHTML={{ __html: selectedItem.description || "No description provided." }}
+                  dangerouslySetInnerHTML={{ __html: sanitizeBrandHtml(selectedItem.description, selectedItem) }}
                 />
               </div>
 

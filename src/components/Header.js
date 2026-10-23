@@ -9,6 +9,7 @@ import {
   Trash2, CheckCircle, ArrowRight, Clock, ArrowUp, Crown
 } from "lucide-react";
 import { getApprovedBrands } from "@/lib/brandsCache";
+import { decodeHtmlEntities } from "@/lib/brandFormatters";
 
 const DEFAULT_NOTIFICATIONS = [
   {
@@ -718,14 +719,14 @@ export default function Header() {
                           <img
                             className="search-result-thumb"
                             src={brand.image || "https://images.unsplash.com/photo-1524178232363-1fb2b075b655?auto=format&fit=crop&q=80&w=100"}
-                            alt={brand.name}
+                            alt={decodeHtmlEntities(brand.name)}
                           />
                           <div className="search-result-info">
-                            <span className="search-result-name">{brand.name}</span>
+                            <span className="search-result-name">{decodeHtmlEntities(brand.name)}</span>
                             <div className="search-result-meta">
-                              <span className="search-result-badge">{brand.category}</span>
+                              <span className="search-result-badge">{decodeHtmlEntities(brand.category)}</span>
                               <span>•</span>
-                              <span>HQ: {brand.hq}</span>
+                              <span>HQ: {decodeHtmlEntities(brand.hq || "India")}</span>
                             </div>
                           </div>
                           <ArrowRight size={16} style={{ color: "var(--text-muted)" }} />

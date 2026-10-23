@@ -21,6 +21,7 @@ import {
   ShieldCheck,
   Zap
 } from "lucide-react";
+import { decodeHtmlEntities } from "@/lib/brandFormatters";
 
 const INITIAL_MESSAGE = {
   id: "welcome-msg",
@@ -350,7 +351,7 @@ export default function SeoAiAgentPopup() {
                                   {brand.image ? (
                                     <img
                                       src={brand.image}
-                                      alt={brand.name}
+                                      alt={decodeHtmlEntities(brand.name)}
                                       className="seo-agent-brand-img"
                                       onError={(e) => {
                                         e.currentTarget.style.display = 'none';
@@ -373,7 +374,7 @@ export default function SeoAiAgentPopup() {
                                     target="_blank"
                                     rel="noopener noreferrer"
                                   >
-                                    {brand.name}
+                                    {decodeHtmlEntities(brand.name)}
                                     <ExternalLink size={13} className="seo-agent-external-icon" />
                                   </Link>
                                   <div className="seo-agent-brand-loc">

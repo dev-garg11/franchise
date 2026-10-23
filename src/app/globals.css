@@ -6284,4 +6284,123 @@ button {
   .seo-agent-tooltip {
     display: none;
   }
-}
+}
+
+/* ==========================================================================
+   REDESIGNED COMMERCIAL SPECIFICATIONS & FCK EDITOR CONTENT STYLING
+   ========================================================================== */
+.commercial-specs {
+  margin: 24px 0 !important;
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 18px !important;
+  padding: 24px !important;
+  box-shadow: 0 4px 20px rgba(15, 23, 42, 0.04) !important;
+}
+
+.commercial-specs h4 {
+  font-size: 18px !important;
+  font-weight: 800 !important;
+  color: #0f172a !important;
+  margin: 0 0 16px 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  letter-spacing: -0.3px !important;
+}
+
+.commercial-specs h4::before {
+  content: "📊";
+  font-size: 18px;
+}
+
+.commercial-specs > div {
+  background: #f8fafc !important;
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 14px !important;
+  padding: 18px 20px !important;
+}
+
+.commercial-specs p {
+  font-size: 13.5px !important;
+  color: #334155 !important;
+  line-height: 1.6 !important;
+  margin: 6px 0 !important;
+}
+
+.commercial-specs strong {
+  color: #0f172a !important;
+  font-weight: 700 !important;
+}
+
+/* FCKeditor and WYSIWYG cleaned rich text containers */
+.fck-content-wrapper,
+.brand-rich-description {
+  color: #334155;
+  font-size: 15px;
+  line-height: 1.75;
+}
+
+.fck-content-wrapper p,
+.brand-rich-description p {
+  margin-bottom: 14px;
+}
+
+.fck-content-wrapper p:last-child,
+.brand-rich-description p:last-child {
+  margin-bottom: 0;
+}
+
+.fck-content-wrapper ul,
+.brand-rich-description ul {
+  padding-left: 20px;
+  margin-bottom: 16px;
+}
+
+.fck-content-wrapper li,
+.brand-rich-description li {
+  margin-bottom: 6px;
+}
+
+.fck-content-wrapper table,
+.brand-rich-description table {
+  width: 100% !important;
+  border-collapse: collapse;
+  margin: 16px 0;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid #e2e8f0;
+}
+
+.fck-content-wrapper td,
+.fck-content-wrapper th,
+.brand-rich-description td,
+.brand-rich-description th {
+  padding: 10px 14px;
+  border: 1px solid #e2e8f0;
+  font-size: 13.5px;
+}
+
+.fck-content-wrapper img,
+.brand-rich-description img {
+  max-width: 100% !important;
+  height: auto !important;
+  border-radius: 12px;
+}
+
+/* AI and AEO sections inside brand description */
+.ai-generated-brand-content .aeo-faq-container {
+  margin-top: 28px !important;
+  padding-top: 24px !important;
+  border-top: 2px dashed #e2e8f0 !important;
+}
+
+.ai-generated-brand-content .owner-direct-note {
+  margin-top: 22px !important;
+  background: #f8fafc !important;
+  border: 1px solid #e2e8f0 !important;
+  border-left: 4px solid #2563eb !important;
+  padding: 16px 20px !important;
+  border-radius: 12px !important;
+}
+

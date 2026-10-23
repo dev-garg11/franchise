@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { Star, Award, Building, ArrowRight, MessageCircle, CheckCircle2, TrendingUp } from "lucide-react";
 import { ProductSkeletonGrid } from "@/components/SkeletonLoader";
+import { decodeHtmlEntities, cleanBrandPlainText } from "@/lib/brandFormatters";
 
 export default function TopFranchiseOpportunities({ brands = [], loading = false, onSelectBrand, onAskExperts }) {
   const [activeCategory, setActiveCategory] = useState("All");
@@ -118,10 +119,10 @@ export default function TopFranchiseOpportunities({ brands = [], loading = false
                   <div style={{ position: "absolute", bottom: "12px", left: "16px", right: "16px", display: "flex", justifyContent: "space-between", alignItems: "flex-end", color: "#ffffff" }}>
                     <div>
                       <span style={{ fontSize: "11px", textTransform: "uppercase", letterSpacing: "1px", background: "rgba(255,255,255,0.2)", backdropFilter: "blur(4px)", padding: "2px 8px", borderRadius: "4px", fontWeight: "700" }}>
-                        {brand.category}
+                        {decodeHtmlEntities(brand.category)}
                       </span>
                       <h3 style={{ fontSize: "20px", fontWeight: "700", margin: "4px 0 0 0", textShadow: "0 2px 4px rgba(0,0,0,0.5)" }}>
-                        {brand.name}
+                        {decodeHtmlEntities(brand.name)}
                       </h3>
                     </div>
                   </div>
@@ -130,9 +131,10 @@ export default function TopFranchiseOpportunities({ brands = [], loading = false
                 {/* Content Details */}
                 <div style={{ padding: "20px", display: "flex", flexDirection: "column", flexGrow: 1 }}>
                   <p
-                    style={{ fontSize: "13px", color: "#64748b", margin: "0 0 16px 0", height: "38px", overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" }}
-                    dangerouslySetInnerHTML={{ __html: brand.description || "" }}
-                  />
+                    style={{ fontSize: "13px", color: "#64748b", margin: "0 0 16px 0", height: "38px", overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", lineHeight: "1.5" }}
+                  >
+                    {cleanBrandPlainText(brand.description, brand, 120)}
+                  </p>
 
 
                   {/* Key Metrics Table */}

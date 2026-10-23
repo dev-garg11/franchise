@@ -11,6 +11,7 @@ import { useApprovedBrands } from "@/lib/brandsCache";
 import { BRAND_CATEGORIES, ALL_INDIAN_STATES } from "@/lib/brandConstants";
 import { ProductSkeletonGrid } from "@/components/SkeletonLoader";
 import SEOGeoTags from "@/components/SEOGeoTags";
+import { decodeHtmlEntities, cleanBrandPlainText } from "@/lib/brandFormatters";
 
 const MASTER_BENEFITS = [
   {
@@ -464,10 +465,10 @@ export default function MasterFranchisingPage() {
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "8px" }}>
                       <div>
                         <h3 style={{ fontSize: "19px", fontWeight: "800", color: "#0f172a", margin: 0 }}>
-                          {brand.name}
+                          {decodeHtmlEntities(brand.name)}
                         </h3>
                         <span style={{ fontSize: "12px", color: "#4f46e5", fontWeight: "700" }}>
-                          {brand.category} {brand.sector && `• ${brand.sector}`}
+                          {decodeHtmlEntities(brand.category)} {brand.sector && `• ${decodeHtmlEntities(brand.sector)}`}
                         </span>
                       </div>
                     </div>
@@ -482,7 +483,7 @@ export default function MasterFranchisingPage() {
                       WebkitBoxOrient: "vertical",
                       overflow: "hidden"
                     }}>
-                      {brand.description || "Leading business concept offering complete regional master rights and royalty expansion models."}
+                      {cleanBrandPlainText(brand.description, brand, 130)}
                     </p>
 
                     {/* Metrics Grid */}

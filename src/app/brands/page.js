@@ -12,6 +12,7 @@ import { ProductSkeletonGrid } from "@/components/SkeletonLoader";
 import { useApprovedBrands } from "@/lib/brandsCache";
 import { DISTRICTS_BY_STATE, ALL_DISTRICTS } from "@/lib/districtsData";
 import { getFilteredMinBudgets, getFilteredMaxBudgets, parseRupeeValue } from "@/lib/investmentData";
+import { decodeHtmlEntities, cleanBrandPlainText } from "@/lib/brandFormatters";
 
 const CATEGORIES = [
     "Automotive", "Beauty & Health", "Business Services", "Dealers & Distributors",
@@ -142,7 +143,8 @@ const matchLocationAndState = (brand, targetState, targetLocation) => {
 // Sector & Concept Keyword Matcher
 const matchSectorAndKeyword = (brand, targetSector, targetSearch) => {
     const brandSector = (brand.sector || "").toLowerCase();
-    const brandText = `${brand.name} ${brand.company || ""} ${brand.category || ""} ${brand.sector || ""} ${brand.description || ""} ${brand.hq || ""} ${brand.location || ""} ${brand.areaRequired || ""}`.toLowerCase();
+    const cleanDesc = cleanBrandPlainText(brand.description, brand);
+    const brandText = `${decodeHtmlEntities(brand.name)} ${decodeHtmlEntities(brand.company || "")} ${decodeHtmlEntities(brand.category || "")} ${brandSector} ${cleanDesc} ${brand.hq || ""} ${brand.location || ""} ${brand.areaRequired || ""}`.toLowerCase();
 
     if (targetSector && targetSector !== "" && targetSector !== "All Sectors") {
         const sectorLower = targetSector.toLowerCase().trim();
@@ -645,20 +647,20 @@ function BrandsDirectoryPage() {
                                                     fontWeight: "700",
                                                     zIndex: 2
                                                 }}>
-                                                    {brand.hq}
+                                                    {decodeHtmlEntities(brand.hq || "India")}
                                                 </div>
                                                 <img
                                                     src={brand.image || "https://images.unsplash.com/photo-1524178232363-1fb2b075b655?auto=format&fit=crop&q=80&w=400"}
-                                                    alt={brand.name}
+                                                    alt={decodeHtmlEntities(brand.name)}
                                                     style={{ width: "100%", height: "100%", objectFit: "contain", objectPosition: "center", transition: "transform 0.5s ease" }}
                                                 />
                                             </div>
                                             <div className="franchise-card-content" style={{ padding: "20px", display: "flex", flexDirection: "column", flexGrow: 1 }}>
                                                 <span className="franchise-category" style={{ fontSize: "11px", color: "var(--primary)", fontWeight: "800", textTransform: "uppercase", letterSpacing: "0.05em", display: "block", marginBottom: "6px" }}>
-                                                    {brand.category}
+                                                    {decodeHtmlEntities(brand.category)}
                                                 </span>
                                                 <h3 className="franchise-title" style={{ fontSize: "18px", fontWeight: "800", color: "var(--text-dark)", marginBottom: "8px", lineHeight: "1.3" }}>
-                                                    {brand.name}
+                                                    {decodeHtmlEntities(brand.name)}
                                                 </h3>
                                                 <p style={{
                                                     fontSize: "13px",
@@ -671,7 +673,7 @@ function BrandsDirectoryPage() {
                                                     overflow: "hidden",
                                                     minHeight: "58px"
                                                 }}>
-                                                    {brand.description ? brand.description.replace(/<[^>]*>/g, "") : ""}
+                                                    {cleanBrandPlainText(brand.description, brand, 180)}
                                                 </p>
 
                                                 <div style={{ marginTop: "auto" }}>

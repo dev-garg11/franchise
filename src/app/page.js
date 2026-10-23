@@ -17,6 +17,7 @@ import { ProductSkeletonSlider } from "@/components/SkeletonLoader";
 import { useApprovedBrands } from "@/lib/brandsCache";
 import { DISTRICTS_BY_STATE, ALL_DISTRICTS } from "@/lib/districtsData";
 import { BUDGET_OPTIONS, getFilteredMinBudgets, getFilteredMaxBudgets, parseRupeeValue } from "@/lib/investmentData";
+import { decodeHtmlEntities, cleanBrandPlainText } from "@/lib/brandFormatters";
 
 
 // Mock Categories with Icons
@@ -937,24 +938,25 @@ export default function Home() {
                 {brands.slice(0, 9).map((brand) => (
                   <div key={brand.id} className="slider-card">
                     <div className="slider-image-wrapper">
-                      <div className="slider-badge">{brand.hq}</div>
+                      <div className="slider-badge">{decodeHtmlEntities(brand.hq || "India")}</div>
                       <div className="slider-overlay-gradient"></div>
                       <img
                         src={brand.image || "https://images.unsplash.com/photo-1524178232363-1fb2b075b655?auto=format&fit=crop&q=80&w=400"}
-                        alt={brand.name}
+                        alt={decodeHtmlEntities(brand.name)}
                         className="slider-image"
                       />
                       <div className="slider-brand-logo">
-                        <span style={{ fontSize: '22px', fontWeight: '800', color: 'var(--primary)' }}>{brand.name.substring(0, 2).toUpperCase()}</span>
+                        <span style={{ fontSize: '22px', fontWeight: '800', color: 'var(--primary)' }}>{decodeHtmlEntities(brand.name).substring(0, 2).toUpperCase()}</span>
                       </div>
                     </div>
                     <div className="slider-card-content">
-                      <span className="slider-category">{brand.category}</span>
-                      <h3>{brand.name}</h3>
+                      <span className="slider-category">{decodeHtmlEntities(brand.category)}</span>
+                      <h3>{decodeHtmlEntities(brand.name)}</h3>
                       <p
-                        style={{ fontSize: '13px', color: 'var(--text-muted)', height: '40px', overflow: 'hidden', marginBottom: '16px', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}
-                        dangerouslySetInnerHTML={{ __html: brand.description || "" }}
-                      />
+                        style={{ fontSize: '13px', color: 'var(--text-muted)', height: '40px', overflow: 'hidden', marginBottom: '16px', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', lineHeight: '1.5' }}
+                      >
+                        {cleanBrandPlainText(brand.description, brand, 130)}
+                      </p>
 
 
                       <div className="slider-meta-row">

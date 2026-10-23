@@ -33,16 +33,8 @@ import {
   Briefcase
 } from "lucide-react";
 import SEOGeoTags from "@/components/SEOGeoTags";
-
-const formatLakhs = (val) => {
-  if (!val && val !== 0) return "N/A";
-  if (typeof val === "string" && (val.includes("Lakh") || val.includes("Cr") || val.includes("₹"))) return val;
-  const num = Number(val);
-  if (isNaN(num)) return val;
-  if (num >= 10000000) return `₹ ${(num / 10000000).toFixed(2)} Cr`;
-  if (num >= 100000) return `₹ ${(num / 100000).toFixed(1)} Lakhs`;
-  return `₹ ${num.toLocaleString('en-IN')}`;
-};
+import CommercialSpecsBreakdown from "@/components/CommercialSpecsBreakdown";
+import { decodeHtmlEntities, sanitizeBrandHtml, formatLakhs } from "@/lib/brandFormatters";
 
 export default function BrandDetailPage({ params }) {
   const resolvedParams = use(params);
@@ -183,7 +175,7 @@ export default function BrandDetailPage({ params }) {
             <ChevronRight size={14} />
             <Link href="/brands" style={{ color: "#64748b", textDecoration: "none" }}>Brands</Link>
             <ChevronRight size={14} />
-            <span style={{ color: "#0f172a", fontWeight: "600" }}>{brand?.name || "Brand Details"}</span>
+            <span style={{ color: "#0f172a", fontWeight: "600" }}>{decodeHtmlEntities(brand?.name || "Brand Details")}</span>
           </div>
 
           <button
@@ -249,7 +241,7 @@ export default function BrandDetailPage({ params }) {
               <div style={{ position: "relative", height: "260px", width: "100%", overflow: "hidden", background: "#ffffff", display: "flex", alignItems: "center", justifyContent: "center" }}>
                 <img
                   src={brand.image || "https://images.unsplash.com/photo-1524178232363-1fb2b075b655?auto=format&fit=crop&q=80&w=1200"}
-                  alt={brand.name}
+                  alt={decodeHtmlEntities(brand.name)}
                   style={{ width: "100%", height: "100%", objectFit: "contain", objectPosition: "center" }}
                 />
                 <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, rgba(15,23,42,0.95) 0%, rgba(15,23,42,0.4) 60%, transparent 100%)" }}></div>
@@ -271,7 +263,7 @@ export default function BrandDetailPage({ params }) {
                   <div style={{ display: "flex", gap: "20px", alignItems: "center" }}>
                     <img
                       src={brand.image || "https://images.unsplash.com/photo-1524178232363-1fb2b075b655?auto=format&fit=crop&q=80&w=300"}
-                      alt={brand.name}
+                      alt={decodeHtmlEntities(brand.name)}
                       style={{
                         width: "90px",
                         height: "90px",
@@ -289,14 +281,14 @@ export default function BrandDetailPage({ params }) {
                           ✓ Verified Concept
                         </span>
                         <span style={{ fontSize: "11px", fontWeight: "700", textTransform: "uppercase", background: "rgba(255,255,255,0.25)", backdropFilter: "blur(6px)", color: "#ffffff", padding: "4px 12px", borderRadius: "20px" }}>
-                          {brand.category || "General"}
+                          {decodeHtmlEntities(brand.category || "General")}
                         </span>
                       </div>
                       <h1 style={{ fontSize: "32px", fontWeight: "900", color: "#ffffff", margin: 0, textShadow: "0 2px 8px rgba(0,0,0,0.5)" }}>
-                        {brand.name}
+                        {decodeHtmlEntities(brand.name)}
                       </h1>
                       <p style={{ color: "#cbd5e1", fontSize: "14px", margin: "4px 0 0 0", display: "flex", alignItems: "center", gap: "6px" }}>
-                        <Building size={15} /> {brand.company || brand.name} • HQ: <strong style={{ color: "#ffffff" }}>{brand.hq || "India"}</strong>
+                        <Building size={15} /> {decodeHtmlEntities(brand.company || brand.name)} • HQ: <strong style={{ color: "#ffffff" }}>{decodeHtmlEntities(brand.hq || "India")}</strong>
                       </p>
                     </div>
                   </div>
@@ -423,15 +415,29 @@ export default function BrandDetailPage({ params }) {
                   <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
                     <div style={{ background: "#ffffff", padding: "28px", borderRadius: "20px", border: "1px solid #e2e8f0" }}>
                       <h3 style={{ fontSize: "20px", fontWeight: "800", color: "#0f172a", marginBottom: "14px" }}>
-                        About {brand.name}
+                        About {decodeHtmlEntities(brand.name)}
                       </h3>
                       <div
+                        className="brand-rich-description fck-content-wrapper"
                         style={{ fontSize: "15px", color: "#334155", lineHeight: 1.7 }}
                         dangerouslySetInnerHTML={{
-                          __html: brand.description || `${brand.name} is a leading brand in the ${brand.category || "Franchise"} industry, offering robust turnkey business opportunities across India.`
+                          __html: sanitizeBrandHtml(
+                            (brand.description || "")
+                              .replace(/<section[^>]*class=["'][^"']*commercial-specs[^"']*["'][\s\S]*?<\/section>/gi, ""),
+                            brand
+                          )
                         }}
                       />
                     </div>
+
+                    {/* REDESIGNED COMMERCIAL SPECIFICATIONS & INVESTMENT BREAKDOWN */}
+                    <CommercialSpecsBreakdown
+                      brand={brand}
+                      onEnquireClick={() => {
+                        const box = document.getElementById("brand-enquiry-box");
+                        box?.scrollIntoView({ behavior: "smooth" });
+                      }}
+                    />
 
                     {/* Key Highlights Grid */}
                     <div style={{ background: "#ffffff", padding: "28px", borderRadius: "20px", border: "1px solid #e2e8f0" }}>
@@ -474,26 +480,36 @@ export default function BrandDetailPage({ params }) {
 
                 {/* FINANCIALS CONTENT */}
                 {activeTab === "financials" && (
-                  <div style={{ background: "#ffffff", padding: "28px", borderRadius: "20px", border: "1px solid #e2e8f0" }}>
-                    <h3 style={{ fontSize: "20px", fontWeight: "800", color: "#0f172a", marginBottom: "18px" }}>
-                      Financial & Investment Requirements
-                    </h3>
-                    <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
-                      <div style={{ display: "flex", justifyContent: "space-between", padding: "14px 18px", background: "#f8fafc", borderRadius: "12px" }}>
-                        <span style={{ fontWeight: "600", color: "#64748b" }}>Investment Range</span>
-                        <strong style={{ color: "#0f172a" }}>{formatLakhs(brand.minInvestment)} - {formatLakhs(brand.maxInvestment)}</strong>
-                      </div>
-                      <div style={{ display: "flex", justifyContent: "space-between", padding: "14px 18px", background: "#f8fafc", borderRadius: "12px" }}>
-                        <span style={{ fontWeight: "600", color: "#64748b" }}>Royalty / Commission</span>
-                        <strong style={{ color: "#16a34a" }}>{brand.royaltyFee || "0% (Zero Royalty)"}</strong>
-                      </div>
-                      <div style={{ display: "flex", justifyContent: "space-between", padding: "14px 18px", background: "#f8fafc", borderRadius: "12px" }}>
-                        <span style={{ fontWeight: "600", color: "#64748b" }}>Franchise Agreement Tenure</span>
-                        <strong style={{ color: "#0f172a" }}>{brand.tenure || "3 to 5 Years (Renewable)"}</strong>
-                      </div>
-                      <div style={{ display: "flex", justifyContent: "space-between", padding: "14px 18px", background: "#f8fafc", borderRadius: "12px" }}>
-                        <span style={{ fontWeight: "600", color: "#64748b" }}>Expected Payback Period</span>
-                        <strong style={{ color: "#2563eb" }}>{brand.paybackPeriod || "12 - 18 Months"}</strong>
+                  <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
+                    <CommercialSpecsBreakdown
+                      brand={brand}
+                      onEnquireClick={() => {
+                        const box = document.getElementById("brand-enquiry-box");
+                        box?.scrollIntoView({ behavior: "smooth" });
+                      }}
+                    />
+
+                    <div style={{ background: "#ffffff", padding: "28px", borderRadius: "20px", border: "1px solid #e2e8f0" }}>
+                      <h3 style={{ fontSize: "20px", fontWeight: "800", color: "#0f172a", marginBottom: "18px" }}>
+                        Financial & Agreement Parameters
+                      </h3>
+                      <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", padding: "14px 18px", background: "#f8fafc", borderRadius: "12px" }}>
+                          <span style={{ fontWeight: "600", color: "#64748b" }}>Investment Range</span>
+                          <strong style={{ color: "#0f172a" }}>{formatLakhs(brand.minInvestment)} - {formatLakhs(brand.maxInvestment)}</strong>
+                        </div>
+                        <div style={{ display: "flex", justifyContent: "space-between", padding: "14px 18px", background: "#f8fafc", borderRadius: "12px" }}>
+                          <span style={{ fontWeight: "600", color: "#64748b" }}>Royalty / Commission</span>
+                          <strong style={{ color: "#16a34a" }}>{brand.royaltyFee || "0% (Zero Royalty)"}</strong>
+                        </div>
+                        <div style={{ display: "flex", justifyContent: "space-between", padding: "14px 18px", background: "#f8fafc", borderRadius: "12px" }}>
+                          <span style={{ fontWeight: "600", color: "#64748b" }}>Franchise Agreement Tenure</span>
+                          <strong style={{ color: "#0f172a" }}>{brand.tenure || "3 to 5 Years (Renewable)"}</strong>
+                        </div>
+                        <div style={{ display: "flex", justifyContent: "space-between", padding: "14px 18px", background: "#f8fafc", borderRadius: "12px" }}>
+                          <span style={{ fontWeight: "600", color: "#64748b" }}>Expected Payback Period</span>
+                          <strong style={{ color: "#2563eb" }}>{brand.paybackPeriod || "12 - 18 Months"}</strong>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -520,6 +536,7 @@ export default function BrandDetailPage({ params }) {
               {/* RIGHT COLUMN: STICKY ENQUIRY FORM */}
               <div>
                 <div
+                  id="brand-enquiry-box"
                   style={{
                     background: "#ffffff",
                     borderRadius: "24px",
@@ -818,15 +835,15 @@ export default function BrandDetailPage({ params }) {
                       <div style={{ height: "160px", position: "relative", background: "#ffffff", display: "flex", alignItems: "center", justifyContent: "center" }}>
                         <img
                           src={rel.image || "https://images.unsplash.com/photo-1524178232363-1fb2b075b655?auto=format&fit=crop&q=80&w=600"}
-                          alt={rel.name}
+                          alt={decodeHtmlEntities(rel.name)}
                           style={{ width: "100%", height: "100%", objectFit: "contain", objectPosition: "center" }}
                         />
                         <span style={{ position: "absolute", top: "12px", right: "12px", background: "rgba(15,23,42,0.8)", color: "#fff", padding: "4px 10px", borderRadius: "12px", fontSize: "11px", fontWeight: "700" }}>
-                          {rel.category || "General"}
+                          {decodeHtmlEntities(rel.category || "General")}
                         </span>
                       </div>
                       <div style={{ padding: "20px", display: "flex", flexDirection: "column", flexGrow: 1 }}>
-                        <h4 style={{ margin: "0 0 6px 0", fontSize: "18px", fontWeight: "800", color: "#0f172a" }}>{rel.name}</h4>
+                        <h4 style={{ margin: "0 0 6px 0", fontSize: "18px", fontWeight: "800", color: "#0f172a" }}>{decodeHtmlEntities(rel.name)}</h4>
                         <p style={{ margin: "0 0 16px 0", fontSize: "13px", color: "#64748b" }}>Min Inv: <strong style={{ color: "#0f172a" }}>{formatLakhs(rel.minInvestment)}</strong></p>
                         <Link
                           href={`/brands/${rel.id || rel._id}`}

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Briefcase, Zap, ShieldCheck, ArrowRight, MessageCircle, Percent, DollarSign, ChevronRight, X, CheckCircle, Award, RefreshCw } from "lucide-react";
 import { ProductSkeletonGrid } from "@/components/SkeletonLoader";
 import { getApprovedBrands } from "@/lib/brandsCache";
+import { decodeHtmlEntities, cleanBrandPlainText } from "@/lib/brandFormatters";
 
 export default function TopBusinessOpportunities({ brands = [], loading = false, onAskExperts }) {
   const [activeFilter, setActiveFilter] = useState("All");
@@ -79,9 +80,9 @@ export default function TopBusinessOpportunities({ brands = [], loading = false,
       type = "High Margin";
     }
 
-    const cleanTitle = stripHtmlTags(brand.name || "");
-    const cleanCategory = stripHtmlTags(brand.category || "Business Services");
-    const rawDescription = brand.description || `${cleanTitle} provides high-growth dealership, distributorship, and business expansion rights.`;
+    const cleanTitle = decodeHtmlEntities(brand.name || "");
+    const cleanCategory = decodeHtmlEntities(brand.category || "Business Services");
+    const rawDescription = cleanBrandPlainText(brand.description, brand, 130);
 
     return {
       id: brand.id || brand._id || `db-${idx}`,
@@ -209,9 +210,10 @@ export default function TopBusinessOpportunities({ brands = [], loading = false,
                 {/* Body */}
                 <div style={{ padding: "20px", display: "flex", flexDirection: "column", flexGrow: 1 }}>
                   <p
-                    style={{ fontSize: "13px", color: "#64748b", margin: "0 0 16px 0", height: "38px", overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" }}
-                    dangerouslySetInnerHTML={{ __html: biz.description || "" }}
-                  />
+                    style={{ fontSize: "13px", color: "#64748b", margin: "0 0 16px 0", height: "38px", overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", lineHeight: "1.5" }}
+                  >
+                    {biz.description}
+                  </p>
 
                   {/* Metrics */}
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px", padding: "12px", background: "#f8fafc", borderRadius: "10px", marginBottom: "16px" }}>

@@ -15,6 +15,7 @@ import { clearBrandsCache } from "@/lib/brandsCache";
 import { BRAND_CATEGORIES, BRAND_SECTORS_MAP, ALL_INDIAN_STATES } from "@/lib/brandConstants";
 import { DISTRICTS_BY_STATE } from "@/lib/districtsData";
 import { getFilteredMaxLimits } from "@/lib/investmentData";
+import { decodeHtmlEntities, sanitizeBrandHtml, cleanBrandPlainText } from "@/lib/brandFormatters";
 
 const INVESTMENT_OPTIONS = [
   "Rs. 10,000 - 50,000",
@@ -546,9 +547,14 @@ export default function BrandPanel({ initialTab = "dashboard" }) {
                         </div>
                       </div>
 
-                      <p style={{ fontSize: "13px", color: "var(--text-muted)" }}>
-                        <strong>Description:</strong> {brand.description}
-                      </p>
+                      <div style={{ fontSize: "13px", color: "var(--text-muted)", marginTop: "12px" }}>
+                        <strong style={{ color: "var(--text-dark)", display: "block", marginBottom: "4px" }}>Description:</strong>
+                        <div
+                          className="brand-rich-description fck-content-wrapper"
+                          style={{ lineHeight: 1.6 }}
+                          dangerouslySetInnerHTML={{ __html: sanitizeBrandHtml(brand.description, brand) }}
+                        />
+                      </div>
                     </>
                   ) : (
                     <div className="flex-center" style={{ padding: "40px", flexDirection: "column", textAlign: "center" }}>

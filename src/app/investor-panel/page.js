@@ -12,6 +12,7 @@ import {
 import Pagination from "@/components/Pagination";
 import { logActivity } from "@/lib/logger";
 import { ALL_INDIAN_STATES } from "@/lib/brandConstants";
+import { decodeHtmlEntities, cleanBrandPlainText, sanitizeBrandHtml } from "@/lib/brandFormatters";
 
 const INVESTMENT_OPTIONS = [
   "Rs. 10,000 - 50,000",
@@ -547,8 +548,8 @@ export default function InvestorPanel({ initialTab = "dashboard" }) {
                           />
                         </div>
                         <div className="franchise-card-content" style={{ padding: "16px" }}>
-                          <span className="franchise-category">{brand.category}</span>
-                          <h3 className="franchise-title" style={{ fontSize: "16px" }}>{brand.name}</h3>
+                          <span className="franchise-category">{decodeHtmlEntities(brand.category)}</span>
+                          <h3 className="franchise-title" style={{ fontSize: "16px" }}>{decodeHtmlEntities(brand.name)}</h3>
 
                           <div className="franchise-meta" style={{ margin: "12px 0 16px 0" }}>
                             <div className="meta-item">
@@ -842,7 +843,11 @@ export default function InvestorPanel({ initialTab = "dashboard" }) {
 
               <div style={{ marginBottom: "24px" }}>
                 <h4 style={{ fontSize: "15px", marginBottom: "6px", borderBottom: "1px solid #f1f5f9", paddingBottom: "6px" }}>Business Overview</h4>
-                <p style={{ fontSize: "13px", color: "var(--text-muted)" }}>{selectedBrand.description}</p>
+                <div
+                  className="brand-rich-description fck-content-wrapper"
+                  style={{ fontSize: "13.5px", color: "#475569", lineHeight: 1.6 }}
+                  dangerouslySetInnerHTML={{ __html: sanitizeBrandHtml(selectedBrand.description, selectedBrand) }}
+                />
               </div>
 
               <div className="form-grid" style={{ marginBottom: "24px", background: "#f8fafc", padding: "16px", borderRadius: "12px", fontSize: "13px" }}>
