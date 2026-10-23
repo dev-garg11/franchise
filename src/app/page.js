@@ -698,6 +698,7 @@ export default function Home() {
                 name: b.name || b.brandName || "Franchise Opportunity",
                 company: b.company || b.name || "",
                 category: b.category || "Franchise Opportunity",
+                description: b.description || "",
                 minInvestment: b.minInvestment || 0,
                 maxInvestment: b.maxInvestment || 0,
                 hq: b.hq || b.location || "India",
@@ -714,10 +715,15 @@ export default function Home() {
 
                   <div className="fi-brand-body">
                     <div>
-                      <h3 className="fi-brand-name">{b.name}</h3>
+                      <h3 className="fi-brand-name" title={b.name}>{b.name}</h3>
                       <div className="fi-brand-investment">
                         Investment: {formatLakhs(b.minInvestment)} - {formatLakhs(b.maxInvestment)}
                       </div>
+                      <p className="fi-brand-desc" title={b.description ? b.description.replace(/<[^>]*>/g, "").replace(/\s+/g, " ").trim() : ""}>
+                        {b.description
+                          ? b.description.replace(/<[^>]*>/g, "").replace(/\s+/g, " ").trim()
+                          : `${b.name} is a leading brand in the ${b.category} sector offering high-growth franchise opportunities.`}
+                      </p>
                     </div>
 
                     <div>

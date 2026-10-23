@@ -61,6 +61,7 @@ export default async function sitemap() {
     // Core static routes
     const routes = [
         "",
+        "/about-us",
         "/brands",
         "/services",
         "/master-franchising",

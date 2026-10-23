@@ -157,6 +157,7 @@ export default function Footer() {
             <h4 style={{ color: 'white', fontSize: '13px', fontWeight: '800', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '24px' }}>Quick Links</h4>
             <ul className="footer-links" style={{ listStyle: 'none' }}>
               {[
+                { name: 'About Franchise Roots', url: '/about-us' },
                 { name: 'Homepage Directory', url: '/' },
                 { name: 'Franchise Brands Catalog', url: '/brands' },
                 { name: 'Master Franchise Portal', url: '/master-franchising' },
@@ -212,6 +213,7 @@ export default function Footer() {
         }}>
           <p>© 2009 - 2026 Franchise Roots. All Rights Reserved.</p>
           <div style={{ display: 'flex', gap: '24px' }}>
+            <Link href="/about-us" style={{ transition: 'var(--transition-normal)' }} className="footer-bottom-link">About Us</Link>
             <Link href="/terms" style={{ transition: 'var(--transition-normal)' }} className="footer-bottom-link">Terms & Conditions</Link>
             <Link href="/privacy" style={{ transition: 'var(--transition-normal)' }} className="footer-bottom-link">Privacy Policy</Link>
             <Link href="/contact" style={{ transition: 'var(--transition-normal)' }} className="footer-bottom-link">Contact Us</Link>
