@@ -158,16 +158,11 @@ export default function Footer() {
             <ul className="footer-links" style={{ listStyle: 'none' }}>
               {[
                 { name: 'About Franchise Roots', url: '/about-us' },
-                { name: 'Homepage Directory', url: '/' },
                 { name: 'Franchise Brands Catalog', url: '/brands' },
                 { name: 'Master Franchise Portal', url: '/master-franchising' },
                 { name: 'Our Specialised Services', url: '/services' },
                 { name: 'Latest Blog Articles', url: '/blogs' },
-                { name: 'Register Your Brand', url: '/brand-registration' },
-                { name: 'Start New Business', url: '/investor-registration' },
-                { name: 'Contact Consulting Desk', url: '/contact' },
-                { name: 'Partner Login Area', url: '/login' },
-                { name: 'Admin Verification Panel', url: '/admin' }
+                { name: 'Contact Consulting Desk', url: '/contact' }
               ].map((link, idx) => (
                 <li key={idx} style={{ marginBottom: '12px' }}>
                   <Link href={link.url} style={{ fontSize: '13.5px', color: '#94A3B8', display: 'inline-flex', alignItems: 'center', gap: '4px' }} className="footer-link-hover">
