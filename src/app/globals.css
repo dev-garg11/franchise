@@ -1362,7 +1362,8 @@ button {
 }
 
 .testimonials-section h2,
-.testimonials-section h3 {
+.testimonials-section h3,
+.testimonials-section h4 {
   color: white;
 }
 
@@ -1431,11 +1432,12 @@ button {
 .author-info h4 {
   font-size: 16px;
   font-weight: 700;
+  color: #ffffff;
 }
 
 .author-info p {
   font-size: 13px;
-  color: #94A3B8;
+  color: #cbd5e1;
 }
 
 /* FAQ Accordion Section */
@@ -4155,6 +4157,10 @@ button {
 }
 
 /* Top Opportunities Hover Cards */
+.top-opportunity-card h3 {
+  color: #ffffff !important;
+}
+
 .top-opportunity-card:hover {
   transform: translateY(-6px);
   box-shadow: 0 20px 35px -10px rgba(15, 23, 42, 0.12) !important;

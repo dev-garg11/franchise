@@ -579,7 +579,7 @@ export default function Home() {
               <Link href="/brand-registration" className="fi-action-card card-blue">
                 <div className="fi-action-info">
                   <span className="fi-action-tag">Franchisor Hub</span>
-                  <h3 className="fi-action-title">Appoint Channel Partners</h3>
+                  <h3 className="fi-action-title">Register your brand</h3>
                   <p className="fi-action-sub">Franchisor & Brand Registration</p>
                 </div>
                 <div className="fi-action-arrow">
@@ -1309,7 +1309,7 @@ export default function Home() {
               <div className="testimonial-author">
                 <div className="author-avatar flex-center">MG</div>
                 <div className="author-info">
-                  <h4>Ms. Meena Goyal</h4>
+                  <h4 style={{ color: "#ffffff" }}>Ms. Meena Goyal</h4>
                   <p>Director, Jaaz Corporation</p>
                 </div>
               </div>
@@ -1322,7 +1322,7 @@ export default function Home() {
               <div className="testimonial-author">
                 <div className="author-avatar flex-center">DA</div>
                 <div className="author-info">
-                  <h4>Darshan Amrute</h4>
+                  <h4 style={{ color: "#ffffff" }}>Darshan Amrute</h4>
                   <p>Head of Franchise Development, Brainytoys</p>
                 </div>
               </div>
@@ -1335,7 +1335,7 @@ export default function Home() {
               <div className="testimonial-author">
                 <div className="author-avatar flex-center">BP</div>
                 <div className="author-info">
-                  <h4>Brijesh Patel</h4>
+                  <h4 style={{ color: "#ffffff" }}>Brijesh Patel</h4>
                   <p>Founder & Director, Doctor Garage</p>
                 </div>
               </div>

@@ -121,7 +121,7 @@ export default function TopFranchiseOpportunities({ brands = [], loading = false
                       <span style={{ fontSize: "11px", textTransform: "uppercase", letterSpacing: "1px", background: "rgba(255,255,255,0.2)", backdropFilter: "blur(4px)", padding: "2px 8px", borderRadius: "4px", fontWeight: "700" }}>
                         {decodeHtmlEntities(brand.category)}
                       </span>
-                      <h3 style={{ fontSize: "20px", fontWeight: "700", margin: "4px 0 0 0", textShadow: "0 2px 4px rgba(0,0,0,0.5)" }}>
+                      <h3 style={{ fontSize: "20px", fontWeight: "700", color: "#ffffff", margin: "4px 0 0 0", textShadow: "0 2px 4px rgba(0,0,0,0.5)" }}>
                         {decodeHtmlEntities(brand.name)}
                       </h3>
                     </div>
