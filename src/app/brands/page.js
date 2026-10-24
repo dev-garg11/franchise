@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, Suspense } from "react";
+import { useState, useEffect, useRef, useCallback, Suspense } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import {
@@ -234,29 +234,69 @@ function BrandsDirectoryPage() {
 
     // Pagination State
     const [visibleCount, setVisibleCount] = useState(6);
+    const loadMoreRef = useRef(null);
+    const isLoadingMoreRef = useRef(false);
 
     // Reset pagination when active filters change
     useEffect(() => {
         setVisibleCount(6);
     }, [searchTerm, selectedCategory, selectedSector, selectedState, selectedLocation, selectedBudget, minBudget, maxBudget]);
 
-    // Handle scroll pagination
+    // Load more brands immediately
+    const loadMoreBrands = useCallback(() => {
+        if (isLoadingMoreRef.current) return;
+        if (visibleCount >= filteredBrands.length) return;
+
+        isLoadingMoreRef.current = true;
+        setVisibleCount(prev => Math.min(prev + 6, filteredBrands.length));
+
+        setTimeout(() => {
+            isLoadingMoreRef.current = false;
+        }, 200);
+    }, [visibleCount, filteredBrands.length]);
+
+    // Trigger immediate loading via IntersectionObserver as soon as the loader element is visible or near viewport
+    useEffect(() => {
+        const target = loadMoreRef.current;
+        if (!target) return;
+        if (visibleCount >= filteredBrands.length) return;
+
+        const observer = new IntersectionObserver(
+            (entries) => {
+                const entry = entries[0];
+                if (entry && entry.isIntersecting) {
+                    loadMoreBrands();
+                }
+            },
+            {
+                root: null,
+                rootMargin: "300px",
+                threshold: 0
+            }
+        );
+
+        observer.observe(target);
+        return () => observer.disconnect();
+    }, [loadMoreBrands, visibleCount, filteredBrands.length]);
+
+    // Fallback scroll listener based directly on the loader element position
     useEffect(() => {
         const handleScroll = () => {
             if (visibleCount >= filteredBrands.length) return;
-
-            // Check if user scrolled near bottom of page
-            const scrolledToBottom =
-                window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 150;
-
-            if (scrolledToBottom) {
-                setVisibleCount(prev => Math.min(prev + 6, filteredBrands.length));
+            const target = loadMoreRef.current;
+            if (target) {
+                const rect = target.getBoundingClientRect();
+                if (rect.top <= window.innerHeight + 300) {
+                    loadMoreBrands();
+                }
             }
         };
 
-        window.addEventListener("scroll", handleScroll);
+        window.addEventListener("scroll", handleScroll, { passive: true });
+        handleScroll();
+
         return () => window.removeEventListener("scroll", handleScroll);
-    }, [visibleCount, filteredBrands]);
+    }, [loadMoreBrands, visibleCount, filteredBrands.length]);
 
     // Modal State
     const [selectedBrand, setSelectedBrand] = useState(null);
@@ -721,7 +761,18 @@ function BrandsDirectoryPage() {
                                     ))}
                                 </div>
                                 {filteredBrands.length > visibleCount ? (
-                                    <div className="flex-center" style={{ margin: "40px 0 20px 0", flexDirection: "column", gap: "10px", width: "100%" }}>
+                                    <div
+                                        ref={loadMoreRef}
+                                        onClick={loadMoreBrands}
+                                        className="flex-center"
+                                        style={{
+                                            margin: "40px 0 20px 0",
+                                            flexDirection: "column",
+                                            gap: "10px",
+                                            width: "100%",
+                                            cursor: "pointer"
+                                        }}
+                                    >
                                         <div className="spinner" style={{ borderTopColor: "var(--primary)", width: "30px", height: "30px", borderWidth: "3px" }}></div>
                                         <p style={{ fontSize: "13px", color: "var(--text-muted)", fontWeight: "600" }}>Loading more brands...</p>
                                     </div>
