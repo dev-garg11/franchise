@@ -6409,4 +6409,553 @@ button {
   padding: 16px 20px !important;
   border-radius: 12px !important;
 }
+
+/* ==========================================================================
+   FRANCHISE APPLY STYLE BANNER (BOTTOM OF TOP MENU - WITHOUT LOGO)
+   ========================================================================== */
+.fa-banner-wrapper {
+  width: 100%;
+  position: relative;
+  z-index: 40;
+  font-family: inherit;
+  background: #ffffff;
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.05);
+}
+
+.fa-container {
+  width: 100%;
+  max-width: 1400px;
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: 16px;
+  padding-right: 16px;
+}
+
+/* 1. Top Promo Bar (Soft Warm Gold Theme) */
+.fa-top-promo-bar {
+  background: linear-gradient(180deg, #FFFBEB 0%, #FEF3C7 100%);
+  border-bottom: 1px solid #FDE68A;
+  padding: 10px 0;
+}
+
+.fa-promo-grid {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.fa-promo-main-col {
+  flex: 1 1 60%;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.fa-expo-banner-link {
+  display: block;
+  width: 100%;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.08);
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+.fa-expo-banner-link:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.12);
+}
+
+.fa-expo-banner-img {
+  width: 100%;
+  height: 120px;
+  object-fit: cover;
+  object-position: center;
+  display: block;
+}
+
+.fa-promo-headline {
+  font-size: 16px;
+  font-weight: 800;
+  color: #0f172a;
+  text-align: center;
+  margin: 6px 0 0 0;
+  letter-spacing: -0.2px;
+}
+
+.fa-highlight-red {
+  color: #dc2626;
+  font-weight: 900;
+}
+
+/* Middle Call & Support Helpline Box */
+.fa-promo-call-col {
+  flex: 0 0 240px;
+}
+
+.fa-call-card {
+  background: #ffffff;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 10px 12px;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.06);
+  text-align: center;
+}
+
+.fa-call-badge {
+  font-size: 11px;
+  font-weight: 700;
+  color: #1e40af;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  margin-bottom: 6px;
+}
+
+.fa-call-icon-pulse {
+  animation: fa-phone-vibe 2s infinite ease-in-out;
+  color: #2563eb;
+}
+
+@keyframes fa-phone-vibe {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.2) rotate(8deg); }
+}
+
+.fa-call-numbers {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.fa-phone-btn {
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+  color: #ffffff !important;
+  font-size: 12.5px;
+  font-weight: 800;
+  padding: 6px 10px;
+  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  text-decoration: none;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 6px rgba(37, 99, 235, 0.25);
+}
+
+.fa-phone-btn:hover {
+  background: linear-gradient(135deg, #1d4ed8 0%, #1e40af 100%);
+  transform: translateY(-1px);
+}
+
+.fa-whatsapp-btn {
+  background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+  color: #ffffff !important;
+  font-size: 11.5px;
+  font-weight: 700;
+  padding: 5px 10px;
+  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  text-decoration: none;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 6px rgba(34, 197, 94, 0.25);
+}
+
+.fa-whatsapp-btn:hover {
+  background: linear-gradient(135deg, #16a34a 0%, #15803d 100%);
+  transform: translateY(-1px);
+}
+
+.fa-call-footer-note {
+  font-size: 10px;
+  color: #64748b;
+  margin-top: 5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+}
+
+/* Magazine / Guide Card */
+.fa-promo-mag-col {
+  flex: 0 0 135px;
+}
+
+.fa-mag-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-decoration: none;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 5px;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.05);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.fa-mag-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.1);
+}
+
+.fa-mag-img-wrap {
+  position: relative;
+  width: 84px;
+  height: 98px;
+  border-radius: 6px;
+  overflow: hidden;
+  background: #0f172a;
+}
+
+.fa-mag-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.fa-mag-overlay-badge {
+  position: absolute;
+  bottom: 3px;
+  left: 3px;
+  right: 3px;
+  background: rgba(15, 23, 42, 0.88);
+  color: #f8fafc;
+  font-size: 8.5px;
+  font-weight: 700;
+  padding: 2px 4px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+}
+
+.fa-mag-caption {
+  text-align: center;
+  margin-top: 4px;
+  width: 100%;
+}
+
+.fa-mag-title {
+  font-size: 10px;
+  font-weight: 800;
+  color: #0f172a;
+  display: block;
+  line-height: 1.2;
+}
+
+.fa-mag-action {
+  font-size: 9.5px;
+  font-weight: 700;
+  color: #2563eb;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  margin-top: 2px;
+}
+
+/* 2. Action Buttons & Search Strip */
+.fa-actions-strip {
+  background: #ffffff;
+  border-top: 1px solid #e2e8f0;
+  border-bottom: 1px solid #e2e8f0;
+  padding: 8px 0;
+}
+
+.fa-actions-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.fa-action-btn {
+  flex: 1 1 200px;
+  min-width: 180px;
+  background: #1e3a8a;
+  color: #ffffff !important;
+  padding: 8px 14px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  text-decoration: none;
+  transition: all 0.25s ease;
+  box-shadow: 0 2px 6px rgba(30, 58, 138, 0.12);
+  position: relative;
+  overflow: hidden;
+}
+
+.fa-btn-channel {
+  background: #1e3a8a;
+}
+
+.fa-btn-expand {
+  background: #1d4ed8;
+}
+
+.fa-btn-start {
+  background: #0f766e;
+}
+
+.fa-action-btn:hover {
+  background: #dc2626 !important;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(220, 38, 38, 0.25);
+}
+
+.fa-action-texts {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.fa-action-main {
+  font-size: 11.5px;
+  font-weight: 800;
+  color: #ffffff;
+  margin: 0;
+  line-height: 1.2;
+}
+
+.fa-action-sub {
+  font-size: 9.5px;
+  color: rgba(255, 255, 255, 0.85);
+  font-weight: 500;
+}
+
+.fa-action-arrow {
+  color: #ffffff;
+  flex-shrink: 0;
+  transition: transform 0.2s ease;
+}
+
+.fa-action-btn:hover .fa-action-arrow {
+  transform: translateX(3px);
+}
+
+/* Keyword Search Widget */
+.fa-search-widget {
+  flex: 1 1 230px;
+  min-width: 200px;
+  display: flex;
+  align-items: center;
+  border: 1.5px solid #cbd5e1;
+  border-radius: 8px;
+  padding: 4px 10px;
+  background: #f8fafc;
+  transition: all 0.2s ease;
+}
+
+.fa-search-widget:focus-within {
+  border-color: #2563eb;
+  background: #ffffff;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+}
+
+.fa-search-input {
+  flex-grow: 1;
+  width: 100%;
+  border: none;
+  outline: none;
+  background: transparent;
+  font-size: 12px;
+  color: #0f172a;
+  padding: 4px 6px;
+}
+
+.fa-search-input::placeholder {
+  color: #64748b;
+  font-size: 11.5px;
+}
+
+.fa-search-submit-btn {
+  background: none;
+  border: none;
+  color: #64748b;
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.2s ease;
+}
+
+.fa-search-submit-btn:hover {
+  color: #2563eb;
+}
+
+/* 3. Top Opportunities Categories Strip */
+.fa-categories-strip {
+  background: #f8fafc;
+  border-bottom: 1px solid #e2e8f0;
+  padding: 8px 0;
+}
+
+.fa-categories-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+.fa-cat-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 16px;
+  border-radius: 10px;
+  text-decoration: none;
+  transition: all 0.25s ease;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+}
+
+.fa-cat-card.cat-purple {
+  background: #ede9fe;
+  border: 1px solid #ddd6fe;
+}
+.fa-cat-card.cat-purple:hover {
+  background: #e0e7ff;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(109, 40, 217, 0.12);
+}
+.fa-cat-card.cat-purple .fa-cat-tag {
+  color: #6d28d9;
+}
+
+.fa-cat-card.cat-orange {
+  background: #ffedd5;
+  border: 1px solid #fed7aa;
+}
+.fa-cat-card.cat-orange:hover {
+  background: #fed7aa;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(234, 88, 12, 0.12);
+}
+.fa-cat-card.cat-orange .fa-cat-tag {
+  color: #c2410c;
+}
+
+.fa-cat-card.cat-green {
+  background: #dcfce7;
+  border: 1px solid #bbf7d0;
+}
+.fa-cat-card.cat-green:hover {
+  background: #bbf7d0;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(22, 163, 74, 0.12);
+}
+.fa-cat-card.cat-green .fa-cat-tag {
+  color: #15803d;
+}
+
+.fa-cat-texts {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.fa-cat-tag {
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+.fa-cat-sub {
+  font-size: 10.5px;
+  color: #475569;
+  font-weight: 500;
+}
+
+.fa-cat-icon-circle {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+  flex-shrink: 0;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+}
+
+.icon-purple {
+  background: #7c3aed;
+}
+
+.icon-orange {
+  background: #ea580c;
+}
+
+.icon-green {
+  background: #16a34a;
+}
+
+/* Responsive Media Queries */
+@media (max-width: 1024px) {
+  .fa-promo-grid {
+    flex-wrap: wrap;
+  }
+  .fa-promo-main-col {
+    flex: 1 1 100%;
+    order: 1;
+  }
+  .fa-promo-call-col {
+    flex: 1 1 50%;
+    order: 2;
+  }
+  .fa-promo-mag-col {
+    flex: 1 1 40%;
+    order: 3;
+    display: flex;
+    justify-content: center;
+  }
+  .fa-mag-card {
+    flex-direction: row;
+    gap: 12px;
+    padding: 8px 14px;
+    align-items: center;
+  }
+  .fa-mag-img-wrap {
+    width: 60px;
+    height: 70px;
+  }
+  .fa-mag-caption {
+    text-align: left;
+  }
+}
+
+@media (max-width: 768px) {
+  .fa-promo-headline {
+    font-size: 14px;
+  }
+  .fa-promo-call-col,
+  .fa-promo-mag-col {
+    flex: 1 1 100%;
+  }
+  .fa-categories-grid {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+  .fa-actions-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .fa-action-btn,
+  .fa-search-widget {
+    flex: 1 1 100%;
+    width: 100%;
+  }
+}
+
 

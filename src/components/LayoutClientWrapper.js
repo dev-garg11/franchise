@@ -4,6 +4,7 @@ import { usePathname, useSearchParams } from "next/navigation";
 import { useState, useEffect, Suspense } from "react";
 import Header from "./Header";
 import Footer from "./Footer";
+import TopMenuBanner from "./TopMenuBanner";
 import AuthModal from "./AuthModal";
 
 import FloatingWhatsApp from "./FloatingWhatsApp";
@@ -74,6 +75,7 @@ export default function LayoutClientWrapper({ children }) {
         />
       </Suspense>
       {!isNoHeaderFooter && <Header />}
+      {!isNoHeaderFooter && <TopMenuBanner />}
       <main style={{ flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
         {children}
       </main>
