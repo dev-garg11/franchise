@@ -19,7 +19,9 @@ import {
   Copy,
   ArrowRight,
   ShieldCheck,
-  Zap
+  Zap,
+  Volume2,
+  VolumeX
 } from "lucide-react";
 import { decodeHtmlEntities } from "@/lib/brandFormatters";
 
@@ -28,13 +30,14 @@ const INITIAL_MESSAGE = {
   role: "assistant",
   content: `### 👋 Welcome to Franchise Roots FR AI Agent!
 
-I'm your **AI-Powered Franchise Advisor**. I analyze high-ranking search trends, brand authority, and investment returns across India to match you with top-performing franchise opportunities.
+I'm your **Franchise Roots Website Assistant**. I answer only from the brands, services, blogs, and details available on this website.
 
 Ask me about:
 - **Best franchise brands** in any category (Food, Automotive, Fashion, Services)
 - **Budget filters** (e.g., *"Franchises under ₹10 Lakhs"*)
 - **Direct page links** to explore brand investment sheets & terms
-- **Master franchise & exclusive territory** availability`,
+- **Master franchise & exclusive territory** availability
+- Questions outside this website's information are referred to the Franchise Roots admin team.`,
   brands: [],
   suggestedPrompts: [
     "🔥 Show Top Trending Franchises",
@@ -56,6 +59,7 @@ export default function SeoAiAgentPopup() {
   const [inputValue, setInputValue] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [copiedId, setCopiedId] = useState(null);
+  const [speakingId, setSpeakingId] = useState(null);
   const [unreadBadge, setUnreadBadge] = useState(true);
 
   // Auto-open if query param ?agent=open or ?ai=true exists
@@ -148,7 +152,7 @@ export default function SeoAiAgentPopup() {
       const errorMessage = {
         id: `bot-err-${Date.now()}`,
         role: "assistant",
-        content: "⚠️ I encountered a temporary connection issue while querying our franchise database. Please try asking again or select one of the suggested prompts below.",
+        content: "⚠️ Website data temporarily unavailable hai. Please thodi der baad try karein ya neeche diye gaye prompt ko select karein.",
         brands: [],
         suggestedPrompts: [
           "🔥 Show Top 3 Trending Franchises",
@@ -180,6 +184,30 @@ export default function SeoAiAgentPopup() {
     navigator.clipboard.writeText(url);
     setCopiedId(brandId);
     setTimeout(() => setCopiedId(null), 2500);
+  };
+
+  const handleSpeakMessage = (messageId, content) => {
+    if (typeof window === "undefined" || !window.speechSynthesis) return;
+    if (speakingId === messageId) {
+      window.speechSynthesis.cancel();
+      setSpeakingId(null);
+      return;
+    }
+
+    window.speechSynthesis.cancel();
+    const spokenText = content
+      .replace(/\[([^\]]+)\]\([^)]*\)/g, "$1")
+      .replace(/[*_#`>-]/g, " ")
+      .replace(/\s+/g, " ")
+      .trim();
+    const utterance = new SpeechSynthesisUtterance(spokenText);
+    const isHindi = /[\u0900-\u097f]/u.test(content) || /\b(hai|hain|mujhe|batao|kya|kaise|chahiye)\b/i.test(content);
+    utterance.lang = isHindi ? "hi-IN" : "en-IN";
+    utterance.rate = 0.95;
+    utterance.onend = () => setSpeakingId(null);
+    utterance.onerror = () => setSpeakingId(null);
+    setSpeakingId(messageId);
+    window.speechSynthesis.speak(utterance);
   };
 
   return (
@@ -328,6 +356,19 @@ export default function SeoAiAgentPopup() {
                         {renderFormattedMarkdown(msg.content)}
                       </div>
 
+                      {msg.role === "assistant" && (
+                        <button
+                          type="button"
+                          className="seo-agent-speak-btn"
+                          onClick={() => handleSpeakMessage(msg.id, msg.content)}
+                          title={speakingId === msg.id ? "Stop voice" : "Listen to answer"}
+                          aria-label={speakingId === msg.id ? "Stop voice" : "Listen to answer"}
+                        >
+                          {speakingId === msg.id ? <VolumeX size={14} /> : <Volume2 size={14} />}
+                          <span>{speakingId === msg.id ? "Stop" : "Listen"}</span>
+                        </button>
+                      )}
+
                       {/* Render Interactive Brand Recommendation Cards if present */}
                       {msg.brands && msg.brands.length > 0 && (
                         <div className="seo-agent-brand-cards-grid">
@@ -473,7 +514,7 @@ export default function SeoAiAgentPopup() {
                       <span className="dot" />
                       <span className="dot" />
                     </div>
-                    <span className="typing-text">FR AI Agent is searching verified brands & links...</span>
+                    <span className="typing-text">FR Website Assistant is checking website data...</span>
                   </div>
                 </div>
               )}

@@ -109,15 +109,11 @@ export function clearBrandsCache() {
  * React hook to consume cached approved brands without UI loading flashes on remount/navigation.
  */
 export function useApprovedBrands() {
-    const [brands, setBrands] = useState(() => {
-        const initialCache = getCachedApprovedBrandsSync();
-        return initialCache || [];
-    });
-
-    const [loading, setLoading] = useState(() => {
-        const initialCache = getCachedApprovedBrandsSync();
-        return !initialCache;
-    });
+    // Keep the first render identical on the server and browser. Reading
+    // sessionStorage during the initial state causes hydration mismatches when
+    // the browser has a cached brand list but the server does not.
+    const [brands, setBrands] = useState([]);
+    const [loading, setLoading] = useState(true);
 
     const loadBrands = useCallback(async (force = false) => {
         if (force) {
