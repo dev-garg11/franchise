@@ -38,4 +38,7 @@ const UserSchema = new mongoose.Schema({
     }
 });
 
+UserSchema.set('bufferCommands', false);
+UserSchema.set('autoIndex', false);
+
 module.exports = mongoose.models.User || mongoose.model('User', UserSchema);

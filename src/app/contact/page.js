@@ -2,7 +2,9 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, Mail, Phone, MapPin, Clock, Send, CheckCircle, Info, HelpCircle } from "lucide-react";
+import { ArrowLeft, Mail, Phone, MapPin, Clock, Send, CheckCircle, Info, HelpCircle, MessageCircle, ArrowRight } from "lucide-react";
+import { toast } from "@/lib/swal";
+import PageHeader from "@/components/public/PageHeader";
 
 export default function ContactUs() {
     const [formData, setFormData] = useState({
@@ -34,6 +36,7 @@ export default function ContactUs() {
         e.preventDefault();
         if (!formData.name || !formData.email || !formData.phone || !formData.message) {
             setError("Please fill out all required fields.");
+            toast.warning("Please fill out all required fields.");
             return;
         }
 
@@ -44,6 +47,7 @@ export default function ContactUs() {
         setTimeout(() => {
             setLoading(false);
             setSubmitted(true);
+            toast.success("Message sent! Our franchise advisors will contact you shortly.");
 
             // Store in localStorage for debugging/admin panel tracking
             try {
@@ -64,37 +68,21 @@ export default function ContactUs() {
         <div style={{ background: "#f8fafc", minHeight: "100vh", padding: "60px 0" }}>
             <div className="container" style={{ maxWidth: "1100px" }}>
 
-                {/* Navigation Breadcrumb */}
-                <div style={{ marginBottom: "24px" }}>
-                    <Link href="/" className="btn btn-outline" style={{ display: "inline-flex", alignItems: "center", gap: "8px", fontSize: "14px", fontWeight: "700", padding: "10px 18px" }}>
-                        <ArrowLeft size={16} /> Back to Homepage
-                    </Link>
-                </div>
-
-                {/* Header Hero Section */}
-                <div style={{
-                    background: "linear-gradient(135deg, var(--primary) 0%, #1e293b 100%)",
-                    borderRadius: "24px",
-                    padding: "50px 40px",
-                    color: "white",
-                    marginBottom: "40px",
-                    position: "relative",
-                    overflow: "hidden",
-                    boxShadow: "var(--shadow-md)"
-                }}>
-                    <div style={{ position: "absolute", top: "-50px", right: "-50px", width: "200px", height: "200px", borderRadius: "50%", background: "var(--secondary-glow)", filter: "blur(40px)" }}></div>
-                    <div style={{ position: "relative", zIndex: 2 }}>
-                        <span className="hero-tag" style={{ background: "rgba(255, 255, 255, 0.1)", color: "#e2e8f0", border: "1px solid rgba(255, 255, 255, 0.15)", padding: "6px 14px" }}>
-                            <Clock size={13} style={{ display: "inline-block", marginRight: "6px", verticalAlign: "middle", color: "var(--secondary)" }} /> Support Desk Online
-                        </span>
-                        <h1 style={{ fontSize: "38px", fontWeight: "800", marginTop: "12.5px", marginBottom: "8px", color: "white" }}>
-                            Contact Our Advisors
-                        </h1>
-                        <p style={{ color: "#94a3b8", fontSize: "15px", maxWidth: "600px", lineHeight: "1.6" }}>
-                            Get verified guidance from start to launch. Connect with India's most trusted franchise advisory and investment solutions experts.
-                        </p>
-                    </div>
-                </div>
+                <PageHeader
+                    theme="contact"
+                    eyebrow={<><Clock size={14} /> SUPPORT DESK ONLINE</>}
+                    titleBefore="Contact Our "
+                    titleAccent="Advisors"
+                    subtitle="Get verified guidance from start to launch. Connect with India's most trusted franchise advisory and investment solutions experts."
+                    leftExtra={<Link href="/" className="page-header-back"><ArrowLeft size={14} /> Back to Homepage</Link>}
+                    rightVisual={(
+                        <div className="page-header-link-stack">
+                            <a href="tel:+919815489999" className="page-header-link-card page-header-link-card--blue"><span><Phone size={20} /></span><strong>Call us<small>+91-9815489999</small></strong><ArrowRight size={17} /></a>
+                            <a href="https://wa.me/919815489999" className="page-header-link-card page-header-link-card--green"><span><MessageCircle size={20} /></span><strong>WhatsApp Advisory<small>Chat with our advisory team</small></strong><ArrowRight size={17} /></a>
+                            <a href="#office-information" className="page-header-link-card page-header-link-card--red"><span><MapPin size={20} /></span><strong>Visit our office<small>Chandigarh HQ</small></strong><ArrowRight size={17} /></a>
+                        </div>
+                    )}
+                />
 
                 {/* Major Columns Card Wrapper */}
                 <div style={{
@@ -107,7 +95,7 @@ export default function ContactUs() {
                     <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
 
                         {/* Direct Info Card */}
-                        <div style={{
+                        <div id="office-information" style={{
                             background: "white",
                             borderRadius: "18px",
                             border: "1px solid var(--border-color)",

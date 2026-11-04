@@ -1,6 +1,10 @@
 import { NextResponse } from "next/server";
 import { getBlogs, saveBlog } from "@/lib/db";
 
+let blogsMemoryCache = null;
+let blogsCacheTime = 0;
+const BLOGS_CACHE_TTL = 30 * 1000;
+
 export async function GET(request) {
     try {
         const { searchParams } = new URL(request.url);
@@ -8,7 +12,14 @@ export async function GET(request) {
         const pageParam = searchParams.get("page");
         const limitParam = searchParams.get("limit");
 
-        let blogs = await getBlogs();
+        let blogs;
+        if (blogsMemoryCache && Date.now() - blogsCacheTime < BLOGS_CACHE_TTL) {
+            blogs = blogsMemoryCache;
+        } else {
+            blogs = await getBlogs();
+            blogsMemoryCache = blogs;
+            blogsCacheTime = Date.now();
+        }
 
         if (search.trim()) {
             const term = search.trim().toLowerCase();
@@ -48,6 +59,7 @@ export async function POST(request) {
         }
 
         const saved = await saveBlog(body);
+        blogsMemoryCache = null;
         return NextResponse.json({ success: true, blog: saved }, { status: 201 });
     } catch (error) {
         return NextResponse.json({ error: "Failed to save blog post" }, { status: 500 });

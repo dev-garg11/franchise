@@ -92,14 +92,15 @@ function generateFallbackDescription(brand = {}) {
  */
 export function formatLakhs(val) {
   if (!val && val !== 0) return "N/A";
-  if (typeof val === "string" && (val.includes("Lakh") || val.includes("Cr") || val.includes("₹"))) {
-    return decodeHtmlEntities(val);
+  const rupee = "\u20B9";
+  if (typeof val === "string" && /lakh|cr|rs\.?/i.test(val)) {
+    return decodeHtmlEntities(val).replace(/(?:ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¹|Ã¢â€šÂ¹|â‚¹)/g, rupee);
   }
   const num = Number(val);
   if (isNaN(num)) return decodeHtmlEntities(String(val));
-  if (num >= 10000000) return `₹ ${(num / 10000000).toFixed(2)} Cr`;
-  if (num >= 100000) return `₹ ${(num / 100000).toFixed(1)} Lakhs`;
-  return `₹ ${num.toLocaleString("en-IN")}`;
+  if (num >= 10000000) return `${rupee} ${(num / 10000000).toFixed(2)} Cr`;
+  if (num >= 100000) return `${rupee} ${(num / 100000).toFixed(1)} Lakhs`;
+  return `${rupee} ${num.toLocaleString("en-IN")}`;
 }
 
 /**

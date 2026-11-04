@@ -6,7 +6,7 @@ import { usePathname, useRouter } from "next/navigation";
 import {
   LogIn, PlusCircle, Shield, User, LogOut, Building, Menu, X,
   Bell, Search, ChevronDown, Sparkles, HelpCircle, Layers, Star,
-  Trash2, CheckCircle, ArrowRight, Clock, ArrowUp, Crown
+  Trash2, CheckCircle, ArrowRight, Clock, ArrowUp, Crown, MessageCircle
 } from "lucide-react";
 import { getApprovedBrands } from "@/lib/brandsCache";
 import { decodeHtmlEntities } from "@/lib/brandFormatters";
@@ -82,7 +82,6 @@ export default function Header() {
   const [loadingLogin, setLoadingLogin] = useState(false);
 
   // Scroll Metrics
-  const [scrollPercent, setScrollPercent] = useState(0);
   const [showScrollTop, setShowScrollTop] = useState(false);
 
   // Mouse Glow Position
@@ -91,79 +90,106 @@ export default function Header() {
   // Refs for closing on click outside
   const notificationRef = useRef(null);
   const userDropdownRef = useRef(null);
+  const solutionsDropdownRef = useRef(null);
+  const dropdownTimeoutRef = useRef(null);
   const searchInputRef = useRef(null);
+  const progressBarRef = useRef(null);
+  const mobileMenuButtonRef = useRef(null);
+  const mobileNavRef = useRef(null);
+  const wasMobileMenuOpen = useRef(false);
 
   // Sync auth, notifications, history on render/pathname change
   useEffect(() => {
-    const adminAuth = localStorage.getItem("adminLoggedIn");
-    const investorAuth = localStorage.getItem("investorLoggedIn");
-    const brandAuth = localStorage.getItem("brandLoggedIn");
+    const syncAuth = () => {
+      try {
+        const adminAuth = typeof window !== "undefined" ? localStorage.getItem("adminLoggedIn") : null;
+        const investorAuth = typeof window !== "undefined" ? localStorage.getItem("investorLoggedIn") : null;
+        const brandAuth = typeof window !== "undefined" ? localStorage.getItem("brandLoggedIn") : null;
 
-    const invName = localStorage.getItem("investorName");
-    const brName = localStorage.getItem("brandName");
+        const invName = typeof window !== "undefined" ? localStorage.getItem("investorName") : null;
+        const brName = typeof window !== "undefined" ? localStorage.getItem("brandName") : null;
 
-    setIsAdmin(adminAuth === "true");
-    setIsInvestor(investorAuth === "true");
-    setIsBrand(brandAuth === "true");
+        setIsAdmin(adminAuth === "true");
+        setIsInvestor(investorAuth === "true");
+        setIsBrand(brandAuth === "true");
 
-    setInvestorName(invName || "Investor");
-    setBrandName(brName || "Brand Owner");
+        setInvestorName(invName || "Investor");
+        setBrandName(brName || "Brand Owner");
+      } catch (e) {}
+    };
 
-    setMobileMenuOpen(false);
+    syncAuth();
+    try {
+      const storedNotifs = localStorage.getItem("userNotifications");
+      if (storedNotifs) {
+        // Notifications are intentionally hydrated from localStorage on mount.
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        setNotifications(JSON.parse(storedNotifs));
+      } else {
+        localStorage.setItem("userNotifications", JSON.stringify(DEFAULT_NOTIFICATIONS));
+        setNotifications(DEFAULT_NOTIFICATIONS);
+      }
+    } catch (e) {}
 
-    // Notifications init
-    const storedNotifs = localStorage.getItem("userNotifications");
-    if (storedNotifs) {
-      setNotifications(JSON.parse(storedNotifs));
-    } else {
-      localStorage.setItem("userNotifications", JSON.stringify(DEFAULT_NOTIFICATIONS));
-      setNotifications(DEFAULT_NOTIFICATIONS);
-    }
+    try {
+      const storedHistory = localStorage.getItem("recentSearches");
+      if (storedHistory) {
+        setSearchHistory(JSON.parse(storedHistory));
+      }
+    } catch (e) {}
 
-    // Search History init
-    const storedHistory = localStorage.getItem("recentSearches");
-    if (storedHistory) {
-      setSearchHistory(JSON.parse(storedHistory));
-    }
+    window.addEventListener("storage", syncAuth);
+    window.addEventListener("auth-state-changed", syncAuth);
+    return () => {
+      window.removeEventListener("storage", syncAuth);
+      window.removeEventListener("auth-state-changed", syncAuth);
+    };
   }, [pathname]);
 
-  // Sync Scroll Percent and mouse move glow
+  // Sync navbar state and progress without a React render on every scroll frame.
   useEffect(() => {
+    let frame = 0;
     const handleScroll = () => {
-      // shrink navbar
-      if (window.scrollY > 20) {
-        setIsScrolled(true);
-      } else {
-        setIsScrolled(false);
-      }
-
-      // show scroll top
-      if (window.scrollY > 300) {
-        setShowScrollTop(true);
-      } else {
-        setShowScrollTop(false);
-      }
-
-      // calculate reading progress
-      const totalHeight = document.documentElement.scrollHeight - window.innerHeight;
-      if (totalHeight > 0) {
-        setScrollPercent((window.scrollY / totalHeight) * 100);
-      }
+      if (frame) return;
+      frame = window.requestAnimationFrame(() => {
+        frame = 0;
+        const scrollY = window.scrollY;
+        setIsScrolled(scrollY > 24);
+        setShowScrollTop(scrollY > 300);
+        const totalHeight = document.documentElement.scrollHeight - window.innerHeight;
+        const progress = totalHeight > 0 ? Math.min(1, Math.max(0, scrollY / totalHeight)) : 0;
+        progressBarRef.current?.style.setProperty("transform", `scaleX(${progress})`);
+      });
     };
 
     const handleMouseMove = (e) => {
       setMousePos({ x: e.clientX, y: e.clientY });
     };
 
-    window.addEventListener("scroll", handleScroll);
+    handleScroll();
+    window.addEventListener("scroll", handleScroll, { passive: true });
     window.addEventListener("mousemove", handleMouseMove);
     return () => {
       window.removeEventListener("scroll", handleScroll);
       window.removeEventListener("mousemove", handleMouseMove);
+      if (frame) window.cancelAnimationFrame(frame);
     };
   }, []);
 
   // Keyboard Shortcuts Ctrl+K and ESC
+  useEffect(() => {
+    const body = document.body;
+    if (mobileMenuOpen) {
+      body.style.overflow = "hidden";
+      window.setTimeout(() => mobileNavRef.current?.querySelector("a, button")?.focus(), 0);
+    } else {
+      body.style.overflow = "";
+      if (wasMobileMenuOpen.current) mobileMenuButtonRef.current?.focus();
+    }
+    wasMobileMenuOpen.current = mobileMenuOpen;
+    return () => { body.style.overflow = ""; };
+  }, [mobileMenuOpen]);
+
   useEffect(() => {
     const handleKeyDown = (e) => {
       if ((e.ctrlKey || e.metaKey) && e.key === "k") {
@@ -172,11 +198,26 @@ export default function Header() {
       }
       if (e.key === "Escape") {
         setSearchModalOpen(false);
+        setActiveDropdown(false);
+        setMobileMenuOpen(false);
+      }
+      if (mobileMenuOpen && e.key === "Tab" && mobileNavRef.current) {
+        const focusable = [...mobileNavRef.current.querySelectorAll("a, button")].filter((element) => !element.disabled);
+        if (focusable.length === 0) return;
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+        if (e.shiftKey && document.activeElement === first) {
+          e.preventDefault();
+          last.focus();
+        } else if (!e.shiftKey && document.activeElement === last) {
+          e.preventDefault();
+          first.focus();
+        }
       }
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, []);
+  }, [mobileMenuOpen]);
 
   // Click Outside logic
   useEffect(() => {
@@ -187,10 +228,49 @@ export default function Header() {
       if (userDropdownRef.current && !userDropdownRef.current.contains(event.target)) {
         setUserDropdownOpen(false);
       }
+      if (solutionsDropdownRef.current && !solutionsDropdownRef.current.contains(event.target)) {
+        setActiveDropdown(false);
+      }
     }
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
+
+  // Close solutions dropdown on route navigation
+  useEffect(() => {
+    setActiveDropdown(false);
+    if (dropdownTimeoutRef.current) {
+      clearTimeout(dropdownTimeoutRef.current);
+      dropdownTimeoutRef.current = null;
+    }
+  }, [pathname]);
+
+  const handleDropdownMouseEnter = () => {
+    if (dropdownTimeoutRef.current) {
+      clearTimeout(dropdownTimeoutRef.current);
+      dropdownTimeoutRef.current = null;
+    }
+    setActiveDropdown(true);
+  };
+
+  const handleDropdownMouseLeave = () => {
+    if (dropdownTimeoutRef.current) {
+      clearTimeout(dropdownTimeoutRef.current);
+    }
+    dropdownTimeoutRef.current = setTimeout(() => {
+      setActiveDropdown(false);
+    }, 280);
+  };
+
+  const handleDropdownToggle = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (dropdownTimeoutRef.current) {
+      clearTimeout(dropdownTimeoutRef.current);
+      dropdownTimeoutRef.current = null;
+    }
+    setActiveDropdown((prev) => !prev);
+  };
 
   // Fetch approved brands for search if search modal is opened
   useEffect(() => {
@@ -219,18 +299,20 @@ export default function Header() {
 
   // Handle live query filtering
   useEffect(() => {
-    if (!searchQuery) {
-      setFilteredBrands([]);
-      return;
-    }
-    const query = searchQuery.toLowerCase();
-    const results = allBrands.filter(
-      b => b.name.toLowerCase().includes(query) ||
-        b.company.toLowerCase().includes(query) ||
-        b.category.toLowerCase().includes(query) ||
-        b.description.toLowerCase().includes(query)
-    );
-    setFilteredBrands(results);
+    queueMicrotask(() => {
+      if (!searchQuery) {
+        setFilteredBrands([]);
+        return;
+      }
+      const query = searchQuery.toLowerCase();
+      const results = allBrands.filter(
+        b => b.name.toLowerCase().includes(query) ||
+          b.company.toLowerCase().includes(query) ||
+          b.category.toLowerCase().includes(query) ||
+          b.description.toLowerCase().includes(query)
+      );
+      setFilteredBrands(results);
+    });
   }, [searchQuery, allBrands]);
 
   const handleLogout = () => {
@@ -247,6 +329,9 @@ export default function Header() {
     setIsInvestor(false);
     setIsBrand(false);
     setMobileMenuOpen(false);
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new Event("auth-state-changed"));
+    }
     router.push("/");
   };
 
@@ -267,7 +352,7 @@ export default function Header() {
     if (searchQuery.trim()) {
       addQueryToHistory(searchQuery);
       setSearchModalOpen(false);
-      router.push(`/brands/?search=${encodeURIComponent(searchQuery)}`);
+      router.push(`/brands?search=${encodeURIComponent(searchQuery)}`);
     }
   };
 
@@ -275,13 +360,13 @@ export default function Header() {
     setSearchQuery(term);
     addQueryToHistory(term);
     setSearchModalOpen(false);
-    router.push(`/brands/?search=${encodeURIComponent(term)}`);
+    router.push(`/brands?search=${encodeURIComponent(term)}`);
   };
 
   const handleResultClick = (brand) => {
     addQueryToHistory(brand.name);
     setSearchModalOpen(false);
-    router.push(`/brands/?search=${encodeURIComponent(brand.name)}`);
+    router.push(`/brands?search=${encodeURIComponent(brand.name)}`);
   };
 
   const clearSearchHistory = () => {
@@ -318,22 +403,23 @@ export default function Header() {
 
   return (
     <>
-      {/* 1. Reading Progress Bar */}
-      <div className="progress-bar-container">
-        <div className="progress-bar" style={{ width: `${scrollPercent}%` }}></div>
-      </div>
-
-      {/* 2. Interactive Mouse Glow Orbs */}
+      {/* Interactive Mouse Glow Orbs */}
       <div className="mouse-glow-trail" style={{ left: `${mousePos.x}px`, top: `${mousePos.y}px` }}></div>
 
-      {/* 3. Header Container */}
+      {/* Header Container */}
       <header className={`header ${isScrolled ? "shrink" : ""}`} style={{
-        position: 'sticky',
+        position: 'fixed',
         top: 0,
-        zIndex: 1000,
+        left: 0,
+        right: 0,
+        zIndex: 10000,
         width: '100%',
+        backgroundColor: '#ffffff',
         transition: 'var(--transition-normal)'
       }}>
+        <div className="progress-bar-container" aria-hidden="true">
+          <div ref={progressBarRef} className="progress-bar"></div>
+        </div>
         <div className="container header-container" style={{
           display: 'flex',
           alignItems: 'center',
@@ -342,6 +428,7 @@ export default function Header() {
         }}>
           {/* Logo */}
           <Link href="/" style={{ display: 'flex', alignItems: 'center', transition: 'all 0.3s ease', textDecoration: 'none' }}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src="/WhatsApp_Image_2026-07-16_at_4.40.00_PM__2_-removebg-preview.png"
               alt="Franchise Roots"
@@ -356,17 +443,34 @@ export default function Header() {
             />
           </Link>
 
+          <button
+            type="button"
+            className="mobile-search-toggle"
+            onClick={() => setSearchModalOpen(true)}
+            aria-label="Search opportunities"
+          >
+            <Search size={18} aria-hidden="true" />
+          </button>
+
           {/* Mobile Hamburger Button */}
           <button
+            ref={mobileMenuButtonRef}
             className="mobile-menu-toggle flex-center"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            aria-label="Toggle menu"
+            aria-label="Open menu"
+            aria-expanded={mobileMenuOpen}
+            aria-controls="site-navigation"
           >
             {mobileMenuOpen ? <X size={22} /> : <Menu size={22} />}
           </button>
 
+          {mobileMenuOpen && <button type="button" className="mobile-menu-overlay" aria-label="Close menu" onClick={() => setMobileMenuOpen(false)} />}
+
           {/* Navigation container */}
-          <nav className={`nav-container ${mobileMenuOpen ? "open" : ""}`}>
+          <nav ref={mobileNavRef} id="site-navigation" className={`nav-container ${mobileMenuOpen ? "open" : ""}`}>
+            <button type="button" className="mobile-drawer-close" onClick={() => setMobileMenuOpen(false)} aria-label="Close menu">
+              <X size={20} aria-hidden="true" />
+            </button>
             <ul className="nav-links">
               <li>
                 <Link href="/" className={`nav-link ${pathname === "/" ? "active" : ""}`} onClick={() => setMobileMenuOpen(false)}>
@@ -375,45 +479,116 @@ export default function Header() {
               </li>
               {/* Mega Dropdown / Solutions menu */}
               <li
-                onMouseEnter={() => setActiveDropdown(true)}
-                onMouseLeave={() => setActiveDropdown(false)}
+                ref={solutionsDropdownRef}
+                onMouseEnter={handleDropdownMouseEnter}
+                onMouseLeave={handleDropdownMouseLeave}
                 style={{ position: 'relative' }}
               >
-                <button className="nav-link" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', cursor: 'pointer', background: 'none', border: 'none', whiteSpace: 'nowrap' }}>
+                <button
+                  type="button"
+                  onClick={handleDropdownToggle}
+                  onKeyDown={(event) => {
+                    if (event.key === "Escape") setActiveDropdown(false);
+                    if (event.key === "Enter" || event.key === " ") {
+                      event.preventDefault();
+                      setActiveDropdown((prev) => !prev);
+                    }
+                  }}
+                  aria-expanded={activeDropdown}
+                  aria-controls="solutions-dropdown"
+                  aria-haspopup="menu"
+                  className={`nav-link ${pathname === "/brand-registration" || pathname === "/investor-registration" ? "active" : ""}`}
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', cursor: 'pointer', border: 'none', whiteSpace: 'nowrap' }}
+                >
                   Solutions <ChevronDown size={14} style={{ transform: activeDropdown ? 'rotate(180deg)' : 'none', transition: 'var(--transition-fast)', flexShrink: 0 }} />
                 </button>
 
                 {activeDropdown && (
-                  <div style={{
+                  <div id="solutions-dropdown" className="solutions-dropdown-panel" onMouseEnter={handleDropdownMouseEnter} onMouseLeave={handleDropdownMouseLeave} style={{
                     position: 'absolute',
-                    top: '100%',
-                    left: '-50px',
-                    width: '320px',
-                    background: 'rgba(255, 255, 255, 0.95)',
+                    top: 'calc(100% + 8px)',
+                    left: '50%', transform: 'translateX(-50%)',
+                    width: '340px',
+                    background: '#ffffff',
                     backdropFilter: 'blur(20px)',
-                    borderRadius: 'var(--radius-md)',
-                    boxShadow: 'var(--shadow-lg)',
+                    borderRadius: '16px',
+                    boxShadow: '0 20px 45px -8px rgba(15, 23, 42, 0.16), 0 0 0 1px rgba(226, 232, 240, 0.9)',
                     border: '1px solid rgba(255, 255, 255, 0.6)',
-                    padding: '20px',
+                    padding: '10px',
                     display: 'flex',
                     flexDirection: 'column',
-                    gap: '16px',
+                    gap: '8px',
                     zIndex: 1100,
                     marginTop: '4px',
                     animation: 'dropdown-fade-in 0.2s ease-out'
                   }}>
-                    <Link href="/brand-registration" style={{ display: 'flex', gap: '12px', padding: '8px', borderRadius: '8px' }} className="dropdown-item-hover" onClick={() => setMobileMenuOpen(false)}>
-                      <Building size={18} style={{ color: 'var(--primary)', flexShrink: 0, marginTop: '2px' }} />
+                    <div style={{ position: 'absolute', top: '-14px', left: 0, right: 0, height: '16px', background: 'transparent' }} />
+                    <Link
+                      href="/brand-registration"
+                      className="solutions-dropdown-item"
+                      role="menuitem"
+                      onClick={() => { setActiveDropdown(false); setMobileMenuOpen(false); }}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '12px',
+                        padding: '12px 14px',
+                        borderRadius: '12px',
+                        textDecoration: 'none',
+                        background: '#ffffff',
+                        border: '1px solid #f1f5f9',
+                        transition: 'all 0.15s ease',
+                        cursor: 'pointer'
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.background = '#f0f7ff';
+                        e.currentTarget.style.borderColor = '#bfdbfe';
+                        e.currentTarget.style.transform = 'translateY(-1px)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.background = '#ffffff';
+                        e.currentTarget.style.borderColor = '#f1f5f9';
+                        e.currentTarget.style.transform = 'none';
+                      }}
+                    >
+                      <div style={{ width: '36px', height: '36px', borderRadius: '10px', backgroundColor: '#eff6ff', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, color: '#2563eb' }}><Building size={18} /></div>
                       <div>
                         <h5 style={{ fontSize: '13.5px', fontWeight: '700', color: 'var(--text-dark)' }}>Brand Listing Expansion</h5>
-                        <p style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Promote your business concepts to 50k+ investors.</p>
+                        <p style={{ fontSize: '12px', color: '#64748b', margin: 0, lineHeight: '1.4' }}>Promote your business concepts to 50k+ investors.</p>
                       </div>
                     </Link>
-                    <Link href="/investor-registration" style={{ display: 'flex', gap: '12px', padding: '8px', borderRadius: '8px' }} className="dropdown-item-hover" onClick={() => setMobileMenuOpen(false)}>
-                      <Sparkles size={18} style={{ color: 'var(--secondary)', flexShrink: 0, marginTop: '2px' }} />
+                    <Link
+                      href="/investor-registration"
+                      className="solutions-dropdown-item"
+                      role="menuitem"
+                      onClick={() => { setActiveDropdown(false); setMobileMenuOpen(false); }}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '12px',
+                        padding: '12px 14px',
+                        borderRadius: '12px',
+                        textDecoration: 'none',
+                        background: '#ffffff',
+                        border: '1px solid #f1f5f9',
+                        transition: 'all 0.15s ease',
+                        cursor: 'pointer'
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.background = '#faf5ff';
+                        e.currentTarget.style.borderColor = '#e9d5ff';
+                        e.currentTarget.style.transform = 'translateY(-1px)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.background = '#ffffff';
+                        e.currentTarget.style.borderColor = '#f1f5f9';
+                        e.currentTarget.style.transform = 'none';
+                      }}
+                    >
+                      <div style={{ width: '36px', height: '36px', borderRadius: '10px', backgroundColor: '#faf5ff', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, color: '#9333ea' }}><Sparkles size={18} /></div>
                       <div>
                         <h5 style={{ fontSize: '13.5px', fontWeight: '700', color: 'var(--text-dark)' }}>Investor Matching Desk</h5>
-                        <p style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Identify pre-qualified franchise recommendations.</p>
+                        <p style={{ fontSize: '12px', color: '#64748b', margin: 0, lineHeight: '1.4' }}>Identify pre-qualified franchise recommendations.</p>
                       </div>
                     </Link>
                     <div style={{ display: 'flex', gap: '12px', padding: '8px', borderTop: '1px solid rgba(229,231,235,0.5)', paddingTop: '12px' }}>
@@ -426,7 +601,7 @@ export default function Header() {
               <li>
                 <Link
                   href="/brands"
-                  className={`nav-link ${pathname === "/brands" ? "active" : ""}`}
+                  className={`nav-link ${pathname === "/brands" || pathname.startsWith("/brands/") || pathname.startsWith("/brand/") ? "active" : ""}`}
                   onClick={() => setMobileMenuOpen(false)}
                 >
                   Brands
@@ -435,7 +610,7 @@ export default function Header() {
               <li>
                 <Link
                   href="/master-franchising"
-                  className={`nav-link ${pathname === "/master-franchising" ? "active" : ""}`}
+                  className={`nav-link ${pathname === "/master-franchising" || pathname.startsWith("/master-franchis") ? "active" : ""}`}
                   onClick={() => setMobileMenuOpen(false)}
                   style={{ display: "inline-flex", alignItems: "center", gap: "5px", whiteSpace: "nowrap" }}
                 >
@@ -473,17 +648,75 @@ export default function Header() {
               <li>
                 <Link
                   href="/contact"
-                  className={`nav-link ${pathname === "/contact" ? "active" : ""}`}
+                  className={`nav-link ${pathname === "/contact" || pathname.startsWith("/contact") ? "active" : ""}`}
                   onClick={() => setMobileMenuOpen(false)}
                 >
                   Contact
                 </Link>
               </li>
-              {!isAdmin && !isInvestor && !isBrand && null}
+              {isAdmin && (
+                <li className="mobile-auth-item" style={{ marginTop: '8px', paddingTop: '8px', borderTop: '1px solid #e2e8f0' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    <Link
+                      href="/admin"
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="btn"
+                      style={{ padding: '8px 16px', fontSize: '13px', borderRadius: '9999px', textAlign: 'center', background: '#2563eb', color: '#fff', textDecoration: 'none', fontWeight: '700' }}
+                    >
+                      Admin Dashboard
+                    </Link>
+                    <button
+                      type="button"
+                      onClick={() => { setMobileMenuOpen(false); handleLogout(); }}
+                      className="btn btn-outline"
+                      style={{ padding: '8px 16px', fontSize: '13px', borderRadius: '9999px', background: '#fff', border: '1px solid #fecdd3', color: '#e11d48', cursor: 'pointer', fontWeight: '700' }}
+                    >
+                      Logout
+                    </button>
+                  </div>
+                </li>
+              )}
+              {!isAdmin && !isInvestor && !isBrand && (
+                <li className="mobile-auth-item" style={{ marginTop: '8px', paddingTop: '8px', borderTop: '1px solid #e2e8f0' }}>
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setMobileMenuOpen(false);
+                        window.dispatchEvent(new CustomEvent("open-auth-modal", { detail: { tab: "login" } }));
+                      }}
+                      className="btn btn-outline"
+                      style={{ padding: '8px 16px', fontSize: '13px', borderRadius: '9999px', background: '#fff', border: '1px solid #e2e8f0', cursor: 'pointer' }}
+                    >
+                      Login
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setMobileMenuOpen(false);
+                        window.dispatchEvent(new CustomEvent("open-auth-modal", { detail: { tab: "register" } }));
+                      }}
+                      className="btn"
+                      style={{ padding: '8px 16px', fontSize: '13px', borderRadius: '9999px', background: '#eff6ff', color: '#2563eb', border: '1px solid #dbeafe', cursor: 'pointer' }}
+                    >
+                      Register
+                    </button>
+                  </div>
+                </li>
+              )}
             </ul>
 
             {/* Right-side utilities and CTAs */}
             <div className="nav-actions">
+              <button
+                type="button"
+                className="search-circle-btn"
+                onClick={() => setSearchModalOpen(true)}
+                aria-label="Search opportunities"
+                title="Search opportunities (Ctrl+K)"
+              >
+                <Search size={16} />
+              </button>
 
               {/* Login Profile Actions */}
               {isAdmin || isInvestor || isBrand ? (
@@ -492,6 +725,17 @@ export default function Header() {
                     className="user-profile-group"
                     style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }}
                     onClick={() => setUserDropdownOpen(prev => !prev)}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter" || event.key === " ") {
+                        event.preventDefault();
+                        setUserDropdownOpen(prev => !prev);
+                      }
+                      if (event.key === "Escape") setUserDropdownOpen(false);
+                    }}
+                    role="button"
+                    tabIndex={0}
+                    aria-haspopup="menu"
+                    aria-expanded={userDropdownOpen}
                   >
                     <div className="user-avatar-btn">
                       {isAdmin ? "AD" : isInvestor ? investorName.substring(0, 2).toUpperCase() : brandName.substring(0, 2).toUpperCase()}
@@ -563,6 +807,7 @@ export default function Header() {
               ) : (
                 <div className="auth-buttons-group" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                   <button
+                    type="button"
                     onClick={() => {
                       setLoadingLogin(true);
                       setTimeout(() => {
@@ -571,28 +816,53 @@ export default function Header() {
                       }, 300);
                     }}
                     className="btn btn-outline desktop-only-auth"
-                    style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '9px 16px', fontSize: '13.5px', fontWeight: '700' }}
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      borderRadius: '9999px',
+                      background: '#ffffff',
+                      border: '1px solid #e2e8f0',
+                      padding: '8px 18px',
+                      fontSize: '13.5px',
+                      fontWeight: '700',
+                      color: 'var(--text-dark)',
+                      cursor: 'pointer'
+                    }}
                   >
                     {loadingLogin ? (
                       <div className="spinner" style={{ width: "14px", height: "14px", borderWidth: "2px", borderColor: "rgba(0,0,0,0.1)", borderTopColor: "var(--primary)" }}></div>
-                    ) : (
-                      <LogIn size={15} />
-                    )}
+                    ) : null}
                     Login
+                    {!loadingLogin && <ArrowRight size={14} />}
                   </button>
 
                   <button
+                    type="button"
                     onClick={() => {
                       window.dispatchEvent(new CustomEvent("open-auth-modal", { detail: { tab: "register" } }));
                     }}
                     className="btn desktop-only-auth"
-                    style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '9px 16px', fontSize: '13.5px', fontWeight: '700', background: 'rgba(37, 99, 235, 0.1)', color: 'var(--primary)', border: '1px solid rgba(37, 99, 235, 0.2)' }}
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      borderRadius: '9999px',
+                      background: '#eff6ff',
+                      color: '#2563eb',
+                      border: '1px solid #dbeafe',
+                      padding: '8px 18px',
+                      fontSize: '13.5px',
+                      fontWeight: '700',
+                      cursor: 'pointer'
+                    }}
                   >
                     <User size={15} />
                     Register
                   </button>
 
                   <button
+                    type="button"
                     onClick={() => {
                       setLoadingAddBrand(true);
                       setTimeout(() => {
@@ -601,7 +871,20 @@ export default function Header() {
                       }, 400);
                     }}
                     className="btn btn-primary add-brand-btn-premium"
-                    style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '9px 18px', fontSize: '13.5px', fontWeight: '700' }}
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      background: 'linear-gradient(90deg, #7c3aed 0%, #ff5a36 100%)',
+                      color: '#ffffff',
+                      borderRadius: '9999px',
+                      padding: '9px 20px',
+                      border: 'none',
+                      boxShadow: '0 4px 14px rgba(124, 58, 237, 0.25)',
+                      fontSize: '13.5px',
+                      fontWeight: '700',
+                      cursor: 'pointer'
+                    }}
                   >
                     {loadingAddBrand ? (
                       <div className="spinner" style={{ width: "14px", height: "14px", borderWidth: "2px", borderTopColor: "white" }}></div>
@@ -612,6 +895,16 @@ export default function Header() {
                   </button>
                 </div>
               )}
+
+              <a
+                className="mobile-whatsapp-advisory"
+                href={`https://api.whatsapp.com/send?phone=${(process.env.NEXT_PUBLIC_ADMIN_WHATSAPP || "919815489999").replace(/[^0-9]/g, "")}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                <MessageCircle size={17} /> WhatsApp Advisory
+              </a>
 
             </div>
           </nav>
@@ -680,10 +973,10 @@ export default function Header() {
                   <div>
                     <span className="search-section-title">Popular Categories</span>
                     <div className="search-tags-row">
-                      {["Food and Beverage", "Retail", "Education", "Automobiles", "Health and Wellness"].map((category, index) => (
+                      {["Food and Beverage", "Retail", "Education", "Automotive", "Beauty & Health"].map((category, index) => (
                         <div key={index} className="search-tag-chip" style={{ background: "rgba(124, 58, 237, 0.05)", color: "var(--secondary)", borderColor: "rgba(124, 58, 237, 0.1)" }} onClick={() => {
                           setSearchModalOpen(false);
-                          router.push(`/brands/?category=${encodeURIComponent(category)}`);
+                          router.push(`/brands?category=${encodeURIComponent(category)}`);
                         }}>
                           <Building size={12} />
                           {category}
@@ -706,7 +999,7 @@ export default function Header() {
                     <div className="panel-empty-state" style={{ padding: "30px 0" }}>
                       <HelpCircle size={28} />
                       <span className="panel-empty-title">No Brands Found</span>
-                      <p style={{ fontSize: "12px", marginTop: "4px" }}>We couldn't find any approved brand matching "{searchQuery}".</p>
+                      <p style={{ fontSize: "12px", marginTop: "4px" }}>We couldn&apos;t find any approved brand matching &quot;{searchQuery}&quot;.</p>
                     </div>
                   ) : (
                     <div className="search-results-list">
@@ -716,6 +1009,7 @@ export default function Header() {
                           className="search-result-item-card"
                           onClick={() => handleResultClick(brand)}
                         >
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
                           <img
                             className="search-result-thumb"
                             src={brand.image || "https://images.unsplash.com/photo-1524178232363-1fb2b075b655?auto=format&fit=crop&q=80&w=100"}

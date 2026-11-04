@@ -7,18 +7,22 @@ export default async function sitemap() {
     const baseUrl = "https://www.franchiseroots.com";
 
     // Connect to database safely
+    let isDbConnected = false;
     try {
-        await connectToDatabase();
+        const conn = await connectToDatabase();
+        if (conn) isDbConnected = true;
     } catch (dbErr) {
         console.error("Sitemap: Database connection error during build:", dbErr.message);
     }
 
     // Fetch published brands mapping
     let brands = [];
-    try {
-        brands = await Brand.find({ status: "Approved" }).select("_id updatedAt").lean();
-    } catch (error) {
-        console.error("Sitemap: Failed to load brands", error);
+    if (isDbConnected) {
+        try {
+            brands = await Brand.find({ status: "Approved" }).select("_id updatedAt").lean();
+        } catch (error) {
+            console.error("Sitemap: Failed to load brands", error);
+        }
     }
 
     const brandUrls = brands.map((brand) => ({
@@ -30,10 +34,12 @@ export default async function sitemap() {
 
     // Fetch published services
     let services = [];
-    try {
-        services = await Service.find({}).select("_id updatedAt").lean();
-    } catch (error) {
-        console.error("Sitemap: Failed to load services", error);
+    if (isDbConnected) {
+        try {
+            services = await Service.find({}).select("_id updatedAt").lean();
+        } catch (error) {
+            console.error("Sitemap: Failed to load services", error);
+        }
     }
 
     const serviceUrls = services.map((service) => ({
@@ -45,10 +51,12 @@ export default async function sitemap() {
 
     // Fetch published blogs
     let blogs = [];
-    try {
-        blogs = await Blog.find({}).select("_id updatedAt").lean();
-    } catch (error) {
-        console.error("Sitemap: Failed to load blogs", error);
+    if (isDbConnected) {
+        try {
+            blogs = await Blog.find({}).select("_id updatedAt").lean();
+        } catch (error) {
+            console.error("Sitemap: Failed to load blogs", error);
+        }
     }
 
     const blogUrls = blogs.map((b) => ({

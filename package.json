@@ -3,9 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
-    "fdev": "next dev",
-    "build": "next build",
+    "dev": "node scripts/clean-dev.js && next dev --webpack",
+    "fdev": "node scripts/clean-dev.js && next dev --webpack",
+    "build": "node scripts/build.js",
     "start": "next start",
     "lint": "eslint",
     "server": "nodemon backend/server.js",

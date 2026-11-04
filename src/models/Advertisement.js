@@ -14,6 +14,15 @@ const AdvertisementSchema = new mongoose.Schema({
         type: String,
         required: [true, 'Ad banner image is required']
     },
+    mediaType: {
+        type: String,
+        enum: ['image', 'video'],
+        default: 'image'
+    },
+    textColor: {
+        type: String,
+        default: '#ffffff'
+    },
     link: {
         type: String,
         default: '/brand-registration'
@@ -35,5 +44,8 @@ const AdvertisementSchema = new mongoose.Schema({
         default: Date.now
     }
 });
+
+AdvertisementSchema.set('bufferCommands', false);
+AdvertisementSchema.set('autoIndex', false);
 
 module.exports = mongoose.models.Advertisement || mongoose.model('Advertisement', AdvertisementSchema);

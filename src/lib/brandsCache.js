@@ -72,20 +72,29 @@ export async function getApprovedBrands(options = {}) {
     }
 
     fetchPromise = (async () => {
+        const controller = new AbortController();
+        const timeout = typeof window !== "undefined"
+            ? window.setTimeout(() => controller.abort("Request timed out"), 30000)
+            : null;
         try {
-            const res = await fetch("/api/brands?status=Approved");
+            const res = await fetch("/api/brands?status=Approved", { cache: "no-store", signal: controller.signal });
             if (res.ok) {
                 const data = await res.json();
-                memoryBrandsCache = data;
-                saveToSessionStorage(data);
-                return data;
+                if (Array.isArray(data)) {
+                    memoryBrandsCache = data;
+                    saveToSessionStorage(data);
+                    return data;
+                }
             }
         } catch (error) {
-            console.error("Error fetching approved brands:", error);
+            if (error?.name !== "AbortError" && error?.name !== "TimeoutError") {
+                console.error("Error fetching approved brands:", error);
+            }
         } finally {
+            if (timeout) window.clearTimeout(timeout);
             fetchPromise = null;
         }
-        return memoryBrandsCache || [];
+        return memoryBrandsCache || getCachedApprovedBrandsSync() || [];
     })();
 
     return fetchPromise;

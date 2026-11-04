@@ -17,4 +17,7 @@ const AdminSchema = new mongoose.Schema({
     }
 });
 
+AdminSchema.set('bufferCommands', false);
+AdminSchema.set('autoIndex', false);
+
 module.exports = mongoose.models.Admin || mongoose.model('Admin', AdminSchema);

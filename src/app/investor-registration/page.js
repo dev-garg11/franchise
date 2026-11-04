@@ -5,6 +5,7 @@ import Link from "next/link";
 import { CheckCircle2, ShieldCheck, Mail, MapPin, IndianRupee, Lock } from "lucide-react";
 import { REGISTRATION_INVESTMENT_OPTIONS, getFilteredMaxLimits } from "@/lib/investmentData";
 import { BRAND_CATEGORIES } from "@/lib/brandConstants";
+import { toast, Swal } from "@/lib/swal";
 
 const INVESTMENT_OPTIONS = [
   "Rs. 10,000 - 50,000",
@@ -168,10 +169,10 @@ export default function InvestorRegistration() {
       });
 
       if (res.ok) {
-        setSubmitted(true);
+        setSubmitted(true); toast.success("Investor registration submitted successfully!");
       } else {
         const data = await res.json();
-        setError(data.error || "Failed to submit investor registration.");
+        setError(data.error || "Failed to submit investor registration."); toast.error(data.error || "Failed to submit investor registration.");
       }
     } catch (err) {
       setError("Network error. Please try again.");

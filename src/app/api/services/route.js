@@ -1,6 +1,10 @@
 import { NextResponse } from "next/server";
 import { getServices, saveService } from "@/lib/db";
 
+let servicesMemoryCache = null;
+let servicesCacheTime = 0;
+const SERVICES_CACHE_TTL = 30 * 1000;
+
 export async function GET(request) {
     try {
         const { searchParams } = new URL(request.url);
@@ -8,7 +12,14 @@ export async function GET(request) {
         const pageParam = searchParams.get("page");
         const limitParam = searchParams.get("limit");
 
-        let services = await getServices();
+        let services;
+        if (servicesMemoryCache && Date.now() - servicesCacheTime < SERVICES_CACHE_TTL) {
+            services = servicesMemoryCache;
+        } else {
+            services = await getServices();
+            servicesMemoryCache = services;
+            servicesCacheTime = Date.now();
+        }
 
         if (search.trim()) {
             const term = search.trim().toLowerCase();
@@ -48,6 +59,7 @@ export async function POST(request) {
         }
 
         const saved = await saveService(body);
+        servicesMemoryCache = null;
         return NextResponse.json({ success: true, service: saved }, { status: 201 });
     } catch (error) {
         return NextResponse.json({ error: "Failed to save service" }, { status: 500 });

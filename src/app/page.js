@@ -1,33 +1,42 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import Image from "next/image";
 import {
-  Search, MapPin, IndianRupee, RotateCcw, Building, Users, Star, ArrowRight,
+  Search, MapPin, IndianRupee, Building, Users, Star, ArrowRight,
   GraduationCap, Utensils, Store, Car, HeartPulse, Building2, HelpCircle,
   CheckCircle, ShieldCheck, Award, ThumbsUp, ChevronRight, MessageSquare, Mail,
   Phone, Globe, Eye, ChevronLeft, Send, Sparkles, ShieldAlert, MessageCircle,
-  Filter, Layers, Briefcase, Crown
+  Filter, Layers, Briefcase, Crown, X, TrendingUp, FileText, Headphones, Dumbbell, Coffee, ShoppingBag, Heart, Cpu, Factory, MoreHorizontal, ChevronDown, LayoutGrid
 } from "lucide-react";
 import SEOGeoTags from "@/components/SEOGeoTags";
 import TopFranchiseOpportunities from "@/components/TopFranchiseOpportunities";
 import TopBusinessOpportunities from "@/components/TopBusinessOpportunities";
-import { ProductSkeletonSlider } from "@/components/SkeletonLoader";
+import { ProductSkeletonSlider, ProductSkeletonGrid } from "@/components/SkeletonLoader";
+import BrandCard from "@/components/public/BrandCard";
 import { useApprovedBrands } from "@/lib/brandsCache";
 import { DISTRICTS_BY_STATE, ALL_DISTRICTS } from "@/lib/districtsData";
 import { BUDGET_OPTIONS, getFilteredMinBudgets, getFilteredMaxBudgets, parseRupeeValue } from "@/lib/investmentData";
 import { decodeHtmlEntities, cleanBrandPlainText } from "@/lib/brandFormatters";
+import AdCard from "@/components/public/AdCard";
+import Marquee from "@/components/public/Marquee";
+import JoinCard from "@/components/public/JoinCard";
+import ImageRotator, { getImageSources } from "@/components/public/ImageRotator";
+import { filterHomepageAdvertisements } from "@/lib/advertisementVisibility";
+import { DEFAULT_SERVICES } from "@/lib/defaultContent";
+import { toast } from "@/lib/swal";
 
 
 // Mock Categories with Icons
 const CATEGORIES = [
-  { name: "Food and Beverage", icon: Utensils, count: "1,240+ Options" },
-  { name: "Retail", icon: Store, count: "980+ Options" },
-  { name: "Education", icon: GraduationCap, count: "650+ Options" },
-  { name: "Automobiles", icon: Car, count: "420+ Options" },
-  { name: "Health and Wellness", icon: HeartPulse, count: "310+ Options" },
-  { name: "Business Services", icon: Building2, count: "550+ Options" }
+  { name: "Food and Beverage", icon: Utensils },
+  { name: "Retail", icon: Store },
+  { name: "Education", icon: GraduationCap },
+  { name: "Automotive", icon: Car },
+  { name: "Beauty & Health", icon: HeartPulse },
+  { name: "Business Services", icon: Building2 }
 ];
 
 const STATES = [
@@ -79,6 +88,40 @@ const FI_MAX_BUDGETS = [
 
 const LEADING_FRANCHISES = [];
 
+// Keep the public homepage renderable while advertisements are loading or the
+// ads API is temporarily unavailable. Live admin-managed ads are preferred.
+const DEFAULT_PARTNER_SPOTLIGHT_ADS = [];
+const PUBLIC_ADS_CACHE_KEY = "franchise_roots_public_ads_v1";
+
+const FI_BUSINESS_TYPES = [
+  "Master Franchise",
+  "Single Unit Franchise",
+  "Multi-Unit Franchise",
+  "Dealership & Distributorship",
+  "Commercial Franchise",
+  "Kiosk & Express Setup"
+];
+
+const HERO_PILLS = [
+  { name: "Food & Beverage", category: "Food and Beverage", icon: Coffee, color: "#e11d48" },
+  { name: "Retail", category: "Retail", icon: ShoppingBag, color: "#f59e0b" },
+  { name: "Fitness", category: "Sports, Fitness & Entertainment", icon: Dumbbell, color: "#ec4899" },
+  { name: "Education", category: "Education", icon: GraduationCap, color: "#2563eb" },
+  { name: "Healthcare", category: "Beauty & Health", icon: Heart, color: "#ef4444" },
+  { name: "Beauty & Wellness", category: "Beauty & Health", icon: Sparkles, color: "#d946ef" },
+  { name: "Technology", category: "Business Services", icon: Cpu, color: "#0284c7" },
+  { name: "Manufacturing", category: "Dealers & Distributors", icon: Factory, color: "#6366f1" },
+  { name: "More", category: "", icon: MoreHorizontal, color: "#64748b" }
+];
+
+const HERO_AVATARS = [
+  { src: "https://randomuser.me/api/portraits/men/32.jpg", label: "Entrepreneur 1" },
+  { src: "https://randomuser.me/api/portraits/women/44.jpg", label: "Entrepreneur 2" },
+  { src: "https://randomuser.me/api/portraits/men/75.jpg", label: "Entrepreneur 3" },
+  { src: "https://randomuser.me/api/portraits/women/68.jpg", label: "Entrepreneur 4" },
+  { src: "https://randomuser.me/api/portraits/men/52.jpg", label: "Entrepreneur 5" }
+];
+
 // FAQS mock data
 const FAQS = [
   {
@@ -104,6 +147,7 @@ const FAQS = [
 ];
 
 export default function Home() {
+  const pillsRef = useRef(null);
   const sliderRef = useRef(null);
   const leadingCarouselRef = useRef(null);
   const router = useRouter();
@@ -123,6 +167,10 @@ export default function Home() {
   const [fiInvIndustry, setFiInvIndustry] = useState("");
   const [fiMinInv, setFiMinInv] = useState("");
   const [fiMaxInv, setFiMaxInv] = useState("");
+
+  const [fiTypeIndustry, setFiTypeIndustry] = useState("");
+  const [fiBusinessType, setFiBusinessType] = useState("");
+  const [fiTypeSearch, setFiTypeSearch] = useState("");
 
   const handleMinInvChange = (val) => {
     setFiMinInv(val);
@@ -162,19 +210,29 @@ export default function Home() {
 
   // Redesign state additions (Non-intrusive UI-only states)
   const [sliderIndex, setSliderIndex] = useState(0);
+  const [spotlightStart, setSpotlightStart] = useState(0);
   const [openFaqIndex, setOpenFaqIndex] = useState(null);
   const [newsletterEmail, setNewsletterEmail] = useState("");
   const [newsletterSuccess, setNewsletterSuccess] = useState(false);
 
   // Services State
-  const [services, setServices] = useState([]);
+  const [services, setServices] = useState(DEFAULT_SERVICES);
   const [loadingServices, setLoadingServices] = useState(true);
 
   // Advertisements State
   const [ads, setAds] = useState([]);
 
   useEffect(() => {
-    fetch("/api/services")
+    // Paint the last known public ads immediately on repeat visits while the
+    // fresh admin-managed list refreshes in the background.
+    try {
+      const cachedAds = JSON.parse(sessionStorage.getItem(PUBLIC_ADS_CACHE_KEY) || "null");
+      if (Array.isArray(cachedAds)) setAds(cachedAds);
+    } catch (error) {
+      // Ignore unavailable or invalid browser storage.
+    }
+
+    fetch("/api/services", { cache: "force-cache" })
       .then((res) => res.json())
       .then((data) => {
         if (Array.isArray(data)) setServices(data);
@@ -182,27 +240,31 @@ export default function Home() {
       .catch((err) => console.error("Error loading services on homepage:", err))
       .finally(() => setLoadingServices(false));
 
-    fetch("/api/advertisements")
-      .then((res) => res.json())
+    fetch("/api/advertisements?public=true", { cache: "force-cache" })
+      .then((res) => (res.ok ? res.json() : []))
       .then((data) => {
-        if (Array.isArray(data)) setAds(data.filter(a => a.isActive));
+        const list = Array.isArray(data) ? data : (data?.data || []);
+        if (Array.isArray(list)) {
+          setAds(filterHomepageAdvertisements(list));
+          try { sessionStorage.setItem(PUBLIC_ADS_CACHE_KEY, JSON.stringify(filterHomepageAdvertisements(list))); } catch (error) { /* storage is optional */ }
+        }
       })
       .catch((err) => console.error("Error loading advertisements on homepage:", err));
   }, []);
 
   // Pre-fill enquiry form if investor is logged in
   useEffect(() => {
-    if (selectedBrand && typeof window !== "undefined") {
-      const isLoggedIn = localStorage.getItem("investorLoggedIn") === "true";
-      if (isLoggedIn) {
-        setEnquiryForm({
-          name: localStorage.getItem("investorName") || "",
-          email: localStorage.getItem("investorEmail") || "",
-          phone: localStorage.getItem("investorPhone") || "",
-          message: ""
-        });
-      }
-    }
+    if (!selectedBrand || typeof window === "undefined") return undefined;
+    const timer = window.setTimeout(() => {
+      if (localStorage.getItem("investorLoggedIn") !== "true") return;
+      setEnquiryForm({
+        name: localStorage.getItem("investorName") || "",
+        email: localStorage.getItem("investorEmail") || "",
+        phone: localStorage.getItem("investorPhone") || "",
+        message: ""
+      });
+    }, 0);
+    return () => window.clearTimeout(timer);
   }, [selectedBrand]);
 
   // Franchise India Search Submit Handler
@@ -222,6 +284,11 @@ export default function Home() {
       if (fiInvIndustry) params.set("category", fiInvIndustry);
       if (fiMinInv) params.set("minBudget", fiMinInv);
       if (fiMaxInv) params.set("maxBudget", fiMaxInv);
+    } else if (searchTab === "business_type") {
+      if (fiTypeIndustry) params.set("category", fiTypeIndustry);
+      if (fiBusinessType) params.set("type", fiBusinessType);
+      const combinedSearch = [fiBusinessType, fiTypeSearch].filter(Boolean).join(" ");
+      if (combinedSearch) params.set("search", combinedSearch);
     }
 
     router.push(`/brands?${params.toString()}`);
@@ -258,10 +325,24 @@ export default function Home() {
     setSelectedLocation("");
   };
 
-  // Quick category select from cards -> Redirection
+  // Category select handler: click sets or toggles active category
   const selectCategory = (categoryName) => {
-    router.push(`/brands?category=${encodeURIComponent(categoryName)}`);
+    setSelectedCategory((prev) => (prev === categoryName ? "" : categoryName));
   };
+
+  // Brands filtered by the selected business category
+  const categoryFilteredBrands = useMemo(() => {
+    if (!selectedCategory) return brands.slice(0, 6);
+    const target = selectedCategory.trim().toLowerCase();
+    return brands.filter((b) => {
+      const cat = (b.category || "").trim().toLowerCase();
+      if (cat === target) return true;
+      if (target === "automotive" && (cat === "automobiles" || cat.includes("auto"))) return true;
+      if (target === "beauty & health" && (cat.includes("beauty") || cat.includes("health") || cat.includes("wellness"))) return true;
+      if (target === "food and beverage" && (cat.includes("food") || cat.includes("beverage") || cat.includes("f&b") || cat.includes("restaurant") || cat.includes("cafe"))) return true;
+      return cat.includes(target) || target.includes(cat);
+    });
+  }, [brands, selectedCategory]);
 
   // Quick location select -> Redirection
   const selectLocation = (locationName) => {
@@ -270,10 +351,26 @@ export default function Home() {
 
   // Format currency
   const formatLakhs = (val) => {
+    const rupee = "\u20B9";
     if (!val) return "N/A";
-    if (val >= 10000000) return `₹${(val / 10000000).toFixed(1)} Cr`;
-    if (val >= 100000) return `₹${(val / 100000).toFixed(1)} Lakhs`;
-    return `₹${val.toLocaleString("en-IN")}`;
+    if (val >= 10000000) return `${rupee}${(val / 10000000).toFixed(1)} Cr`;
+    if (val >= 100000) return `${rupee}${(val / 100000).toFixed(1)} Lakhs`;
+    return `${rupee}${val.toLocaleString("en-IN")}`;
+  };
+
+  const formatLakhsLegacy = (val) => {
+    return formatLakhsFixed(val);
+    if (!val) return "N/A";
+    if (val >= 10000000) return `â‚¹${(val / 10000000).toFixed(1)} Cr`;
+    if (val >= 100000) return `â‚¹${(val / 100000).toFixed(1)} Lakhs`;
+    return `â‚¹${val.toLocaleString("en-IN")}`;
+  };
+
+  const formatLakhsFixed = (val) => {
+    const rupee = "\u20B9";
+    if (val >= 10000000) return `${rupee}${(val / 10000000).toFixed(1)} Cr`;
+    if (val >= 100000) return `${rupee}${(val / 100000).toFixed(1)} Lakhs`;
+    return `${rupee}${val.toLocaleString("en-IN")}`;
   };
 
   // Submit Enquiry
@@ -302,10 +399,15 @@ export default function Home() {
       });
       if (res.ok) {
         setEnquirySubmitted(true);
+        toast.success("Enquiry submitted successfully!");
         setEnquiryForm({ name: "", email: "", phone: "", message: "" });
+      } else {
+        const errData = await res.json().catch(() => ({}));
+        toast.error(errData.error || "Failed to submit enquiry. Please check your details.");
       }
     } catch (error) {
       console.error("Enquiry submission failed:", error);
+      toast.error("Network error submitting enquiry. Please check your connection.");
     } finally {
       setSubmittingEnquiry(false);
     }
@@ -351,297 +453,636 @@ export default function Home() {
     }
   };
 
+  const spotlightAds = useMemo(() => {
+    return [...ads].sort((first, second) => {
+      const firstFeatured = String(first.badge || "").toLowerCase().includes("featured");
+      const secondFeatured = String(second.badge || "").toLowerCase().includes("featured");
+      return Number(secondFeatured) - Number(firstFeatured);
+    });
+  }, [ads]);
+
+  const effectiveSpotlightAds = useMemo(() => {
+    if (spotlightAds && spotlightAds.length > 0) {
+      if (spotlightAds.length >= 4) return spotlightAds;
+      const remaining = DEFAULT_PARTNER_SPOTLIGHT_ADS.filter(
+        def => !spotlightAds.some(a => (a.title || "").toLowerCase().trim() === (def.title || "").toLowerCase().trim())
+      );
+      return [...spotlightAds, ...remaining].slice(0, 3);
+    }
+    return DEFAULT_PARTNER_SPOTLIGHT_ADS;
+  }, [spotlightAds]);
+
+  // Keep the partner area compact: show three placements and rotate the next
+  // placement into view so newly-added admin ads are visible without growing
+  // the section vertically.
+  useEffect(() => {
+    setSpotlightStart((current) => {
+      if (effectiveSpotlightAds.length <= 3) return 0;
+      return current % effectiveSpotlightAds.length;
+    });
+  }, [effectiveSpotlightAds.length]);
+
+  useEffect(() => {
+    if (effectiveSpotlightAds.length <= 3) return undefined;
+    const timer = window.setInterval(() => {
+      setSpotlightStart((current) => (current + 1) % effectiveSpotlightAds.length);
+    }, 3000);
+    return () => window.clearInterval(timer);
+  }, [effectiveSpotlightAds.length]);
+
+  const visibleSpotlightAds = useMemo(() => {
+    if (effectiveSpotlightAds.length <= 3) return effectiveSpotlightAds;
+    return Array.from({ length: 3 }, (_, index) => (
+      effectiveSpotlightAds[(spotlightStart + index) % effectiveSpotlightAds.length]
+    ));
+  }, [effectiveSpotlightAds, spotlightStart]);
+
+  const moveSpotlight = (direction) => {
+    if (effectiveSpotlightAds.length <= 3) return;
+    setSpotlightStart((current) => (
+      (current + direction + effectiveSpotlightAds.length) % effectiveSpotlightAds.length
+    ));
+  };
+
+
+  const adminWhatsAppNumber = (process.env.NEXT_PUBLIC_ADMIN_WHATSAPP || "919815489999").replace(/[^0-9]/g, "");
+  const heroWhatsAppUrl = `https://api.whatsapp.com/send?phone=${adminWhatsAppNumber}&text=${encodeURIComponent("Hi Franchise Roots, I am interested in Franchise Opportunities and would like a free consultation.")}`;
 
   return (
-    <div>
-      {/* 1. Main Hero Banner & Multi-Criteria Search (Franchise India Style) */}
-      <section className="fi-hero-section">
-        <div className="fi-hero-orb orb-1"></div>
-        <div className="fi-hero-orb orb-2"></div>
+    <div className="public-home">
+      {/* 1. Main Hero Banner & Multi-Criteria Search (Franchise Roots Redesign) */}
+      <section className="fr-hero-section">
+        {/* Decorative CSS background flourishes */}
+        <div className="fr-hero-flourish-tl" />
+        <div className="fr-hero-bg-glow" />
+        <div className="fr-hero-photo" aria-hidden="true" />
 
         <div className="container">
-          <div className="fi-hero-grid">
-            {/* Left Column: Interactive Multi-Criteria Search Banner */}
-            <div className="fi-search-card">
-              <div>
-                <div className="fi-search-header">
-                  <h1 className="fi-search-title">
-                    Find India's Top <span>Franchise Opportunities</span>
-                  </h1>
-                  <p className="fi-search-subtitle">
-                    Explore 1,200+ audited business setups, master dealerships & ROI-proven brands
-                  </p>
+          <div className="fr-hero-main-layout">
+            {/* Left Column: Badge, Heading, Subtitle, Highlights, Search Card, Pills */}
+            <div className="fr-hero-left">
+              {/* Top pill badge */}
+              <div className="fr-hero-badge-wrap">
+                <Link href="/brands" className="fr-hero-badge">
+                  <span className="fr-badge-crown-box" aria-hidden="true">
+                    <Crown size={13} className="fr-crown-icon" />
+                  </span>
+                  <span className="fr-badge-text">India&apos;s No.1 Franchise Marketplace</span>
+                  <span className="fr-badge-arrow">→</span>
+                </Link>
+              </div>
+
+              {/* Heading */}
+              <h1 className="fr-hero-title">
+                Find India&apos;s Best
+                <span className="fr-hero-title-row">
+                  <span className="fr-title-accent-wrap">
+                    Franchise
+                    <svg className="fr-title-brush-curve" viewBox="0 0 210 16" fill="none" preserveAspectRatio="none" aria-hidden="true">
+                      <path d="M 4 6 C 55 14, 155 14, 206 5 C 160 12, 60 12, 4 6 Z" fill="url(#fr-title-brush-grad)" />
+                      <defs>
+                        <linearGradient id="fr-title-brush-grad" x1="0%" y1="0%" x2="100%" y2="0%">
+                          <stop offset="0%" stopColor="#ff0055" />
+                          <stop offset="60%" stopColor="#e11d48" />
+                          <stop offset="100%" stopColor="#f43f5e" />
+                        </linearGradient>
+                      </defs>
+                    </svg>
+                  </span>{" "}
+                  <span className="fr-title-opp-gradient">Opportunities</span>
+                </span>
+              </h1>
+
+              {/* Subtitle */}
+              <p className="fr-hero-subtitle">
+                Explore {brands.length ? `${brands.length}+` : "145+"} audited business setups, master dealerships &amp; ROI-proven brands. Start your franchise journey with confidence.
+              </p>
+
+              {/* Three feature highlights */}
+              <div className="fr-hero-highlights">
+                <div className="fr-highlight-item">
+                  <div className="fr-highlight-icon fr-hi-pink">
+                    <ShieldCheck size={20} />
+                  </div>
+                  <div className="fr-highlight-meta">
+                    <strong>Verified Brands</strong>
+                    <span>100% authentic</span>
+                  </div>
                 </div>
 
-                {/* Filter Tabs */}
-                <div className="fi-search-tabs">
+                <div className="fr-highlight-divider" />
+
+                <div className="fr-highlight-item">
+                  <div className="fr-highlight-icon fr-hi-blue">
+                    <TrendingUp size={20} />
+                  </div>
+                  <div className="fr-highlight-meta">
+                    <strong>High ROI Options</strong>
+                    <span>Profitable businesses</span>
+                  </div>
+                </div>
+
+                <div className="fr-highlight-divider" />
+
+                <div className="fr-highlight-item">
+                  <div className="fr-highlight-icon fr-hi-purple">
+                    <Headphones size={20} />
+                  </div>
+                  <div className="fr-highlight-meta">
+                    <strong>Expert Support</strong>
+                    <span>From search to setup</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* White search card */}
+              <div className="fr-search-card">
+                {/* 4 Rail Tabs */}
+                <div className="fr-tabs-rail" role="tablist">
                   <button
                     type="button"
-                    className={`fi-tab-btn ${searchTab === "categories" ? "active" : ""}`}
+                    role="tab"
+                    aria-selected={searchTab === "categories"}
+                    className={`fr-tab-btn ${searchTab === "categories" ? "active" : ""}`}
                     onClick={() => setSearchTab("categories")}
                   >
-                    <Filter size={15} /> Categories
+                    <LayoutGrid size={15} />
+                    <span>Categories</span>
                   </button>
+
                   <button
                     type="button"
-                    className={`fi-tab-btn ${searchTab === "location" ? "active" : ""}`}
+                    role="tab"
+                    aria-selected={searchTab === "location"}
+                    className={`fr-tab-btn ${searchTab === "location" ? "active" : ""}`}
                     onClick={() => setSearchTab("location")}
                   >
-                    <MapPin size={15} /> Location
+                    <MapPin size={15} />
+                    <span>Location</span>
                   </button>
+
                   <button
                     type="button"
-                    className={`fi-tab-btn ${searchTab === "investment" ? "active" : ""}`}
+                    role="tab"
+                    aria-selected={searchTab === "investment"}
+                    className={`fr-tab-btn ${searchTab === "investment" ? "active" : ""}`}
                     onClick={() => setSearchTab("investment")}
                   >
-                    <IndianRupee size={15} /> Investment
+                    <IndianRupee size={15} />
+                    <span>Investment</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    role="tab"
+                    aria-selected={searchTab === "business_type"}
+                    className={`fr-tab-btn ${searchTab === "business_type" ? "active" : ""}`}
+                    onClick={() => setSearchTab("business_type")}
+                  >
+                    <Building2 size={15} />
+                    <span>Business Type</span>
                   </button>
                 </div>
 
-                {/* Form Controls depending on Active Tab */}
-                <form onSubmit={handleFiSearchSubmit}>
+                {/* Form Controls */}
+                <form onSubmit={handleFiSearchSubmit} className="fr-search-form">
                   {searchTab === "categories" && (
-                    <div className="fi-search-fields-grid">
-                      <div className="fi-input-group">
-                        <label>Select Industry</label>
-                        <select
-                          className="fi-select-control"
-                          value={fiIndustry}
-                          onChange={(e) => {
-                            setFiIndustry(e.target.value);
-                            setFiSector("");
-                          }}
-                        >
-                          <option value="">All Industries</option>
-                          {FI_INDUSTRIES.map((ind, idx) => (
-                            <option key={idx} value={ind}>{ind}</option>
-                          ))}
-                        </select>
-                      </div>
-
-                      <div className="fi-input-group">
-                        <label>Select Sector</label>
-                        <select
-                          className="fi-select-control"
-                          value={fiSector}
-                          onChange={(e) => setFiSector(e.target.value)}
-                        >
-                          <option value="">All Sectors</option>
-                          {fiIndustry && FI_SECTORS_MAP[fiIndustry]
-                            ? FI_SECTORS_MAP[fiIndustry].map((sec, i) => (
-                              <option key={i} value={sec}>{sec}</option>
-                            ))
-                            : ["QSR", "Preschool", "Salon", "Retail", "Services"].map((sec, i) => (
-                              <option key={i} value={sec}>{sec}</option>
+                    <div className="fr-fields-row">
+                      <div className="fr-field-box">
+                        <label className="fr-field-label">Select Industry</label>
+                        <div className="fr-input-wrap">
+                          <Building size={16} className="fr-input-icon" />
+                          <select
+                            className="fr-select-control"
+                            value={fiIndustry}
+                            onChange={(e) => {
+                              setFiIndustry(e.target.value);
+                              setFiSector("");
+                            }}
+                          >
+                            <option value="">All Industries</option>
+                            {FI_INDUSTRIES.map((ind, idx) => (
+                              <option key={idx} value={ind}>{ind}</option>
                             ))}
-                        </select>
+                          </select>
+                          <ChevronDown size={14} className="fr-select-chevron" />
+                        </div>
                       </div>
 
-                      <div className="fi-input-group">
-                        <label>Search Concept</label>
-                        <input
-                          type="text"
-                          className="fi-select-control"
-                          placeholder="e.g. Chai, EV, Gym..."
-                          value={fiService}
-                          onChange={(e) => setFiService(e.target.value)}
-                        />
+                      <div className="fr-field-box">
+                        <label className="fr-field-label">Select Sector</label>
+                        <div className="fr-input-wrap">
+                          <Layers size={16} className="fr-input-icon" />
+                          <select
+                            className="fr-select-control"
+                            value={fiSector}
+                            onChange={(e) => setFiSector(e.target.value)}
+                          >
+                            <option value="">All Sectors</option>
+                            {fiIndustry && FI_SECTORS_MAP[fiIndustry]
+                              ? FI_SECTORS_MAP[fiIndustry].map((sec, i) => (
+                                <option key={i} value={sec}>{sec}</option>
+                              ))
+                              : ["QSR", "Preschool", "Salon", "Retail", "Services"].map((sec, i) => (
+                                <option key={i} value={sec}>{sec}</option>
+                              ))}
+                          </select>
+                          <ChevronDown size={14} className="fr-select-chevron" />
+                        </div>
+                      </div>
+
+                      <div className="fr-field-box">
+                        <label className="fr-field-label">Search Concept</label>
+                        <div className="fr-input-wrap">
+                          <Search size={16} className="fr-input-icon" />
+                          <input
+                            type="text"
+                            className="fr-input-control"
+                            placeholder="e.g. Chai, EV, Gym, Education..."
+                            value={fiService}
+                            onChange={(e) => setFiService(e.target.value)}
+                          />
+                        </div>
+                      </div>
+
+                      <div className="fr-btn-wrap">
+                        <button type="submit" className="fr-search-submit-btn">
+                          <span>Search Franchise</span>
+                          <span>Opportunities →</span>
+                        </button>
                       </div>
                     </div>
                   )}
 
                   {searchTab === "location" && (
-                    <div className="fi-search-fields-grid">
-                      <div className="fi-input-group">
-                        <label>Select Industry</label>
-                        <select
-                          className="fi-select-control"
-                          value={fiLocIndustry}
-                          onChange={(e) => setFiLocIndustry(e.target.value)}
-                        >
-                          <option value="">All Industries</option>
-                          {FI_INDUSTRIES.map((ind, idx) => (
-                            <option key={idx} value={ind}>{ind}</option>
-                          ))}
-                        </select>
-                      </div>
-
-                      <div className="fi-input-group">
-                        <label>Select State</label>
-                        <select
-                          className="fi-select-control"
-                          value={fiState}
-                          onChange={(e) => {
-                            setFiState(e.target.value);
-                            setFiCity("");
-                          }}
-                        >
-                          <option value="">All States</option>
-                          {FI_STATES.map((st, i) => (
-                            <option key={i} value={st}>{st}</option>
-                          ))}
-                        </select>
-                      </div>
-
-                      <div className="fi-input-group">
-                        <label>Select District</label>
-                        <select
-                          className="fi-select-control"
-                          value={fiCity}
-                          onChange={(e) => setFiCity(e.target.value)}
-                        >
-                          <option value="">All Districts</option>
-                          {(fiState && DISTRICTS_BY_STATE[fiState]
-                            ? DISTRICTS_BY_STATE[fiState]
-                            : ALL_DISTRICTS).map((d, i) => (
-                              <option key={i} value={d}>{d}</option>
+                    <div className="fr-fields-row">
+                      <div className="fr-field-box">
+                        <label className="fr-field-label">Select Industry</label>
+                        <div className="fr-input-wrap">
+                          <Building size={16} className="fr-input-icon" />
+                          <select
+                            className="fr-select-control"
+                            value={fiLocIndustry}
+                            onChange={(e) => setFiLocIndustry(e.target.value)}
+                          >
+                            <option value="">All Industries</option>
+                            {FI_INDUSTRIES.map((ind, idx) => (
+                              <option key={idx} value={ind}>{ind}</option>
                             ))}
-                        </select>
+                          </select>
+                          <ChevronDown size={14} className="fr-select-chevron" />
+                        </div>
+                      </div>
+
+                      <div className="fr-field-box">
+                        <label className="fr-field-label">Select State</label>
+                        <div className="fr-input-wrap">
+                          <MapPin size={16} className="fr-input-icon" />
+                          <select
+                            className="fr-select-control"
+                            value={fiState}
+                            onChange={(e) => {
+                              setFiState(e.target.value);
+                              setFiCity("");
+                            }}
+                          >
+                            <option value="">All States</option>
+                            {FI_STATES.map((st, i) => (
+                              <option key={i} value={st}>{st}</option>
+                            ))}
+                          </select>
+                          <ChevronDown size={14} className="fr-select-chevron" />
+                        </div>
+                      </div>
+
+                      <div className="fr-field-box">
+                        <label className="fr-field-label">Select District</label>
+                        <div className="fr-input-wrap">
+                          <MapPin size={16} className="fr-input-icon" />
+                          <select
+                            className="fr-select-control"
+                            value={fiCity}
+                            onChange={(e) => setFiCity(e.target.value)}
+                          >
+                            <option value="">All Districts</option>
+                            {(fiState && DISTRICTS_BY_STATE[fiState]
+                              ? DISTRICTS_BY_STATE[fiState]
+                              : ALL_DISTRICTS).map((d, i) => (
+                                <option key={i} value={d}>{d}</option>
+                              ))}
+                          </select>
+                          <ChevronDown size={14} className="fr-select-chevron" />
+                        </div>
+                      </div>
+
+                      <div className="fr-btn-wrap">
+                        <button type="submit" className="fr-search-submit-btn">
+                          <span>Search Franchise</span>
+                          <span>Opportunities →</span>
+                        </button>
                       </div>
                     </div>
                   )}
 
                   {searchTab === "investment" && (
-                    <div className="fi-search-fields-grid">
-                      <div className="fi-input-group">
-                        <label>Select Industry</label>
-                        <select
-                          className="fi-select-control"
-                          value={fiInvIndustry}
-                          onChange={(e) => setFiInvIndustry(e.target.value)}
-                        >
-                          <option value="">All Industries</option>
-                          {FI_INDUSTRIES.map((ind, idx) => (
-                            <option key={idx} value={ind}>{ind}</option>
-                          ))}
-                        </select>
+                    <div className="fr-fields-row">
+                      <div className="fr-field-box">
+                        <label className="fr-field-label">Select Industry</label>
+                        <div className="fr-input-wrap">
+                          <Building size={16} className="fr-input-icon" />
+                          <select
+                            className="fr-select-control"
+                            value={fiInvIndustry}
+                            onChange={(e) => setFiInvIndustry(e.target.value)}
+                          >
+                            <option value="">All Industries</option>
+                            {FI_INDUSTRIES.map((ind, idx) => (
+                              <option key={idx} value={ind}>{ind}</option>
+                            ))}
+                          </select>
+                          <ChevronDown size={14} className="fr-select-chevron" />
+                        </div>
                       </div>
 
-                      <div className="fi-input-group">
-                        <label>Min Investment</label>
-                        <select
-                          className="fi-select-control"
-                          value={fiMinInv}
-                          onChange={(e) => handleMinInvChange(e.target.value)}
-                        >
-                          <option value="">No Min Limit</option>
-                          {availableMinBudgets.map((b, i) => (
-                            <option key={i} value={b.label}>{b.label}</option>
-                          ))}
-                        </select>
+                      <div className="fr-field-box">
+                        <label className="fr-field-label">Min Investment</label>
+                        <div className="fr-input-wrap">
+                          <IndianRupee size={16} className="fr-input-icon" />
+                          <select
+                            className="fr-select-control"
+                            value={fiMinInv}
+                            onChange={(e) => handleMinInvChange(e.target.value)}
+                          >
+                            <option value="">No Min Limit</option>
+                            {availableMinBudgets.map((b, i) => (
+                              <option key={i} value={b.label}>{b.label}</option>
+                            ))}
+                          </select>
+                          <ChevronDown size={14} className="fr-select-chevron" />
+                        </div>
                       </div>
 
-                      <div className="fi-input-group">
-                        <label>
-                          Max Investment
-                          {fiMinInv && (
-                            <span style={{ fontSize: "9.5px", color: "#16a34a", fontWeight: "700", marginLeft: "6px" }}>
-                              (&gt; {fiMinInv})
-                            </span>
-                          )}
-                        </label>
-                        <select
-                          className="fi-select-control"
-                          value={fiMaxInv}
-                          onChange={(e) => handleMaxInvChange(e.target.value)}
-                        >
-                          <option value="">No Max Limit</option>
-                          {availableMaxBudgets.map((b, i) => (
-                            <option key={i} value={b.label}>{b.label}</option>
-                          ))}
-                        </select>
+                      <div className="fr-field-box">
+                        <label className="fr-field-label">Max Investment</label>
+                        <div className="fr-input-wrap">
+                          <IndianRupee size={16} className="fr-input-icon" />
+                          <select
+                            className="fr-select-control"
+                            value={fiMaxInv}
+                            onChange={(e) => handleMaxInvChange(e.target.value)}
+                          >
+                            <option value="">No Max Limit</option>
+                            {availableMaxBudgets.map((b, i) => (
+                              <option key={i} value={b.label}>{b.label}</option>
+                            ))}
+                          </select>
+                          <ChevronDown size={14} className="fr-select-chevron" />
+                        </div>
+                      </div>
+
+                      <div className="fr-btn-wrap">
+                        <button type="submit" className="fr-search-submit-btn">
+                          <span>Search Franchise</span>
+                          <span>Opportunities →</span>
+                        </button>
                       </div>
                     </div>
                   )}
 
-                  <div className="fi-search-action-bar">
-                    <button type="submit" className="fi-btn-search-main">
-                      <Search size={18} /> Search Franchise Opportunities
-                    </button>
-                  </div>
+                  {searchTab === "business_type" && (
+                    <div className="fr-fields-row">
+                      <div className="fr-field-box">
+                        <label className="fr-field-label">Select Industry</label>
+                        <div className="fr-input-wrap">
+                          <Building size={16} className="fr-input-icon" />
+                          <select
+                            className="fr-select-control"
+                            value={fiTypeIndustry}
+                            onChange={(e) => setFiTypeIndustry(e.target.value)}
+                          >
+                            <option value="">All Industries</option>
+                            {FI_INDUSTRIES.map((ind, idx) => (
+                              <option key={idx} value={ind}>{ind}</option>
+                            ))}
+                          </select>
+                          <ChevronDown size={14} className="fr-select-chevron" />
+                        </div>
+                      </div>
+
+                      <div className="fr-field-box">
+                        <label className="fr-field-label">Business Type</label>
+                        <div className="fr-input-wrap">
+                          <Briefcase size={16} className="fr-input-icon" />
+                          <select
+                            className="fr-select-control"
+                            value={fiBusinessType}
+                            onChange={(e) => setFiBusinessType(e.target.value)}
+                          >
+                            <option value="">All Business Types</option>
+                            {FI_BUSINESS_TYPES.map((bt, i) => (
+                              <option key={i} value={bt}>{bt}</option>
+                            ))}
+                          </select>
+                          <ChevronDown size={14} className="fr-select-chevron" />
+                        </div>
+                      </div>
+
+                      <div className="fr-field-box">
+                        <label className="fr-field-label">Search Concept</label>
+                        <div className="fr-input-wrap">
+                          <Search size={16} className="fr-input-icon" />
+                          <input
+                            type="text"
+                            className="fr-input-control"
+                            placeholder="e.g. Chai, EV, Gym, Education..."
+                            value={fiTypeSearch}
+                            onChange={(e) => setFiTypeSearch(e.target.value)}
+                          />
+                        </div>
+                      </div>
+
+                      <div className="fr-btn-wrap">
+                        <button type="submit" className="fr-search-submit-btn">
+                          <span>Search Franchise</span>
+                          <span>Opportunities →</span>
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </form>
+              </div>
+
+              {/* Sub-category pills strip */}
+              <div className="fr-pills-strip-wrap">
+                <div ref={pillsRef} className="fr-pills-strip" role="navigation" aria-label="Quick Category Filters">
+                  {HERO_PILLS.map((pill, idx) => {
+                    const PillIcon = pill.icon;
+                    return (
+                      <button
+                        key={idx}
+                        type="button"
+                        className="fr-pill-item"
+                        onClick={() => {
+                          if (pill.name === "More") {
+                            router.push("/brands");
+                          } else {
+                            router.push(`/brands?category=${encodeURIComponent(pill.category || pill.name)}`);
+                          }
+                        }}
+                      >
+                        <span className="fr-pill-icon" style={{ color: pill.color }}>
+                          <PillIcon size={14} />
+                        </span>
+                        <span className="fr-pill-label">{pill.name}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+                <button
+                  type="button"
+                  className="fr-pills-scroll-hint fr-pills-scroll-prev"
+                  aria-label="Show previous categories"
+                  onClick={() => pillsRef.current?.scrollBy({ left: -220, behavior: "smooth" })}
+                >
+                  <ChevronLeft size={18} aria-hidden="true" />
+                </button>
+                <button
+                  type="button"
+                  className="fr-pills-scroll-hint fr-pills-scroll-next"
+                  aria-label="Show more categories"
+                  onClick={() => pillsRef.current?.scrollBy({ left: 220, behavior: "smooth" })}
+                >
+                  <ChevronRight size={18} aria-hidden="true" />
+                </button>
               </div>
             </div>
 
-            {/* Right Column: Hero Quick Action Banner Cards */}
-            <div className="fi-action-cards-grid">
-              <Link href="/investor-registration" className="fi-action-card card-green">
-                <div className="fi-action-info">
-                  <span className="fi-action-tag">Investor Hub</span>
-                  <h3 className="fi-action-title">Start A Business Today</h3>
-                  <p className="fi-action-sub">Investor Registration & ROI Profiles</p>
-                </div>
-                <div className="fi-action-arrow">
-                  <ArrowRight size={18} />
-                </div>
-              </Link>
-
-              <Link href="/brand-registration" className="fi-action-card card-blue">
-                <div className="fi-action-info">
-                  <span className="fi-action-tag">Franchisor Hub</span>
-                  <h3 className="fi-action-title">Register your brand</h3>
-                  <p className="fi-action-sub">Franchisor & Brand Registration</p>
-                </div>
-                <div className="fi-action-arrow">
-                  <ArrowRight size={18} />
-                </div>
-              </Link>
-
-              {/* Ask Our Experts Interactive Card */}
-              <div className="fi-ask-experts-widget">
-                <div className="fi-expert-header">
-                  <div className="fi-expert-title">
-                    <Sparkles size={16} style={{ color: "#7cb02c" }} /> Ask Our Experts
+            {/* Right Column: Three Action Cards */}
+            <div className="fr-hero-right">
+              <div className="fr-action-cards-stack">
+                <Link href="/investor-registration" className="fr-action-card fr-card-investor">
+                  <div className="fr-action-icon fr-icon-pink">
+                    <TrendingUp size={22} />
                   </div>
-                  <span style={{ fontSize: "11px", color: "#25D366", fontWeight: "700", display: "flex", alignItems: "center", gap: "6px" }}>
-                    <span className="live-dot-pulse"></span> Live Support
-                  </span>
-                </div>
+                  <div className="fr-action-body">
+                    <h3 className="fr-action-title">Start A Business Today</h3>
+                    <p className="fr-action-sub">Investor Registration &amp; ROI Profiles</p>
+                  </div>
+                  <div className="fr-action-arrow fr-arrow-pink">
+                    <ArrowRight size={16} />
+                  </div>
+                </Link>
 
-                <div className="fi-expert-btns" style={{ marginBottom: "12px" }}>
-                  <button
-                    type="button"
-                    className={`fi-expert-toggle-btn ${expertMode === "expand" ? "active" : ""}`}
-                    onClick={() => {
-                      setExpertMode("expand");
-                      handleOpenAskExperts("expand");
-                    }}
-                  >
-                    Expand My Brand
-                  </button>
-                  <button
-                    type="button"
-                    className={`fi-expert-toggle-btn ${expertMode === "buy" ? "active" : ""}`}
-                    onClick={() => {
-                      setExpertMode("buy");
-                      handleOpenAskExperts("buy");
-                    }}
-                  >
-                    Buy a Franchise
-                  </button>
-                </div>
+                <Link href="/brand-registration" className="fr-action-card fr-card-brand">
+                  <div className="fr-action-icon fr-icon-purple">
+                    <FileText size={22} />
+                  </div>
+                  <div className="fr-action-body">
+                    <h3 className="fr-action-title">Register your Brand</h3>
+                    <p className="fr-action-sub">Franchisor &amp; Brand Registration</p>
+                  </div>
+                  <div className="fr-action-arrow fr-arrow-purple">
+                    <ArrowRight size={16} />
+                  </div>
+                </Link>
 
-                <button
-                  type="button"
-                  onClick={() => handleOpenAskExperts(expertMode)}
-                  style={{
-                    width: "100%",
-                    padding: "10px",
-                    background: "#25D366",
-                    color: "#ffffff",
-                    fontWeight: "800",
-                    fontSize: "13px",
-                    borderRadius: "10px",
-                    border: "none",
-                    cursor: "pointer",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    gap: "8px"
-                  }}
+                <a
+                  href={heroWhatsAppUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="fr-action-card fr-card-whatsapp"
                 >
-                  <MessageCircle size={16} /> Consult Franchise Expert on WhatsApp
-                </button>
+                  <div className="fr-action-icon fr-icon-green">
+                    <MessageCircle size={22} />
+                  </div>
+                  <div className="fr-action-body">
+                    <h3 className="fr-action-title">Talk to an Expert on WhatsApp</h3>
+                    <p className="fr-action-sub">Get Free Consultation</p>
+                  </div>
+                  <div className="fr-action-arrow fr-arrow-green">
+                    <ArrowRight size={16} />
+                  </div>
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Floating Stat Bar over Bottom Wave */}
+        <div className="fr-hero-wave-wrap">
+          <svg className="fr-wave-svg" viewBox="0 0 1440 54" fill="none" preserveAspectRatio="none">
+            <path
+              d="M0 24 C 280 4 620 44 960 16 C 1180 -4 1340 32 1440 22 L 1440 54 L 0 54 Z"
+              fill="url(#fr-wave-grad)"
+            />
+            <defs>
+              <linearGradient id="fr-wave-grad" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" stopColor="#081846" />
+                <stop offset="35%" stopColor="#0e2a78" />
+                <stop offset="70%" stopColor="#4f1d96" />
+                <stop offset="90%" stopColor="#9333ea" />
+                <stop offset="100%" stopColor="#c026d3" />
+              </linearGradient>
+            </defs>
+          </svg>
+
+          <div className="fr-hero-stat-bar">
+            <div className="container">
+              <div className="fr-stats-grid">
+                {/* Stat 1: Franchise Options */}
+                <div className="fr-stat-item fr-stat-trust">
+                  <div className="fr-avatar-stack" aria-label="Entrepreneur community avatars">
+                    {HERO_AVATARS.map(({ src, label }) => (
+                      <span className="fr-avatar" title={label} key={label}>
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={src} alt="" className="fr-avatar-image" loading="lazy" />
+                      </span>
+                    ))}
+                  </div>
+                  <div className="fr-stat-text">
+                    <span className="fr-stat-number">10,000+</span>
+                    <span className="fr-stat-label">Franchise Options</span>
+                  </div>
+                </div>
+
+                <div className="fr-stat-sep" />
+
+                {/* Stat 2: Verified Investors */}
+                <div className="fr-stat-item">
+                  <div className="fr-stat-icon-frame">
+                    <Users size={20} />
+                  </div>
+                  <div className="fr-stat-text">
+                    <span className="fr-stat-number">50,000+</span>
+                    <span className="fr-stat-label">Verified Investors</span>
+                  </div>
+                </div>
+
+                <div className="fr-stat-sep" />
+
+                {/* Stat 3: Approved Concepts */}
+                <div className="fr-stat-item">
+                  <div className="fr-stat-icon-frame">
+                    <ShieldCheck size={20} />
+                  </div>
+                  <div className="fr-stat-text">
+                    <span className="fr-stat-number">100%</span>
+                    <span className="fr-stat-label">Approved Concepts</span>
+                  </div>
+                </div>
+
+                <div className="fr-stat-sep" />
+
+                {/* Stat 4: Industry Experience */}
+                <div className="fr-stat-item">
+                  <div className="fr-stat-icon-frame fr-star-frame">
+                    <Award size={20} className="fr-star-gold" />
+                  </div>
+                  <div className="fr-stat-text">
+                    <span className="fr-stat-number">17+ Years</span>
+                    <span className="fr-stat-label">Industry Experience</span>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -654,22 +1095,18 @@ export default function Home() {
           <div className="fi-section-header">
             <div className="fi-section-title-wrap">
               <h2>
-                <Award size={24} style={{ color: "#7cb02c" }} /> Leading Franchises Today
+                <Award size={24} style={{ color: "#10B981" }} /> Leading Franchises Today
               </h2>
               <p>Top performing franchise setups actively looking for regional & master partners</p>
             </div>
 
-            <div className="fi-carousel-controls">
-              <button className="fi-carousel-btn" onClick={handlePrevLeading} title="Previous">
-                <ChevronLeft size={20} />
-              </button>
-              <button className="fi-carousel-btn" onClick={handleNextLeading} title="Next">
-                <ChevronRight size={20} />
-              </button>
-            </div>
           </div>
 
-          <div className="fi-brand-cards-track" ref={leadingCarouselRef}>
+          <div className="fi-carousel-shell">
+            <button className="fi-carousel-side-btn fi-carousel-side-btn--left" onClick={handlePrevLeading} title="Scroll left" aria-label="Scroll franchises left">
+              <ChevronLeft size={20} />
+            </button>
+            <div className="fi-brand-cards-track" ref={leadingCarouselRef}>
             {loading ? (
               Array.from({ length: 5 }).map((_, idx) => (
                 <div key={`skel-leading-${idx}`} className="fi-brand-card-item" style={{ flex: "0 0 290px" }}>
@@ -703,15 +1140,13 @@ export default function Home() {
                 minInvestment: b.minInvestment || 0,
                 maxInvestment: b.maxInvestment || 0,
                 hq: b.hq || b.location || "India",
-                roi: b.roi || "12-18 Mos",
-                image: b.image || "https://images.unsplash.com/photo-1524178232363-1fb2b075b655?auto=format&fit=crop&q=80&w=400",
-                badge: b.featured ? "Featured" : "Verified"
+                image: b.image || "/logo.png"
               })).map((b) => (
                 <div key={b.id} className="fi-brand-card-item">
                   <div className="fi-brand-img-box">
-                    <img src={b.image} alt={b.name} />
+                    <ImageRotator sources={getImageSources(b)} alt={b.name} />
                     <span className="fi-brand-cat-badge">{b.category}</span>
-                    <span className="fi-brand-roi-pill">ROI: {b.roi}</span>
+                    {b.roi && <span className="fi-brand-roi-pill">ROI: {b.roi}</span>}
                   </div>
 
                   <div className="fi-brand-body">
@@ -723,14 +1158,14 @@ export default function Home() {
                       <p className="fi-brand-desc" title={b.description ? b.description.replace(/<[^>]*>/g, "").replace(/\s+/g, " ").trim() : ""}>
                         {b.description
                           ? b.description.replace(/<[^>]*>/g, "").replace(/\s+/g, " ").trim()
-                          : `${b.name} is a leading brand in the ${b.category} sector offering high-growth franchise opportunities.`}
+                          : "Description not disclosed by the brand."}
                       </p>
                     </div>
 
                     <div>
                       <div className="fi-brand-meta">
                         <span>HQ: {b.hq}</span>
-                        <span style={{ color: "#7cb02c", fontWeight: "700" }}>{b.badge}</span>
+                        <span style={{ color: "#10B981", fontWeight: "700" }}>{b.status === "Approved" ? "Verified" : "Listed"}</span>
                       </div>
 
                       <Link
@@ -745,125 +1180,94 @@ export default function Home() {
                 </div>
               ))
             )}
+            </div>
+            <button className="fi-carousel-side-btn fi-carousel-side-btn--right" onClick={handleNextLeading} title="Scroll right" aria-label="Scroll franchises right">
+              <ChevronRight size={20} />
+            </button>
           </div>
         </div>
       </section>
 
-      {/* 2.5 Managed Advertising Space Section */}
-      {ads.length > 0 && (
-        <section className="fi-ad-space-section" style={{ padding: "44px 0", background: "linear-gradient(135deg, #0f172a 0%, #1e293b 100%)", color: "#ffffff", borderTop: "1px solid rgba(255,255,255,0.08)", borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
-          <div className="container">
-            <div style={{ display: "grid", gridTemplateColumns: ads.length > 1 ? "repeat(auto-fit, minmax(320px, 1fr))" : "1fr", gap: "24px" }}>
-              {ads.map((ad) => (
-                <div
-                  key={ad.id || ad._id}
-                  style={{
-                    position: "relative",
-                    borderRadius: "20px",
-                    overflow: "hidden",
-                    minHeight: "220px",
-                    display: "flex",
-                    alignItems: "flex-end",
-                    boxShadow: "0 12px 30px rgba(0,0,0,0.3)",
-                    border: "1px solid rgba(255,255,255,0.12)",
-                    background: "#0f172a"
-                  }}
-                >
-                  <img
-                    src={ad.image || "https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&q=80&w=1200"}
-                    alt={ad.title}
-                    style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "contain", objectPosition: "center", display: "block", backgroundColor: "#ffffff" }}
-                  />
-                  <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, rgba(15,23,42,0.95) 0%, rgba(15,23,42,0.4) 60%, transparent 100%)" }} />
-
-                  <div style={{ position: "relative", zIndex: 2, padding: "28px", width: "100%" }}>
-                    <span style={{ background: "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)", color: "#ffffff", fontSize: "11px", fontWeight: "800", letterSpacing: "0.5px", padding: "4px 12px", borderRadius: "20px", textTransform: "uppercase", display: "inline-block", marginBottom: "12px" }}>
-                      {ad.badge || "SPONSORED"}
-                    </span>
-                    <h3 style={{ fontSize: "22px", fontWeight: "800", color: "#ffffff", marginBottom: "8px", lineHeight: "1.3" }}>
-                      {ad.title}
-                    </h3>
-                    {ad.subtitle && (
-                      <p style={{ color: "#cbd5e1", fontSize: "14px", marginBottom: "16px", lineHeight: "1.5" }}>
-                        {ad.subtitle}
-                      </p>
-                    )}
-                    <Link
-                      href={ad.link || "/brand-registration"}
-                      className="btn"
-                      style={{ background: "#7cb02c", color: "#ffffff", fontWeight: "800", padding: "10px 20px", borderRadius: "12px", display: "inline-flex", alignItems: "center", gap: "8px", fontSize: "13px" }}
-                    >
-                      Learn More <ArrowRight size={16} />
-                    </Link>
-                  </div>
-                </div>
+      {/* 2.5 Partner Spotlight */}
+      <section className="public-partner-spotlight">
+        <div className="container">
+          <div className="public-partner-heading">
+            <div>
+              <span className="public-eyebrow">Partner Spotlight</span>
+              <h2>Opportunities from our partners</h2>
+            </div>
+            <Link className="public-ghost-button" href="/contact">
+              Advertise with us <span aria-hidden="true">&rarr;</span>
+            </Link>
+          </div>
+          <div className="public-ads-carousel" aria-roledescription="carousel" aria-label="Partner advertisements">
+            <button
+              type="button"
+              className="public-ads-carousel-button public-ads-carousel-button--prev"
+              onClick={() => moveSpotlight(-1)}
+              aria-label="Show previous partner advertisements"
+              disabled={effectiveSpotlightAds.length <= 3}
+            >
+              <ChevronLeft size={18} />
+            </button>
+            <div className="public-ads-grid public-ads-grid--compact">
+            {visibleSpotlightAds.map((ad, index) => {
+              const isFeatured = String(ad.badge || "").toLowerCase().includes("featured");
+              return (
+                <AdCard
+                  key={`${ad.id || ad._id || ad.title}-${spotlightStart}-${index}`}
+                  ad={ad}
+                  featured={isFeatured}
+                  large={false}
+                />
+              );
+            })}
+            </div>
+            <button
+              type="button"
+              className="public-ads-carousel-button public-ads-carousel-button--next"
+              onClick={() => moveSpotlight(1)}
+              aria-label="Show next partner advertisements"
+              disabled={effectiveSpotlightAds.length <= 3}
+            >
+              <ChevronRight size={18} />
+            </button>
+          </div>
+          {effectiveSpotlightAds.length > 3 && (
+            <div className="public-ads-carousel-dots" aria-label="Partner advertisement slides">
+              {effectiveSpotlightAds.map((ad, index) => (
+                <button
+                  type="button"
+                  key={ad.id || ad._id || ad.title || index}
+                  className={index === spotlightStart ? "is-active" : ""}
+                  onClick={() => setSpotlightStart(index)}
+                  aria-label={`Show partner advertisement ${index + 1}`}
+                  aria-current={index === spotlightStart ? "true" : undefined}
+                />
               ))}
             </div>
-          </div>
-        </section>
-      )}
+          )}
+          <p className="public-sponsored-note">
+            Sponsored placements are clearly labelled. Franchise Roots verifies every listing before it goes live.
+          </p>
+        </div>
+      </section>
 
       {/* 3. Trust Section (Auto Scrolling verified logos) */}
       <section className="trust-section">
         <div className="container">
           <p className="trust-title">Featured Verification Networks</p>
-          <div className="logo-slider">
-            <div className="logo-track">
-              {[
-                "JAIPUR CHAI", "DOCTOR GARAGE", "EDUQUANTUM", "JAAZ BATHWARE", "AMUL PARLIAMENT",
-                "BOMBAY KULFI", "JAIPUR CHAI", "DOCTOR GARAGE", "EDUQUANTUM", "JAAZ BATHWARE",
-                "AMUL PARLIAMENT", "BOMBAY KULFI"
-              ].map((logoName, idx) => (
-                <div key={idx} className="logo-item">
-                  <span className="logo-item-text">{logoName}</span>
-                </div>
-              ))}
-            </div>
-          </div>
+          <h2 className="public-trust-title">Brands that trust Franchise Roots</h2>
+          <Marquee items={brands.map((brand) => ({ name: brand.name, image: brand.image || brand.logo || brand.logoUrl }))} />
         </div>
       </section>
 
       {/* 4. Promo Cards (Main features styled premium) */}
-      <section className="promo-section container">
+      <section className="promo-section container public-join-section">
         <div className="promo-grid">
-          <div className="promo-card blue">
-            <div className="promo-card-content">
-              <h3>Promote Your Brand</h3>
-              <p>Expand your franchise network, acquire verified investor inquiries, and capture active leads instantly.</p>
-              <Link href="/brand-registration" className="btn btn-primary" style={{ alignSelf: 'flex-start' }}>
-                Register Your Brand <ArrowRight size={14} />
-              </Link>
-            </div>
-            <div className="promo-icon-wrapper">
-              <Building size={48} />
-            </div>
-          </div>
-
-          <div className="promo-card orange">
-            <div className="promo-card-content">
-              <h3>Acquire Franchise Rights</h3>
-              <p>Search from 1,000+ verified franchise concepts with detailed investment breakdowns and corporate support.</p>
-              <Link href="/investor-registration" className="btn btn-secondary" style={{ alignSelf: 'flex-start' }}>
-                Register as Investor <ArrowRight size={14} />
-              </Link>
-            </div>
-            <div className="promo-icon-wrapper">
-              <Users size={48} />
-            </div>
-          </div>
-
-          <div className="promo-card green">
-            <div className="promo-card-content">
-              <h3>Become Channel Partner</h3>
-              <p>Network with regional business consultancies, master franchise brokers, and legal registry agents.</p>
-              <Link href="/investor-registration" className="btn btn-outline" style={{ alignSelf: 'flex-start', background: 'var(--success)', color: 'white', borderColor: 'transparent' }}>
-                Join the Network <ArrowRight size={14} />
-              </Link>
-            </div>
-            <div className="promo-icon-wrapper">
-              <Star size={48} />
-            </div>
-          </div>
+          <JoinCard tone="red" tag="For Franchisors" icon={Building} title="Promote Your Brand" description="Expand your franchise network, acquire verified investor inquiries, and capture active leads instantly." points={["Reach verified investors", "Capture active leads instantly", "Grow your franchise network"]} href="/brand-registration" action="Register Your Brand" />
+          <JoinCard tone="blue" tag="For Investors" icon={Users} title="Acquire Franchise Rights" description="Search verified franchise concepts with detailed investment breakdowns and corporate support." points={["Verified concepts", "Detailed investment breakdowns", "Corporate support"]} href="/investor-registration" action="Register as Investor" />
+          <JoinCard tone="green" tag="For Consultants" icon={Star} title="Become Channel Partner" description="Network with regional business consultancies, master franchise brokers, and legal registry agents." points={["Regional consultancies", "Master franchise brokers", "Legal registry agents"]} href="/investor-registration" action="Join the Network" />
         </div>
       </section>
 
@@ -879,37 +1283,159 @@ export default function Home() {
         onAskExperts={handleOpenAskExperts}
       />
 
-      {/* 5. Popular Categories Grid */}
-      <section className="container" style={{ margin: "80px auto" }}>
-        <div className="section-title-wrapper">
+      {/* 5. Popular Categories Grid & Dynamic Category Brands Showcase */}
+      <section className="container public-category-section" style={{ margin: "80px auto" }}>
+        <div className="section-title-wrapper public-category-heading">
           <div className="section-title">
+            <span className="public-category-kicker"><LayoutGrid size={14} /> VERIFIED BUSINESS DIRECTORY</span>
             <h2>Explore Business Segments</h2>
             <p>Select your favorite category to audit verified business proposals.</p>
           </div>
+          <Link href="/brands" className="public-category-summary" title="Explore all verified franchise brands">
+            <div className="public-category-summary-icon"><CheckCircle size={19} /></div>
+            <div>
+              <strong>{brands.length || "100+"} verified options</strong>
+              <span>Curated across {CATEGORIES.length} high-demand sectors</span>
+            </div>
+            <ArrowRight size={18} className="public-category-summary-arrow" />
+          </Link>
         </div>
         <div className="categories-grid">
           {CATEGORIES.map((cat, i) => {
             const Icon = cat.icon;
+            const count = brands.filter((brand) => brand.category === cat.name).length;
+            const isSelected = selectedCategory === cat.name;
             return (
               <div
                 key={i}
-                className={`category-card ${selectedCategory === cat.name ? "active-category" : ""}`}
+                className={`category-card ${isSelected ? "active-category" : ""}`}
                 onClick={() => selectCategory(cat.name)}
-                style={{ cursor: 'pointer' }}
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    selectCategory(cat.name);
+                  }
+                }}
+                style={{ cursor: "pointer" }}
+                aria-pressed={isSelected}
               >
                 <div className="category-icon flex-center">
                   <Icon size={22} />
                 </div>
                 <h4>{cat.name}</h4>
-                <span style={{ fontSize: "11px", color: "var(--text-muted)", marginTop: "4px" }}>{cat.count}</span>
+                <span style={{ fontSize: "11px", color: "var(--text-muted)", marginTop: "4px" }}>
+                  {count || "Available"} {brands.length ? "options" : "records"}
+                </span>
               </div>
             );
           })}
         </div>
-      </section>
 
-      {/* NEW: Top Business Opportunities Section (Franchise India Reference) */}
-      <TopBusinessOpportunities brands={brands} loading={loading} onAskExperts={handleOpenAskExperts} />
+        {/* Dynamic Category Brands Showcase */}
+        <div className="public-category-brands-showcase" style={{ marginTop: "40px" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "24px", flexWrap: "wrap", gap: "12px" }}>
+            <div>
+              <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                <h3 style={{ fontSize: "22px", fontWeight: "800", color: "#0f1a3d", margin: 0, letterSpacing: "-0.02em" }}>
+                  {selectedCategory ? `${selectedCategory} Franchises` : "Top Verified Business Opportunities"}
+                </h3>
+                <span style={{ fontSize: "12px", fontWeight: "700", padding: "3px 11px", borderRadius: "12px", backgroundColor: "#eff6ff", color: "#2563eb", border: "1px solid #bfdbfe" }}>
+                  {categoryFilteredBrands.length} {categoryFilteredBrands.length === 1 ? "Option" : "Options"} Listed
+                </span>
+              </div>
+              <p style={{ fontSize: "14px", color: "#64748b", margin: "4px 0 0 0" }}>
+                {selectedCategory
+                  ? `Showing verified business proposals in ${selectedCategory}. Click any category above to switch.`
+                  : "Click any business segment above to view verified proposals in that industry."}
+              </p>
+            </div>
+
+            {selectedCategory && (
+              <button
+                type="button"
+                onClick={() => setSelectedCategory("")}
+                style={{
+                  fontSize: "13px",
+                  fontWeight: "600",
+                  color: "#475569",
+                  background: "#f1f5f9",
+                  border: "1px solid #e2e8f0",
+                  borderRadius: "8px",
+                  padding: "7px 14px",
+                  cursor: "pointer",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "6px",
+                  transition: "all 0.2s ease"
+                }}
+              >
+                ✕ Clear Filter (Show All)
+              </button>
+            )}
+          </div>
+
+          {loading ? (
+            <ProductSkeletonGrid count={3} minWidth="280px" />
+          ) : categoryFilteredBrands.length > 0 ? (
+            <>
+              <div className="public-business-grid">
+                {categoryFilteredBrands.slice(0, 6).map((brand) => (
+                  <BrandCard
+                    key={brand.id || brand._id || brand.name}
+                    brand={brand}
+                    compact
+                    onEnquire={(b) => {
+                      setSelectedBrand(b);
+                      setIsEnquiryOnlyMode(true);
+                      setEnquirySubmitted(false);
+                    }}
+                  />
+                ))}
+              </div>
+
+              {categoryFilteredBrands.length > 6 && (
+                <div style={{ textAlign: "center", marginTop: "32px" }}>
+                  <Link
+                    href={`/brands?category=${encodeURIComponent(selectedCategory)}`}
+                    className="btn btn-outline"
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: "8px",
+                      padding: "10px 24px",
+                      borderRadius: "10px",
+                      fontWeight: "700",
+                      fontSize: "14px",
+                      textDecoration: "none"
+                    }}
+                  >
+                    Explore all {categoryFilteredBrands.length} {selectedCategory} Brands <ArrowRight size={16} />
+                  </Link>
+                </div>
+              )}
+            </>
+          ) : (
+            <div style={{ textAlign: "center", padding: "48px 20px", background: "#f8fafc", borderRadius: "16px", border: "1px dashed #cbd5e1" }}>
+              <h4 style={{ fontSize: "16px", fontWeight: "700", color: "#0f1a3d", marginBottom: "8px" }}>
+                No active listings found in {selectedCategory}
+              </h4>
+              <p style={{ color: "#64748b", fontSize: "13.5px", margin: "0 0 16px 0" }}>
+                New verified concepts in this sector are currently undergoing audit.
+              </p>
+              <button
+                type="button"
+                onClick={() => setSelectedCategory("")}
+                className="btn btn-outline"
+                style={{ fontSize: "13px", padding: "8px 16px", cursor: "pointer" }}
+              >
+                View All Categories
+              </button>
+            </div>
+          )}
+        </div>
+      </section>
 
 
       {/* 6. Premium Brand Slider/Carousel Section */}
@@ -920,34 +1446,28 @@ export default function Home() {
               <h2>Featured Opportunities</h2>
               <p>Trending franchises gaining high network expansion leads this month.</p>
             </div>
-            <div style={{ display: 'flex', gap: '10px' }}>
-              <button className="slider-nav-btn" onClick={handlePrevSlide} aria-label="Previous slide">
-                <ChevronLeft size={20} />
-              </button>
-              <button className="slider-nav-btn" onClick={handleNextSlide} aria-label="Next slide">
-                <ChevronRight size={20} />
-              </button>
-            </div>
           </div>
 
           {loading ? (
             <ProductSkeletonSlider count={3} />
           ) : brands.length > 0 && (
-            <div className="slider-container" ref={sliderRef}>
-              <div className="slider-track">
-                {brands.slice(0, 9).map((brand) => (
-                  <div key={brand.id} className="slider-card">
+            <div className="slider-viewport">
+              <button className="slider-nav-btn slider-side-nav slider-side-nav-left" onClick={handlePrevSlide} aria-label="Scroll featured opportunities left">
+                <ChevronLeft size={22} />
+              </button>
+              <div className="slider-container" ref={sliderRef}>
+                <div className="slider-track">
+                  {brands.slice(0, 9).map((brand) => (
+                    <div key={brand.id} className="slider-card">
                     <div className="slider-image-wrapper">
                       <div className="slider-badge">{decodeHtmlEntities(brand.hq || "India")}</div>
                       <div className="slider-overlay-gradient"></div>
-                      <img
-                        src={brand.image || "https://images.unsplash.com/photo-1524178232363-1fb2b075b655?auto=format&fit=crop&q=80&w=400"}
+                      <ImageRotator
+                        sources={getImageSources(brand).length > 0 ? getImageSources(brand) : ["https://images.unsplash.com/photo-1524178232363-1fb2b075b655?auto=format&fit=crop&q=80&w=400"]}
                         alt={decodeHtmlEntities(brand.name)}
                         className="slider-image"
                       />
-                      <div className="slider-brand-logo">
-                        <span style={{ fontSize: '22px', fontWeight: '800', color: 'var(--primary)' }}>{decodeHtmlEntities(brand.name).substring(0, 2).toUpperCase()}</span>
-                      </div>
+                      
                     </div>
                     <div className="slider-card-content">
                       <span className="slider-category">{decodeHtmlEntities(brand.category)}</span>
@@ -979,9 +1499,13 @@ export default function Home() {
                         </Link>
                       </div>
                     </div>
-                  </div>
-                ))}
+                    </div>
+                  ))}
+                </div>
               </div>
+              <button className="slider-nav-btn slider-side-nav slider-side-nav-right" onClick={handleNextSlide} aria-label="Scroll featured opportunities right">
+                <ChevronRight size={22} />
+              </button>
             </div>
           )}
         </div>
@@ -990,124 +1514,93 @@ export default function Home() {
       {/* NEW: Ask Our Experts WhatsApp Banner Section */}
       <section className="container">
         <div className="ask-experts-banner">
-          <div style={{ maxWidth: "680px", position: "relative", zIndex: 2 }}>
-            <span style={{ display: "inline-flex", alignItems: "center", gap: "6px", background: "rgba(37, 211, 102, 0.2)", color: "#4ade80", padding: "6px 14px", borderRadius: "20px", fontSize: "12px", fontWeight: "700", marginBottom: "16px" }}>
+          <div className="ask-experts-banner__glow ask-experts-banner__glow--one" aria-hidden="true" />
+          <div className="ask-experts-banner__glow ask-experts-banner__glow--two" aria-hidden="true" />
+          <div className="ask-experts-banner__content">
+            <span className="ask-experts-banner__eyebrow">
               <MessageCircle size={16} /> Free Advisory Service
             </span>
-            <h2 style={{ fontSize: "36px", fontWeight: "800", color: "#ffffff", marginBottom: "12px", lineHeight: 1.2 }}>
+            <h2>
               Looking to Buy a Franchise or Expand Your Brand? <br />
-              <span style={{ color: "#4ade80" }}>Ask Our Franchise Experts</span>
+              <span>Ask Our Franchise Experts</span>
             </h2>
-            <p style={{ color: "#cbd5e1", fontSize: "16px", marginBottom: "28px", lineHeight: 1.6 }}>
+            <p>
               Get customized advice based on your budget, city location, and expansion goals. Connect directly with our admin team on WhatsApp.
             </p>
-            <div style={{ display: "flex", gap: "14px", flexWrap: "wrap" }}>
+            <div className="ask-experts-banner__actions">
               <button
                 onClick={() => handleOpenAskExperts("buy")}
-                className="btn flex-center"
-                style={{
-                  background: "#25D366",
-                  color: "#ffffff",
-                  border: "none",
-                  padding: "16px 26px",
-                  borderRadius: "14px",
-                  fontWeight: "800",
-                  fontSize: "15px",
-                  cursor: "pointer",
-                  gap: "10px",
-                  boxShadow: "0 10px 25px rgba(37, 211, 102, 0.4)"
-                }}
+                className="ask-experts-banner__button ask-experts-banner__button--primary"
               >
                 <Store size={20} /> Buy a Franchise
               </button>
 
               <button
                 onClick={() => handleOpenAskExperts("expand")}
-                className="btn flex-center"
-                style={{
-                  background: "rgba(255, 255, 255, 0.12)",
-                  backdropFilter: "blur(8px)",
-                  color: "#ffffff",
-                  border: "1px solid rgba(255, 255, 255, 0.3)",
-                  padding: "16px 26px",
-                  borderRadius: "14px",
-                  fontWeight: "800",
-                  fontSize: "15px",
-                  cursor: "pointer",
-                  gap: "10px"
-                }}
+                className="ask-experts-banner__button ask-experts-banner__button--secondary"
               >
                 <Building size={20} /> Expand My Brand
               </button>
+            </div>
+          </div>
+          <div className="ask-experts-banner__visual" aria-hidden="true">
+            <div className="ask-experts-banner__orbit ask-experts-banner__orbit--one" />
+            <div className="ask-experts-banner__orbit ask-experts-banner__orbit--two" />
+            <div className="ask-experts-banner__visual-card">
+              <span className="ask-experts-banner__visual-icon"><MessageCircle size={24} /></span>
+              <strong>Let’s build your next move</strong>
+              <small>Personal guidance from verified experts</small>
+              <div className="ask-experts-banner__visual-progress"><span /></div>
+            </div>
+            <div className="ask-experts-banner__mini-card ask-experts-banner__mini-card--top">
+              <strong>148+</strong><span>verified brands</span>
+            </div>
+            <div className="ask-experts-banner__mini-card ask-experts-banner__mini-card--bottom">
+              <strong>Free</strong><span>first consultation</span>
             </div>
           </div>
         </div>
       </section>
 
       {/* Dynamic Managed Services Section */}
-      <section className="container" style={{ margin: "80px auto" }}>
-        <div className="section-title-wrapper" style={{ marginBottom: "40px" }}>
-          <div className="section-title">
-            <span className="hero-tag" style={{ marginBottom: "8px", display: "inline-block" }}>Empowering Growth</span>
+      <section className="container public-services-section">
+        <div className="section-title-wrapper public-services-heading">
+          <div className="section-title public-services-title">
+            <span className="hero-tag">Empowering Growth</span>
             <h2>Our Specialised Services</h2>
             <p>Managed solutions for investors seeking franchise ownership and brands looking to scale nationwide.</p>
           </div>
-          <Link href="/services" className="btn btn-outline" style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}>
+          <Link href="/services" className="btn btn-outline public-services-view-all">
             View All Services <ArrowRight size={16} />
           </Link>
         </div>
 
-        <div style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))",
-          gap: "24px"
-        }}>
-          {services.slice(0, 4).map((service) => (
+        <div className="public-services-grid">
+          {services.slice(0, 4).map((service, index) => (
             <div
               key={service.id || service._id}
-              style={{
-                background: "#ffffff",
-                borderRadius: "16px",
-                overflow: "hidden",
-                border: "1px solid var(--border-color)",
-                boxShadow: "0 4px 20px rgba(0,0,0,0.04)",
-                transition: "transform 0.3s ease, box-shadow 0.3s ease",
-                display: "flex",
-                flexDirection: "column"
-              }}
-              className="card-hover-effect"
+              className={`public-service-card public-service-card--${(index % 4) + 1}`}
+              style={{ "--service-delay": `${index * 90}ms` }}
             >
-              <div style={{ position: "relative", height: "180px", overflow: "hidden" }}>
-                <img
-                  src={service.image || "https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?auto=format&fit=crop&q=80&w=600"}
+              <div className="public-service-image-wrap">
+                <span className="public-service-number">0{index + 1}</span>
+                <ImageRotator
+                  sources={getImageSources(service).length > 0 ? getImageSources(service) : ["https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?auto=format&fit=crop&q=80&w=600"]}
                   alt={service.title}
-                  style={{ width: "100%", height: "100%", objectFit: "contain", objectPosition: "center", display: "block", backgroundColor: "#ffffff" }}
+                  className="public-service-image"
                 />
               </div>
-              <div style={{ padding: "20px", display: "flex", flexDirection: "column", flex: 1, justifyContent: "space-between" }}>
+              <div className="public-service-body">
                 <div>
-                  <h3 style={{ fontSize: "18px", fontWeight: "800", color: "var(--text-dark)", marginBottom: "10px", lineHeight: "1.3" }}>
-                    {service.title}
-                  </h3>
-                  <p style={{
-                    fontSize: "13.5px",
-                    color: "var(--text-muted)",
-                    lineHeight: "1.6",
-                    display: "-webkit-box",
-                    WebkitLineClamp: 3,
-                    WebkitBoxOrient: "vertical",
-                    overflow: "hidden",
-                    marginBottom: "16px"
-                  }}>
-                    {service.content}
-                  </p>
+                  <span className="public-service-kicker">Franchise growth solution</span>
+                  <h3>{service.title}</h3>
+                  <p>{service.content}</p>
                 </div>
                 <Link
                   href={`/services/${service.id || service._id}`}
-                  className="btn btn-outline"
-                  style={{ width: "100%", padding: "10px", fontSize: "13px", fontWeight: "700", textAlign: "center", textDecoration: "none" }}
+                  className="public-service-link"
                 >
-                  Explore Details
+                  Explore Details <ArrowRight size={15} />
                 </Link>
               </div>
             </div>
@@ -1120,7 +1613,7 @@ export default function Home() {
 
       <section className="timeline-section">
         <div className="container">
-          <div style={{ textAlign: "center", marginBottom: "60px" }}>
+          <div className="public-timeline-heading" style={{ textAlign: "center", marginBottom: "60px" }}>
             <span className="hero-tag">How it works</span>
             <h2 style={{ fontSize: '32px' }}>Your Roadmap to Business Ownership</h2>
             <p style={{ color: "var(--text-muted)", marginTop: "10px" }}>Four simple steps to register, identify, verify, and lock in franchise catalog parameters.</p>
@@ -1157,9 +1650,9 @@ export default function Home() {
       </section>
 
       {/* Master Franchise Spotlight Banner */}
-      <section style={{ padding: "0 0 80px 0" }}>
+      <section className="public-master-section" style={{ padding: "0 0 80px 0" }}>
         <div className="container">
-          <div style={{
+          <div className="public-master-banner" style={{
             background: "linear-gradient(135deg, #0f172a 0%, #1e1b4b 60%, #312e81 100%)",
             borderRadius: "24px",
             padding: "48px 40px",
@@ -1172,7 +1665,7 @@ export default function Home() {
             gap: "40px",
             alignItems: "center"
           }}>
-            <div style={{ position: "relative", zIndex: 2 }}>
+            <div className="public-master-copy" style={{ position: "relative", zIndex: 2 }}>
               <span style={{
                 display: "inline-flex",
                 alignItems: "center",
@@ -1203,7 +1696,7 @@ export default function Home() {
               </Link>
             </div>
 
-            <div style={{
+            <div className="public-master-benefits" style={{
               background: "rgba(255, 255, 255, 0.05)",
               border: "1px solid rgba(255, 255, 255, 0.1)",
               borderRadius: "20px",
@@ -1243,7 +1736,7 @@ export default function Home() {
       </section>
 
       {/* 9. Metrics/Counters Section */}
-      <section style={{ padding: "60px 0", borderBottom: "1px solid var(--border-color)", marginBottom: "80px" }}>
+      <section className="public-metrics-section" style={{ padding: "60px 0", borderBottom: "1px solid var(--border-color)", marginBottom: "80px" }}>
         <div className="container metrics-grid">
           <div>
             <Building size={36} style={{ color: "var(--primary)", marginBottom: "16px" }} />
@@ -1269,7 +1762,7 @@ export default function Home() {
       </section>
 
       {/* 10. Browse by State Location */}
-      <section className="container" style={{ marginBottom: "80px" }}>
+      <section className="container public-state-section" style={{ marginBottom: "80px" }}>
         <div className="section-title-wrapper">
           <div className="section-title">
             <h2>Browse by State Location</h2>
@@ -1304,7 +1797,7 @@ export default function Home() {
           <div className="testimonials-grid">
             <div className="testimonial-card">
               <p className="testimonial-quote">
-                "Franchise Roots helped us scale our bathware brand across western and southern states. We received highly pre-qualified enquiries within weeks of listing our franchise requirements."
+                &quot;Franchise Roots helped us scale our bathware brand across western and southern states. We received highly pre-qualified enquiries within weeks of listing our franchise requirements.&quot;
               </p>
               <div className="testimonial-author">
                 <div className="author-avatar flex-center">MG</div>
@@ -1317,7 +1810,7 @@ export default function Home() {
 
             <div className="testimonial-card">
               <p className="testimonial-quote">
-                "As an education startup, reaching quality partners was a major bottleneck. The team at Franchise Roots helped us package our STEM modules and introduced us to 20+ state franchises."
+                &quot;As an education startup, reaching quality partners was a major bottleneck. The team at Franchise Roots helped us package our STEM modules and introduced us to state franchises.&quot;
               </p>
               <div className="testimonial-author">
                 <div className="author-avatar flex-center">DA</div>
@@ -1330,7 +1823,7 @@ export default function Home() {
 
             <div className="testimonial-card">
               <p className="testimonial-quote">
-                "Excellent portal for brand expansion! The lead filtering capabilities on their admin panel allowed our sales teams to focus purely on high-budget leads, optimizing our conversion cycles."
+                &quot;Excellent portal for brand expansion! The lead filtering capabilities allowed our sales teams to focus on qualified leads and optimize our conversion cycles.&quot;
               </p>
               <div className="testimonial-author">
                 <div className="author-avatar flex-center">BP</div>
@@ -1346,33 +1839,48 @@ export default function Home() {
 
       {/* 12. FAQ Accordion Section */}
       <section className="faq-section container">
-        <div style={{ textAlign: "center", marginBottom: "50px" }}>
+        <div className="public-faq-heading" style={{ textAlign: "center", marginBottom: "50px" }}>
           <span className="hero-tag">Support Center</span>
           <h2 style={{ fontSize: '32px' }}>Frequently Asked Questions</h2>
           <p style={{ color: 'var(--text-muted)', marginTop: '8px' }}>Answers to key questions regarding listing approvals, contracts, and matching algorithms.</p>
         </div>
 
-        <div className="faq-grid">
-          {FAQS.map((faq, i) => (
-            <div
-              key={i}
-              className={`faq-item ${openFaqIndex === i ? "open" : ""}`}
-              onClick={() => setOpenFaqIndex(openFaqIndex === i ? null : i)}
-            >
-              <div className="faq-question">
-                <span>{faq.question}</span>
-                <ChevronRight size={18} />
+        <div className="public-faq-layout">
+          <aside className="public-faq-aside">
+            <div className="public-faq-aside-orb" aria-hidden="true" />
+            <span className="public-faq-aside-icon"><HelpCircle size={24} /></span>
+            <span className="public-faq-aside-kicker">Need a clear answer?</span>
+            <h3>Let&apos;s make your next move simple.</h3>
+            <p>Our advisory team can guide you through listings, investment, approvals, and franchise setup.</p>
+            <Link href="/contact" className="public-faq-contact-link">Talk to an advisor <ArrowRight size={15} /></Link>
+            <div className="public-faq-trust-row">
+              <span><ShieldCheck size={15} /> Verified guidance</span>
+              <span><MessageCircle size={15} /> Quick support</span>
               </div>
-              <div className="faq-answer">
-                <p>{faq.answer}</p>
+          </aside>
+          <div className="faq-grid">
+            {FAQS.map((faq, i) => (
+              <div
+                key={i}
+                className={`faq-item ${openFaqIndex === i ? "open" : ""}`}
+                onClick={() => setOpenFaqIndex(openFaqIndex === i ? null : i)}
+              >
+                <div className="faq-question">
+                  <span className="faq-question-number">{String(i + 1).padStart(2, "0")}</span>
+                  <span>{faq.question}</span>
+                  <span className="faq-question-arrow"><ChevronRight size={18} /></span>
+                </div>
+                <div className="faq-answer">
+                  <p>{faq.answer}</p>
+                </div>
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
       </section>
 
       {/* 13. Newsletter Section */}
-      <section className="container" style={{ marginBottom: '80px' }}>
+      <section className="container public-seo-section" style={{ marginBottom: '80px' }}>
         <div className="newsletter-section">
           <div className="newsletter-content">
             <h2>Join the Inner Circle</h2>
@@ -1439,7 +1947,150 @@ export default function Home() {
           })
         }}
       />
+          {/* BRAND ENQUIRY MODAL POPUP */}
+      {selectedBrand && (
+        <div
+          style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px', background: 'rgba(15, 23, 42, 0.65)', backdropFilter: 'blur(4px)' }}
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setSelectedBrand(null);
+          }}
+        >
+          <div
+            style={{ position: 'relative', width: '100%', maxWidth: '520px', background: '#ffffff', borderRadius: '24px', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)', border: '1px solid #e2e8f0', overflow: 'hidden' }}
+          >
+            {/* Header */}
+            <div style={{ padding: '24px 28px 18px', background: 'linear-gradient(135deg, #f8faff 0%, #edf2fe 100%)', borderBottom: '1px solid #e2e8f0', position: 'relative' }}>
+              <button
+                type="button"
+                onClick={() => setSelectedBrand(null)}
+                style={{ position: 'absolute', top: '20px', right: '20px', width: '36px', height: '36px', borderRadius: '50%', background: '#ffffff', border: '1px solid #cbd5e1', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#64748b' }}
+                aria-label="Close Enquiry Modal"
+              >
+                <X size={18} />
+              </button>
+
+              <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '3px 10px', borderRadius: '999px', background: '#dbeafe', color: '#1d4ed8', fontSize: '11px', fontWeight: '800', textTransform: 'uppercase', marginBottom: '8px' }}>
+                {selectedBrand.category || "Franchise Opportunity"}
+              </div>
+
+              <h3 style={{ fontSize: '22px', fontWeight: '800', color: '#0f172a', margin: '0 0 4px', lineHeight: '1.2' }}>
+                Enquire for {selectedBrand.name}
+              </h3>
+              <p style={{ margin: 0, fontSize: '13px', color: '#64748b' }}>
+                Investment Range: <strong style={{ color: '#2563eb' }}>{selectedBrand.investment_range || (formatLakhs(selectedBrand.minInvestment) + ' - ' + formatLakhs(selectedBrand.maxInvestment))}</strong>
+              </p>
+            </div>
+
+            {/* Body */}
+            <div style={{ padding: '24px 28px' }}>
+              {enquirySubmitted ? (
+                <div style={{ textAlign: 'center', padding: '24px 12px' }}>
+                  <div style={{ width: '60px', height: '60px', borderRadius: '50%', background: '#dcfce7', color: '#16a34a', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
+                    <CheckCircle size={32} />
+                  </div>
+                  <h4 style={{ fontSize: '20px', fontWeight: '800', color: '#0f172a', marginBottom: '8px' }}>
+                    Enquiry Submitted Successfully!
+                  </h4>
+                  <p style={{ fontSize: '14px', color: '#64748b', marginBottom: '24px', lineHeight: '1.5' }}>
+                    Thank you, <strong>{enquiryForm.name || "Investor"}</strong>! Your franchise lead has been recorded. Our corporate advisor or <strong>{selectedBrand.name}</strong> will contact you shortly.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedBrand(null);
+                      setEnquirySubmitted(false);
+                    }}
+                    style={{ padding: '12px 28px', background: '#2563eb', color: '#ffffff', borderRadius: '12px', fontWeight: '800', border: 'none', cursor: 'pointer', fontSize: '14px' }}
+                  >
+                    Done
+                  </button>
+                </div>
+              ) : (
+                <form onSubmit={handleEnquirySubmit} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '12px', fontWeight: '700', color: '#334155', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                      Your Full Name *
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="e.g. Rahul Sharma"
+                      value={enquiryForm.name}
+                      onChange={(e) => setEnquiryForm({ ...enquiryForm, name: e.target.value })}
+                      style={{ width: '100%', padding: '12px 14px', borderRadius: '10px', border: '1px solid #cbd5e1', fontSize: '14px', outline: 'none', background: '#f8fafc' }}
+                    />
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '12px', fontWeight: '700', color: '#334155', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                        Phone Number *
+                      </label>
+                      <input
+                        type="tel"
+                        required
+                        placeholder="+91 98765 43210"
+                        value={enquiryForm.phone}
+                        onChange={(e) => setEnquiryForm({ ...enquiryForm, phone: e.target.value })}
+                        style={{ width: '100%', padding: '12px 14px', borderRadius: '10px', border: '1px solid #cbd5e1', fontSize: '14px', outline: 'none', background: '#f8fafc' }}
+                      />
+                    </div>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '12px', fontWeight: '700', color: '#334155', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                        Email Address *
+                      </label>
+                      <input
+                        type="email"
+                        required
+                        placeholder="rahul@example.com"
+                        value={enquiryForm.email}
+                        onChange={(e) => setEnquiryForm({ ...enquiryForm, email: e.target.value })}
+                        style={{ width: '100%', padding: '12px 14px', borderRadius: '10px', border: '1px solid #cbd5e1', fontSize: '14px', outline: 'none', background: '#f8fafc' }}
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label style={{ display: 'block', fontSize: '12px', fontWeight: '700', color: '#334155', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                      Message or City (Optional)
+                    </label>
+                    <textarea
+                      rows={2}
+                      placeholder="e.g. Interested in opening a franchise branch in Chandigarh / Mohali..."
+                      value={enquiryForm.message}
+                      onChange={(e) => setEnquiryForm({ ...enquiryForm, message: e.target.value })}
+                      style={{ width: '100%', padding: '10px 14px', borderRadius: '10px', border: '1px solid #cbd5e1', fontSize: '13px', outline: 'none', background: '#f8fafc', resize: 'vertical' }}
+                    />
+                  </div>
+
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '6px' }}>
+                    <button
+                      type="submit"
+                      disabled={submittingEnquiry}
+                      style={{ width: '100%', padding: '14px', background: '#dc2626', color: '#ffffff', border: 'none', borderRadius: '12px', fontWeight: '800', fontSize: '14px', cursor: submittingEnquiry ? 'wait' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', boxShadow: '0 4px 14px rgba(220, 38, 38, 0.3)' }}
+                    >
+                      {submittingEnquiry ? "Submitting..." : "Submit Direct Enquiry"} <ArrowRight size={16} />
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const adminPhone = process.env.NEXT_PUBLIC_ADMIN_WHATSAPP || "919815489999";
+                        const cleanPhone = adminPhone.replace(/[^0-9]/g, "");
+                        const msg = 'Hi Franchise Roots, I want to enquire about ' + selectedBrand.name + ' (' + selectedBrand.category + '). Please share catalog & ROI details.';
+                        window.open("https://api.whatsapp.com/send?phone=" + cleanPhone + "&text=" + encodeURIComponent(msg), "_blank");
+                      }}
+                      style={{ width: '100%', padding: '12px', background: '#f0fdf4', color: '#15803d', border: '1px solid #86efac', borderRadius: '12px', fontWeight: '800', fontSize: '13px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
+                    >
+                      <MessageCircle size={16} color="#16a34a" /> Instant Enquiry on WhatsApp
+                    </button>
+                  </div>
+                </form>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
-

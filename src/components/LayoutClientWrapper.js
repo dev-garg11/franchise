@@ -4,12 +4,13 @@ import { usePathname, useSearchParams } from "next/navigation";
 import { useState, useEffect, Suspense } from "react";
 import Header from "./Header";
 import Footer from "./Footer";
-import TopMenuBanner from "./TopMenuBanner";
+import HighlightBanner from "./HighlightBanner";
 import AuthModal from "./AuthModal";
 
 import FloatingWhatsApp from "./FloatingWhatsApp";
 import AskExpertsModal from "./AskExpertsModal";
 import SeoAiAgentPopup from "./SeoAiAgentPopup";
+import ToastSweetAlert from "./ToastSweetAlert";
 
 function AuthParamsHandler({ setIsAuthModalOpen, setAuthModalTab }) {
   const searchParams = useSearchParams();
@@ -27,6 +28,12 @@ function AuthParamsHandler({ setIsAuthModalOpen, setAuthModalTab }) {
 
 export default function LayoutClientWrapper({ children }) {
   const pathname = usePathname();
+
+  // Start each route at its own header so navigation never opens midway through
+  // the previous page's scroll position.
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+  }, [pathname]);
   
   const [mounted, setMounted] = useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
@@ -35,6 +42,8 @@ export default function LayoutClientWrapper({ children }) {
   const [askExpertsMode, setAskExpertsMode] = useState("buy");
 
   useEffect(() => {
+    // Mounting the client-only overlays is intentionally synchronized after hydration.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setMounted(true);
   }, []);
 
@@ -74,8 +83,12 @@ export default function LayoutClientWrapper({ children }) {
           setAuthModalTab={setAuthModalTab} 
         />
       </Suspense>
-      {!isNoHeaderFooter && <Header />}
-      {!isNoHeaderFooter && <TopMenuBanner />}
+      {!isNoHeaderFooter && (
+        <div className="site-header-shell">
+          {!isNoHeaderFooter && <Header />}
+          {!isNoHeaderFooter && <HighlightBanner />}
+        </div>
+      )}
       <main style={{ flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
         {children}
       </main>
@@ -105,6 +118,8 @@ export default function LayoutClientWrapper({ children }) {
           initialMode={askExpertsMode}
         />
       )}
+      {/* Global Toastr & SweetAlert System */}
+      {mounted && <ToastSweetAlert />}
     </div>
   );
 }

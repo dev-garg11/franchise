@@ -35,6 +35,7 @@ import {
 import SEOGeoTags from "@/components/SEOGeoTags";
 import CommercialSpecsBreakdown from "@/components/CommercialSpecsBreakdown";
 import { decodeHtmlEntities, sanitizeBrandHtml, formatLakhs } from "@/lib/brandFormatters";
+import { toast, Swal } from "@/lib/swal";
 
 export default function BrandDetailPage({ params }) {
   const resolvedParams = use(params);
@@ -45,6 +46,7 @@ export default function BrandDetailPage({ params }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [relatedBrands, setRelatedBrands] = useState([]);
+  const [sidebarAds, setSidebarAds] = useState([]);
 
   // Enquiry form state
   const [enquiryForm, setEnquiryForm] = useState({
@@ -101,6 +103,20 @@ export default function BrandDetailPage({ params }) {
       .catch(() => { });
   }, [brandId]);
 
+  useEffect(() => {
+    fetch("/api/advertisements")
+      .then((res) => res.json())
+      .then((data) => {
+        if (Array.isArray(data)) {
+          const matching = data.filter(
+            (a) => a.isActive !== false && (a.position === "brand_sidebar" || a.position === "brands_sidebar")
+          );
+          setSidebarAds(matching);
+        }
+      })
+      .catch((err) => console.error("Error fetching sidebar ads:", err));
+  }, []);
+
   const handleEnquirySubmit = async (e) => {
     e.preventDefault();
     if (!brand) return;
@@ -134,13 +150,19 @@ export default function BrandDetailPage({ params }) {
 
       if (res.ok) {
         setEnquirySubmitted(true);
+        Swal.fire({
+          title: "Enquiry Sent!",
+          text: `Your franchise application for ${brand.name} has been received. Our team will contact you shortly.`,
+          icon: "success"
+        });
+        toast.success("Enquiry submitted successfully!");
       } else {
         const errorData = await res.json().catch(() => ({}));
-        alert(errorData.error || "Failed to submit enquiry. Please try again or WhatsApp directly.");
+        toast.error(errorData.error || "Failed to submit enquiry. Please try again or WhatsApp directly.");
       }
     } catch (err) {
       console.error(err);
-      alert("Error submitting enquiry.");
+      toast.error("Error submitting enquiry.");
     } finally {
       setSubmittingEnquiry(false);
     }
@@ -657,9 +679,157 @@ export default function BrandDetailPage({ params }) {
                       </div>
                     </form>
                   )}
+
+                    {/* Brand Sidebar Promotional Banner */}
+                    {sidebarAds.length > 0 && (
+                      <div style={{ marginTop: "24px", paddingTop: "20px", borderTop: "1px solid #e2e8f0", display: "flex", flexDirection: "column", gap: "16px" }}>
+                        {sidebarAds.map((ad) => (
+                          <div
+                            key={ad.id || ad._id}
+                            style={{
+                              borderRadius: "16px",
+                              overflow: "hidden",
+                              border: "1px solid #e2e8f0",
+                              boxShadow: "0 4px 12px rgba(0,0,0,0.04)",
+                              backgroundColor: "#ffffff",
+                              position: "relative"
+                            }}
+                          >
+                            <div style={{ position: "relative", height: "130px", backgroundColor: "#0f172a" }}>
+                              {ad.image && (
+                                <img
+                                  src={ad.image}
+                                  alt={ad.title}
+                                  style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                                />
+                              )}
+                              <span
+                                style={{
+                                  position: "absolute",
+                                  top: "10px",
+                                  left: "10px",
+                                  backgroundColor: "rgba(15,23,42,0.85)",
+                                  color: "#38bdf8",
+                                  fontSize: "10px",
+                                  fontWeight: "800",
+                                  padding: "3px 8px",
+                                  borderRadius: "6px",
+                                  letterSpacing: "0.5px"
+                                }}
+                              >
+                                {ad.badge || "PROMOTED"}
+                              </span>
+                            </div>
+                            <div style={{ padding: "14px 16px" }}>
+                              <h4 style={{ fontSize: "14px", fontWeight: "800", color: "#0f172a", marginBottom: "4px" }}>
+                                {ad.title}
+                              </h4>
+                              {ad.subtitle && (
+                                <p style={{ fontSize: "12px", color: "#64748b", margin: "0 0 10px 0", lineHeight: "1.4" }}>
+                                  {ad.subtitle}
+                                </p>
+                              )}
+                              <Link
+                                href={ad.link || "/brand-registration"}
+                                style={{
+                                  display: "inline-flex",
+                                  alignItems: "center",
+                                  gap: "6px",
+                                  fontSize: "12px",
+                                  fontWeight: "700",
+                                  color: "#2563eb",
+                                  textDecoration: "none"
+                                }}
+                              >
+                                Learn More <ChevronRight size={14} />
+                              </Link>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                  )}
                 </div>
               </div>
             </div>
+
+            {/* AI OVERVIEW & GEO FACTS */}
+            {brand.seoData?.geoDescription && (
+              <div
+                style={{
+                  marginTop: "50px",
+                  padding: "24px",
+                  borderRadius: "16px",
+                  backgroundColor: "#f0fdf4",
+                  border: "1px solid #bbf7d0",
+                  boxShadow: "0 2px 10px rgba(0,0,0,0.02)"
+                }}
+              >
+                <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "10px" }}>
+                  <Sparkles size={20} style={{ color: "#16a34a" }} />
+                  <h3 style={{ margin: 0, fontSize: "17px", fontWeight: "800", color: "#166534" }}>
+                    AI Search & Investment Overview (GEO Factsheet)
+                  </h3>
+                </div>
+                <p style={{ margin: 0, fontSize: "14px", lineHeight: "1.65", color: "#14532d" }}>
+                  {brand.seoData.geoDescription}
+                </p>
+              </div>
+            )}
+
+            {/* TABLE OF CONTENTS */}
+            {brand.seoData?.toc && brand.seoData.toc.length > 0 && (
+              <div
+                id="toc"
+                style={{
+                  marginTop: "30px",
+                  padding: "20px 24px",
+                  borderRadius: "14px",
+                  backgroundColor: "#f8fafc",
+                  border: "1px solid #e2e8f0"
+                }}
+              >
+                <h3 style={{ margin: "0 0 12px 0", fontSize: "16px", fontWeight: "800", color: "#0f172a" }}>
+                  📖 Table of Contents & Navigation
+                </h3>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: "10px" }}>
+                  {brand.seoData.toc.map((item, idx) => (
+                    <a
+                      key={idx}
+                      href={`#${item.id}`}
+                      style={{
+                        fontSize: "13px",
+                        color: "#2563eb",
+                        textDecoration: "none",
+                        fontWeight: "600",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "6px"
+                      }}
+                    >
+                      <span style={{ color: "#94a3b8" }}>&bull;</span> {item.title}
+                    </a>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* COMPREHENSIVE PILLAR GUIDE */}
+            {brand.seoData?.pillarContent && (
+              <div
+                className="brand-pillar-guide"
+                style={{
+                  marginTop: "30px",
+                  backgroundColor: "#ffffff",
+                  borderRadius: "16px",
+                  padding: "32px",
+                  border: "1px solid #e2e8f0",
+                  lineHeight: "1.75",
+                  fontSize: "15px",
+                  color: "#334155"
+                }}
+                dangerouslySetInnerHTML={{ __html: brand.seoData.pillarContent }}
+              />
+            )}
 
             {/* DYNAMIC FAQ SECTION WITH ACCORDION */}
             <div style={{ marginTop: "60px" }}>
@@ -667,7 +837,21 @@ export default function BrandDetailPage({ params }) {
                 Frequently Asked Questions about {brand.name}
               </h3>
               <div className="faq-accordion-container" style={{ display: "flex", flexDirection: "column" }}>
-                <details className="faq-details">
+                {Array.isArray(brand.faqs) && brand.faqs.length > 0 ? (
+                  brand.faqs.map((faq, idx) => (
+                    <details key={idx} className="faq-details">
+                      <summary className="faq-summary">
+                        <span>{faq.question}</span>
+                        <span className="faq-icon">+</span>
+                      </summary>
+                      <div className="faq-content">
+                        <p>{faq.answer}</p>
+                      </div>
+                    </details>
+                  ))
+                ) : (
+                  <>
+                    <details className="faq-details">
                   <summary className="faq-summary">
                     <span>What is the minimum investment required for a {brand.name} franchise?</span>
                     <span className="faq-icon">+</span>
@@ -712,6 +896,8 @@ export default function BrandDetailPage({ params }) {
                     <p>{brand.masterFranchiseAvailable ? `Yes, master franchise options are available. The master investment range is ${brand.masterInvestmentRange || 'available upon contact'}.` : `Currently, ${brand.name} is focusing on standard franchise units. Connect with us to discuss special territorial rights.`}</p>
                   </div>
                 </details>
+                  </>
+                )}
               </div>
             </div>
 
@@ -719,7 +905,7 @@ export default function BrandDetailPage({ params }) {
             <script
               type="application/ld+json"
               dangerouslySetInnerHTML={{
-                __html: JSON.stringify({
+                __html: JSON.stringify(brand.schemaData && Object.keys(brand.schemaData).length > 0 ? brand.schemaData : {
                   "@context": "https://schema.org",
                   "@graph": [
                     {

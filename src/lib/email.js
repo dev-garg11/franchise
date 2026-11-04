@@ -2,20 +2,17 @@ import nodemailer from "nodemailer";
 import fs from "fs";
 import path from "path";
 
-const SMTP_USER = process.env.SMTP_USER;
-const SMTP_PASS = process.env.SMTP_PASS;
+const SMTP_USER = (process.env.SMTP_USER || "").trim();
+const SMTP_PASS = (process.env.SMTP_PASS || "").replace(/\s+/g, "").trim();
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
 
-const isConfigured = SMTP_USER && SMTP_PASS;
+const isConfigured = Boolean(SMTP_USER && SMTP_PASS);
 
 const logoPath = path.join(process.cwd(), "public", "logo-footer.png");
 
 const transporter = isConfigured
   ? nodemailer.createTransport({
       service: "gmail",
-      host: "smtp.gmail.com",
-      port: 587,
-      secure: false,
       auth: {
         user: SMTP_USER,
         pass: SMTP_PASS,
@@ -124,6 +121,17 @@ async function sendMail({ to, subject, html }) {
     console.error("Failed to send email via Nodemailer:", error);
     throw error;
   }
+}
+
+export async function sendLoginOtpEmail({ email, code }) {
+  const content = baseTemplate(
+    "Your Franchise Roots login code",
+    `<h2>Verify your sign-in</h2>`,
+    `<p>Use this one-time password to sign in to your Franchise Roots account:</p>
+     <p style="font-size:32px;letter-spacing:8px;font-weight:800;color:#4f46e5;text-align:center;margin:28px 0;">${code}</p>
+     <p>This code expires in 10 minutes. If you did not request it, you can safely ignore this email.</p>`
+  );
+  return sendMail({ to: email, subject: `${code} is your Franchise Roots login code`, html: content });
 }
 
 // 1. Send Brand Registration Email

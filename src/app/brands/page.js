@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback, Suspense } from "react";
+import { useState, useEffect, useRef, useCallback, useTransition, Suspense } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import {
@@ -13,6 +13,9 @@ import { useApprovedBrands } from "@/lib/brandsCache";
 import { DISTRICTS_BY_STATE, ALL_DISTRICTS } from "@/lib/districtsData";
 import { getFilteredMinBudgets, getFilteredMaxBudgets, parseRupeeValue } from "@/lib/investmentData";
 import { decodeHtmlEntities, cleanBrandPlainText } from "@/lib/brandFormatters";
+import PageHeader from "@/components/public/PageHeader";
+import ImageRotator, { getImageSources } from "@/components/public/ImageRotator";
+import { toast } from "@/lib/swal";
 
 const CATEGORIES = [
     "Automotive", "Beauty & Health", "Business Services", "Dealers & Distributors",
@@ -28,6 +31,18 @@ const STATES = [
     "Nagaland", "Odisha", "Puducherry", "Punjab", "Rajasthan", "Sikkim", "Tamil Nadu",
     "Telangana", "Tripura", "Uttar Pradesh", "Uttarakhand", "West Bengal"
 ];
+
+const getBrandFallbackImage = (brandName = "Franchise") => {
+    const initials = String(brandName)
+        .split(/\s+/)
+        .filter(Boolean)
+        .slice(0, 2)
+        .map((part) => part[0])
+        .join("")
+        .toUpperCase() || "FR";
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 420"><defs><linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#172554"/><stop offset=".55" stop-color="#2563eb"/><stop offset="1" stop-color="#7c3aed"/></linearGradient></defs><rect width="800" height="420" fill="url(#bg)"/><circle cx="690" cy="80" r="160" fill="#ffffff" opacity=".08"/><circle cx="110" cy="380" r="180" fill="#38bdf8" opacity=".08"/><text x="400" y="215" text-anchor="middle" fill="#ffffff" font-family="Arial, sans-serif" font-size="96" font-weight="800">${initials}</text><text x="400" y="278" text-anchor="middle" fill="#dbeafe" font-family="Arial, sans-serif" font-size="22" font-weight="700">VERIFIED BRAND</text></svg>`;
+    return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
+};
 
 
 
@@ -234,12 +249,15 @@ function BrandsDirectoryPage() {
 
     // Pagination State
     const [visibleCount, setVisibleCount] = useState(6);
+    const [, startTransition] = useTransition();
     const loadMoreRef = useRef(null);
     const isLoadingMoreRef = useRef(false);
 
     // Reset pagination when active filters change
     useEffect(() => {
+        /* eslint-disable react-hooks/set-state-in-effect -- filter changes reset the visible page. */
         setVisibleCount(6);
+        /* eslint-enable react-hooks/set-state-in-effect */
     }, [searchTerm, selectedCategory, selectedSector, selectedState, selectedLocation, selectedBudget, minBudget, maxBudget]);
 
     // Load more brands immediately
@@ -248,7 +266,9 @@ function BrandsDirectoryPage() {
         if (visibleCount >= filteredBrands.length) return;
 
         isLoadingMoreRef.current = true;
-        setVisibleCount(prev => Math.min(prev + 6, filteredBrands.length));
+        startTransition(() => {
+            setVisibleCount(prev => Math.min(prev + 12, filteredBrands.length));
+        });
 
         setTimeout(() => {
             isLoadingMoreRef.current = false;
@@ -270,32 +290,13 @@ function BrandsDirectoryPage() {
             },
             {
                 root: null,
-                rootMargin: "300px",
+            rootMargin: "700px",
                 threshold: 0
             }
         );
 
         observer.observe(target);
         return () => observer.disconnect();
-    }, [loadMoreBrands, visibleCount, filteredBrands.length]);
-
-    // Fallback scroll listener based directly on the loader element position
-    useEffect(() => {
-        const handleScroll = () => {
-            if (visibleCount >= filteredBrands.length) return;
-            const target = loadMoreRef.current;
-            if (target) {
-                const rect = target.getBoundingClientRect();
-                if (rect.top <= window.innerHeight + 300) {
-                    loadMoreBrands();
-                }
-            }
-        };
-
-        window.addEventListener("scroll", handleScroll, { passive: true });
-        handleScroll();
-
-        return () => window.removeEventListener("scroll", handleScroll);
     }, [loadMoreBrands, visibleCount, filteredBrands.length]);
 
     // Modal State
@@ -310,6 +311,7 @@ function BrandsDirectoryPage() {
 
     // Pre-fill enquiry form if investor is logged in
     useEffect(() => {
+        /* eslint-disable react-hooks/set-state-in-effect -- hydrate the enquiry form from the browser session. */
         if (selectedBrand && typeof window !== "undefined") {
             const isLoggedIn = localStorage.getItem("investorLoggedIn") === "true";
             if (isLoggedIn) {
@@ -321,16 +323,19 @@ function BrandsDirectoryPage() {
                 });
             }
         }
+        /* eslint-enable react-hooks/set-state-in-effect */
     }, [selectedBrand]);
 
     // Sync URL search params from Homepage or Header Search
     useEffect(() => {
+        /* eslint-disable react-hooks/set-state-in-effect -- URL filters are external state. */
         if (brands.length > 0) {
             const categoryParam = searchParams.get("category");
             const sectorParam = searchParams.get("sector");
             const stateParam = searchParams.get("state");
             const locationParam = searchParams.get("location");
             const searchParam = searchParams.get("search");
+            const typeParam = searchParams.get("type");
             const minBudgetParam = searchParams.get("minBudget");
             const maxBudgetParam = searchParams.get("maxBudget");
             const budgetParam = searchParams.get("budget");
@@ -339,15 +344,23 @@ function BrandsDirectoryPage() {
             if (sectorParam) setSelectedSector(sectorParam);
             if (stateParam) setSelectedState(stateParam);
             if (locationParam) setSelectedLocation(locationParam);
-            if (searchParam) setSearchTerm(searchParam);
+            if (searchParam && typeParam && !searchParam.toLowerCase().includes(typeParam.toLowerCase())) {
+                setSearchTerm(`${searchParam} ${typeParam}`);
+            } else if (searchParam) {
+                setSearchTerm(searchParam);
+            } else if (typeParam) {
+                setSearchTerm(typeParam);
+            }
             if (minBudgetParam) setMinBudget(minBudgetParam);
             if (maxBudgetParam) setMaxBudget(maxBudgetParam);
             if (budgetParam) setSelectedBudget(budgetParam);
         }
+        /* eslint-enable react-hooks/set-state-in-effect */
     }, [searchParams, brands]);
 
     // Handle Multi-Criteria Filtering
     useEffect(() => {
+        /* eslint-disable react-hooks/set-state-in-effect -- derived catalog state is synchronized after filtering. */
         let result = [...brands];
 
         result = result.filter(b => {
@@ -359,6 +372,7 @@ function BrandsDirectoryPage() {
         });
 
         setFilteredBrands(result);
+        /* eslint-enable react-hooks/set-state-in-effect */
     }, [searchTerm, selectedCategory, selectedSector, selectedState, selectedLocation, selectedBudget, minBudget, maxBudget, brands]);
 
     const handleReset = () => {
@@ -404,10 +418,15 @@ function BrandsDirectoryPage() {
             });
             if (res.ok) {
                 setEnquirySubmitted(true);
+                toast.success("Enquiry submitted successfully!");
                 setEnquiryForm({ name: "", email: "", phone: "", message: "" });
+            } else {
+                const errData = await res.json().catch(() => ({}));
+                toast.error(errData.error || "Failed to submit enquiry. Please check your details.");
             }
         } catch (error) {
             console.error("Enquiry submission failed:", error);
+            toast.error("Network error submitting enquiry. Please check your connection.");
         } finally {
             setSubmittingEnquiry(false);
         }
@@ -417,30 +436,24 @@ function BrandsDirectoryPage() {
         <div style={{ background: "#f8fafc", minHeight: "100vh", padding: "40px 0" }}>
             <div className="container" style={{ maxWidth: "1280px" }}>
 
-                {/* Header Hero Section */}
-                <div style={{
-                    background: "linear-gradient(135deg, #1e1b4b 0%, #312e81 100%)",
-                    borderRadius: "24px",
-                    padding: "50px 40px",
-                    color: "white",
-                    marginBottom: "40px",
-                    position: "relative",
-                    overflow: "hidden",
-                    boxShadow: "var(--shadow-md)"
-                }}>
-                    <div style={{ position: "absolute", top: "-50px", right: "-50px", width: "200px", height: "200px", borderRadius: "50%", background: "rgba(99, 102, 241, 0.15)", filter: "blur(40px)" }}></div>
-                    <div style={{ position: "relative", zIndex: 2 }}>
-                        <span className="hero-tag" style={{ background: "rgba(255, 255, 255, 0.1)", color: "#c7d2fe", border: "1px solid rgba(255, 255, 255, 0.15)" }}>
-                            <Sparkles size={13} style={{ display: "inline-block", marginRight: "4px", verticalAlign: "middle" }} /> Verified Opportunities
-                        </span>
-                        <h1 style={{ fontSize: "36px", fontWeight: "800", marginTop: "12px", marginBottom: "8px", color: "white" }}>
-                            Explore Franchise Brands
-                        </h1>
-                        <p style={{ color: "#c7d2fe", fontSize: "15px", maxWidth: "600px", lineHeight: "1.6" }}>
-                            Discover premium high-ROI investments, contact brand owners directly, and expand your franchise footprint.
-                        </p>
-                    </div>
-                </div>
+                <PageHeader
+                    theme="brands"
+                    eyebrow={<><Sparkles size={14} /> VERIFIED OPPORTUNITIES</>}
+                    titleBefore="Explore "
+                    titleAccent="Franchise Brands"
+                    subtitle="Discover premium high-ROI investments, contact brand owners directly, and expand your franchise footprint."
+                    leftExtra={<span className="page-header-count-chip">{brands.length > 0 ? `${brands.length}+ verified brands` : "Verified brands"}</span>}
+                    rightVisual={brands.length > 0 ? (
+                        <div className="page-header-tile-stack">
+                            {brands.slice(0, 3).map((brand, index) => (
+                                <div className="page-header-tile page-header-tile--brand" key={brand.id || brand._id || brand.name} style={{ "--tile-delay": `${index * 120}ms` }}>
+                                    <span className="page-header-tile-icon"><Building size={20} /></span>
+                                    <span><strong>{decodeHtmlEntities(brand.name)}</strong><small>{decodeHtmlEntities(brand.category || "Franchise opportunity")}</small></span>
+                                </div>
+                            ))}
+                        </div>
+                    ) : null}
+                />
 
                 {/* Dynamic Inner Layout (Sidebar + Grid View) */}
                 <div className="brands-main-layout" style={{
@@ -648,7 +661,7 @@ function BrandsDirectoryPage() {
                             <div className="flex-center" style={{ minHeight: "350px", flexDirection: "column", background: "white", borderRadius: "18px", border: "1px dashed var(--border-color)", padding: "40px", textAlign: 'center' }}>
                                 <HelpCircle size={48} color="var(--text-muted)" style={{ marginBottom: "16px" }} />
                                 <h3 style={{ fontSize: "20px", fontWeight: "800", color: "var(--text-dark)", marginBottom: "8px" }}>No Opportunities Found</h3>
-                                <p style={{ color: "var(--text-muted)", marginBottom: "24px", maxWidth: "420px" }}>We couldn't search any approved business logos matching your filter configuration. Try broadening your criteria.</p>
+                                <p style={{ color: "var(--text-muted)", marginBottom: "24px", maxWidth: "420px" }}>We couldn&apos;t search any approved business logos matching your filter configuration. Try broadening your criteria.</p>
                                 <button className="btn btn-primary" onClick={handleReset}>Show All Brands</button>
                             </div>
                         ) : (
@@ -689,10 +702,14 @@ function BrandsDirectoryPage() {
                                                 }}>
                                                     {decodeHtmlEntities(brand.hq || "India")}
                                                 </div>
-                                                <img
-                                                    src={brand.image || "https://images.unsplash.com/photo-1524178232363-1fb2b075b655?auto=format&fit=crop&q=80&w=400"}
+                                                <ImageRotator
+                                                    sources={getImageSources({
+                                                        ...brand,
+                                                        image: brand.image || getBrandFallbackImage(decodeHtmlEntities(brand.name))
+                                                    })}
                                                     alt={decodeHtmlEntities(brand.name)}
-                                                    style={{ width: "100%", height: "100%", objectFit: "contain", objectPosition: "center", transition: "transform 0.5s ease" }}
+                                                    interval={2000}
+                                                    className="franchise-card-brand-image"
                                                 />
                                             </div>
                                             <div className="franchise-card-content" style={{ padding: "20px", display: "flex", flexDirection: "column", flexGrow: 1 }}>
@@ -774,7 +791,7 @@ function BrandsDirectoryPage() {
                                         }}
                                     >
                                         <div className="spinner" style={{ borderTopColor: "var(--primary)", width: "30px", height: "30px", borderWidth: "3px" }}></div>
-                                        <p style={{ fontSize: "13px", color: "var(--text-muted)", fontWeight: "600" }}>Loading more brands...</p>
+                                        <p style={{ fontSize: "13px", color: "var(--text-muted)", fontWeight: "600" }}>More verified brands loading as you scroll</p>
                                     </div>
                                 ) : null}
                             </>

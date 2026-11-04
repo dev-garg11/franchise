@@ -1,5 +1,25 @@
 import { NextResponse } from "next/server";
-import { getBrands, saveBrand } from "@/lib/db";
+import { getBrands, resetDatabaseConnection, saveBrand } from "@/lib/db";
+import { validateArea, validateBrandName, validateImageUrl } from "@/lib/seo/validate";
+
+let approvedBrandsMemoryCache = null;
+let approvedBrandsSerializedCache = null;
+let approvedBrandsCacheTime = 0;
+const APPROVED_BRANDS_CACHE_TTL = 60 * 1000;
+
+let allBrandsMemoryCache = null;
+let allBrandsCacheTime = 0;
+const ALL_BRANDS_CACHE_TTL = 10 * 1000;
+
+function toPublicBrand(brand) {
+  const {
+    user,
+    password,
+    email,
+    ...publicBrand
+  } = brand;
+  return publicBrand;
+}
 
 export async function GET(request) {
   try {
@@ -10,7 +30,25 @@ export async function GET(request) {
     const pageParam = searchParams.get("page");
     const limitParam = searchParams.get("limit");
 
-    let brands = await getBrands();
+    const isSimpleApprovedRequest = filterStatus === "Approved" && !featured && !search.trim() && pageParam === null && limitParam === null;
+    const isSimpleAllBrandsRequest = !filterStatus && !featured && !search.trim() && pageParam === null && limitParam === null;
+    let brands;
+    if (isSimpleApprovedRequest && approvedBrandsMemoryCache && Date.now() - approvedBrandsCacheTime < APPROVED_BRANDS_CACHE_TTL) {
+      brands = approvedBrandsMemoryCache;
+    } else if (isSimpleAllBrandsRequest && allBrandsMemoryCache && Date.now() - allBrandsCacheTime < ALL_BRANDS_CACHE_TTL) {
+      brands = allBrandsMemoryCache;
+    } else {
+      brands = await getBrands();
+      if (isSimpleApprovedRequest) {
+        approvedBrandsMemoryCache = brands.filter((brand) => brand.status === "Approved").map(toPublicBrand);
+        approvedBrandsSerializedCache = JSON.stringify(approvedBrandsMemoryCache);
+        approvedBrandsCacheTime = Date.now();
+        brands = approvedBrandsMemoryCache;
+      } else if (isSimpleAllBrandsRequest) {
+        allBrandsMemoryCache = brands;
+        allBrandsCacheTime = Date.now();
+      }
+    }
 
     if (filterStatus) {
       brands = brands.filter(b => b.status === filterStatus);
@@ -48,9 +86,26 @@ export async function GET(request) {
       });
     }
 
-    return NextResponse.json(brands);
+    if (isSimpleApprovedRequest && approvedBrandsSerializedCache) {
+      return new NextResponse(approvedBrandsSerializedCache, {
+        headers: {
+          "Content-Type": "application/json",
+          "Cache-Control": "public, max-age=30, stale-while-revalidate=120"
+        }
+      });
+    }
+    const response = NextResponse.json(brands);
+    if (isSimpleApprovedRequest) {
+      response.headers.set("Cache-Control", "public, max-age=30, stale-while-revalidate=120");
+    }
+    return response;
   } catch (error) {
-    return NextResponse.json({ error: "Failed to fetch brands" }, { status: 500 });
+    try {
+      await resetDatabaseConnection();
+      return NextResponse.json(await getBrands());
+    } catch (retryError) {
+      return NextResponse.json({ error: "Failed to fetch brands" }, { status: 503 });
+    }
   }
 }
 
@@ -62,32 +117,78 @@ export async function POST(request) {
       body[key] = typeof rawBody[key] === "string" ? rawBody[key].trim() : rawBody[key];
     }
 
-    // Validation
-    if (!body.name || !body.email || !body.phone || !body.password || !body.pincode || !body.investment_range || !body.max_investment_limit) {
-      return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
+    const name = body.name || body.company || body.companyName;
+    const email = body.email;
+    const phoneStr = body.phone ? String(body.phone).trim() : "";
+    const cleanPhone = phoneStr.replace(/\D/g, "");
+
+    // Validation: name, email, phone are mandatory
+    if (!name || !email || !phoneStr) {
+      return NextResponse.json({ error: "Missing required fields: Name, email, and phone are required." }, { status: 400 });
     }
 
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(body.email)) {
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       return NextResponse.json({ error: "Please enter a valid email address." }, { status: 400 });
     }
 
-    if (body.phone.length !== 10 || !/^\d{10}$/.test(body.phone)) {
+    if (cleanPhone.length !== 10) {
       return NextResponse.json({ error: "Phone number must be exactly 10 digits." }, { status: 400 });
     }
 
-    if (body.password.length < 6) {
+    if (body.password && body.password.length < 6) {
       return NextResponse.json({ error: "Password must be at least 6 characters." }, { status: 400 });
     }
 
-    if (body.pincode.length !== 6 || !/^\d{6}$/.test(body.pincode)) {
+    if (body.pincode && (body.pincode.length !== 6 || !/^\d{6}$/.test(body.pincode))) {
       return NextResponse.json({ error: "Pincode must be exactly 6 digits." }, { status: 400 });
     }
 
-    if (body.maxInvestment < body.minInvestment) {
+    if (body.minInvestment && body.maxInvestment && Number(body.maxInvestment) < Number(body.minInvestment)) {
       return NextResponse.json({ error: "Maximum investment must be greater than or equal to minimum investment." }, { status: 400 });
     }
 
-    const saved = await saveBrand(body);
+    // Phase 1 Strict Validation
+    const nameVal = validateBrandName(name);
+    if (!nameVal.isValid) {
+      return NextResponse.json({ error: nameVal.reason }, { status: 400 });
+    }
+
+    let sanitizedArea = null;
+    if (body.areaRequired && String(body.areaRequired).trim()) {
+      const areaVal = validateArea(body.areaRequired);
+      if (!areaVal.isValid) {
+        return NextResponse.json({ error: `Invalid Area: ${areaVal.reason}. Must be between 50 and 50,000 sq ft.` }, { status: 400 });
+      }
+      sanitizedArea = areaVal.value;
+    }
+
+    if (body.image && typeof body.image === "string") {
+      const imgVal = validateImageUrl(body.image);
+      if (!imgVal.isValid) {
+        return NextResponse.json({ error: `Invalid Image: ${imgVal.reason}` }, { status: 400 });
+      }
+    }
+
+    const brandPayload = {
+      ...body,
+      name,
+      company: body.company || body.companyName || name,
+      phone: cleanPhone,
+      password: body.password || "BrandLead123#",
+      pincode: body.pincode || "110001",
+      investment_range: body.investment_range || "Rs. 5 Lakh - 10 Lakh",
+      max_investment_limit: body.max_investment_limit || "Rs. 20 Lakh - 30 Lakh",
+      category: body.category || "General",
+      areaRequired: sanitizedArea,
+      status: body.status || "Pending"
+    };
+
+    const saved = await saveBrand(brandPayload);
+    approvedBrandsMemoryCache = null;
+    approvedBrandsSerializedCache = null;
+    approvedBrandsCacheTime = 0;
+    allBrandsMemoryCache = null;
+    allBrandsCacheTime = 0;
     return NextResponse.json({ success: true, brand: saved }, { status: 201 });
   } catch (error) {
     console.error("Error in POST /api/brands:", error);

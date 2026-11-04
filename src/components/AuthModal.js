@@ -15,6 +15,9 @@ export default function AuthModal({ isOpen, onClose, initialTab = "login" }) {
   const [loginPassword, setLoginPassword] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
   const [showLoginPassword, setShowLoginPassword] = useState(false);
+  const [otpSent, setOtpSent] = useState(false);
+  const [otpCode, setOtpCode] = useState("");
+  const [otpDestination, setOtpDestination] = useState("");
 
   // Register Form States
   const [regName, setRegName] = useState("");
@@ -36,6 +39,9 @@ export default function AuthModal({ isOpen, onClose, initialTab = "login" }) {
       setActiveTab(initialTab);
       setError("");
       setSuccess("");
+      setOtpSent(false);
+      setOtpCode("");
+      setOtpDestination("");
 
       const remembered = localStorage.getItem("rememberedUser");
       if (remembered) {
@@ -60,6 +66,80 @@ export default function AuthModal({ isOpen, onClose, initialTab = "login" }) {
     };
   }, [isOpen, onClose]);
 
+  const handleRequestOtp = async () => {
+    if (!loginIdentifier.trim()) {
+      setError("Please enter your Email or Mobile number first.");
+      return;
+    }
+    setLoading(true);
+    setError("");
+    setSuccess("");
+    setOtpCode("");
+    try {
+      const res = await fetch("/api/auth/request-otp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ identifier: loginIdentifier.trim() })
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        const detail = data.details && process.env.NODE_ENV !== "production" ? ` (${data.details})` : "";
+        throw new Error(`${data.error || data.message || "Unable to send OTP."}${detail}`);
+      }
+      setOtpSent(true);
+      setOtpDestination(data.destination || "your registered email");
+      setSuccess(`OTP sent to ${data.destination || "your Gmail"}. Please check your inbox and enter the 6-digit code.`);
+    } catch (err) {
+      setError(err.message || "Unable to send OTP. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleVerifyOtp = async () => {
+    if (!/^\d{6}$/.test(otpCode)) {
+      setError("Please enter the 6-digit OTP.");
+      return;
+    }
+    setLoading(true);
+    setError("");
+    try {
+      const res = await fetch("/api/auth/verify-otp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ identifier: loginIdentifier.trim(), code: otpCode })
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.user) {
+        const detail = data.details && process.env.NODE_ENV !== "production" ? ` (${data.details})` : "";
+        throw new Error(`${data.error || data.message || "Invalid or expired OTP."}${detail}`);
+      }
+      const { user } = data;
+      if (rememberMe) localStorage.setItem("rememberedUser", loginIdentifier.trim());
+      if (user.role === "admin") {
+        localStorage.setItem("adminLoggedIn", "true");
+        localStorage.setItem("adminUsername", user.username || "admin");
+        window.location.href = "/admin";
+      } else if (user.role === "investor") {
+        localStorage.setItem("investorLoggedIn", "true");
+        localStorage.setItem("investorEmail", user.email || "");
+        localStorage.setItem("investorName", user.name || "Investor");
+        localStorage.setItem("investorPhone", user.phone || "");
+        localStorage.setItem("investorId", user.id || "");
+        window.location.href = "/investor-panel";
+      } else {
+        localStorage.setItem("brandLoggedIn", "true");
+        localStorage.setItem("brandEmail", user.email || "");
+        localStorage.setItem("brandId", user.id || "");
+        localStorage.setItem("brandName", user.name || "Brand Owner");
+        window.location.href = "/brand-panel";
+      }
+    } catch (err) {
+      setError(err.message || "Unable to verify OTP. Please try again.");
+      setLoading(false);
+    }
+  };
+
   const handleLoginSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -81,7 +161,7 @@ export default function AuthModal({ isOpen, onClose, initialTab = "login" }) {
       const res = await fetch("/api/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ identifier: loginIdentifier, password: loginPassword })
+        body: JSON.stringify({ identifier: loginIdentifier.trim(), password: loginPassword })
       });
 
       if (res.ok) {
@@ -170,6 +250,12 @@ export default function AuthModal({ isOpen, onClose, initialTab = "login" }) {
       const payload = {
         name: regName,
         companyName: regCompany,
+        company: regCompany || regName,
+        pincode: "110001",
+        investment_range: "Rs. 5 Lakh - 10 Lakh",
+        max_investment_limit: "Rs. 20 Lakh - 30 Lakh",
+        category: "General",
+        status: regRole === "brand_owner" ? "Pending" : "Approved",
         email: regEmail,
         phone: regMobile,
         password: regPassword
@@ -189,7 +275,7 @@ export default function AuthModal({ isOpen, onClose, initialTab = "login" }) {
             const loginRes = await fetch("/api/login", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ identifier: regEmail, password: regPassword })
+              body: JSON.stringify({ identifier: regEmail.trim(), password: regPassword })
             });
 
             if (loginRes.ok) {
@@ -214,11 +300,18 @@ export default function AuthModal({ isOpen, onClose, initialTab = "login" }) {
                 window.location.href = "/brand-panel";
               }
             } else {
+              const loginError = await loginRes.json().catch(() => ({}));
               setActiveTab("login");
+              setLoginIdentifier(regEmail.trim());
+              setLoginPassword("");
+              setError(loginError.error || "Account created, but automatic sign-in failed. Please sign in with your new password.");
               setLoading(false);
             }
           } catch (err) {
             setActiveTab("login");
+            setLoginIdentifier(regEmail.trim());
+            setLoginPassword("");
+            setError("Account created, but automatic sign-in could not connect. Please sign in again.");
             setLoading(false);
           }
         }, 1000);
@@ -332,78 +425,59 @@ export default function AuthModal({ isOpen, onClose, initialTab = "login" }) {
           </p>
         </div>
 
-        {/* Tabs Headers */}
+        {/* Modern Segmented Pill Tabs */}
         <div
           style={{
             display: "flex",
-            borderBottom: "2px solid #E5E7EB",
+            backgroundColor: "#F1F5F9",
+            borderRadius: "14px",
+            padding: "5px",
             position: "relative",
-            marginBottom: "4px"
+            marginBottom: "8px",
+            border: "1px solid #E2E8F0"
           }}
         >
           <button
+            type="button"
             onClick={() => { setActiveTab("login"); setError(""); setSuccess(""); }}
             style={{
               flex: 1,
-              padding: "12px",
+              padding: "10px 16px",
               textAlign: "center",
               fontWeight: "700",
-              fontSize: "15px",
-              letterSpacing: "0.5px",
-              color: activeTab === "login" ? "var(--primary)" : "#6B7280",
-              background: "none",
+              fontSize: "14px",
+              letterSpacing: "0.4px",
+              color: activeTab === "login" ? "#ffffff" : "#64748B",
+              backgroundColor: activeTab === "login" ? "#2563EB" : "transparent",
+              borderRadius: "10px",
               border: "none",
               cursor: "pointer",
-              position: "relative",
-              transition: "color 0.2s"
+              transition: "all 0.25s cubic-bezier(0.16, 1, 0.3, 1)",
+              boxShadow: activeTab === "login" ? "0 4px 14px rgba(37, 99, 235, 0.35)" : "none"
             }}
           >
             LOGIN
-            {activeTab === "login" && (
-              <div
-                style={{
-                  position: "absolute",
-                  bottom: "-2px",
-                  left: 0,
-                  right: 0,
-                  height: "3px",
-                  background: "linear-gradient(90deg, var(--primary), var(--secondary))",
-                  borderRadius: "2px"
-                }}
-              />
-            )}
           </button>
           <button
+            type="button"
             onClick={() => { setActiveTab("register"); setError(""); setSuccess(""); }}
             style={{
               flex: 1,
-              padding: "12px",
+              padding: "10px 16px",
               textAlign: "center",
               fontWeight: "700",
-              fontSize: "15px",
-              letterSpacing: "0.5px",
-              color: activeTab === "register" ? "var(--primary)" : "#6B7280",
-              background: "none",
+              fontSize: "14px",
+              letterSpacing: "0.4px",
+              color: activeTab === "register" ? "#ffffff" : "#64748B",
+              backgroundColor: activeTab === "register" ? "#2563EB" : "transparent",
+              borderRadius: "10px",
               border: "none",
               cursor: "pointer",
-              position: "relative",
-              transition: "color 0.2s"
+              transition: "all 0.25s cubic-bezier(0.16, 1, 0.3, 1)",
+              boxShadow: activeTab === "register" ? "0 4px 14px rgba(37, 99, 235, 0.35)" : "none"
             }}
           >
             REGISTER
-            {activeTab === "register" && (
-              <div
-                style={{
-                  position: "absolute",
-                  bottom: "-2px",
-                  left: 0,
-                  right: 0,
-                  height: "3px",
-                  background: "linear-gradient(90deg, var(--primary), var(--secondary))",
-                  borderRadius: "2px"
-                }}
-              />
-            )}
           </button>
         </div>
 
@@ -545,6 +619,69 @@ export default function AuthModal({ isOpen, onClose, initialTab = "login" }) {
               </div>
             </div>
 
+            <div style={{ marginTop: "-8px" }}>
+              <button
+                type="button"
+                disabled={loading}
+                onClick={handleRequestOtp}
+                style={{
+                  border: "none",
+                  background: "transparent",
+                  color: "#4F46E5",
+                  fontSize: "13px",
+                  fontWeight: "700",
+                  padding: 0,
+                  cursor: loading ? "not-allowed" : "pointer"
+                }}
+              >
+                {otpSent ? "Resend OTP" : "Login with OTP"}
+              </button>
+              {otpSent && (
+                <div style={{ display: "flex", gap: "8px", marginTop: "10px" }}>
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    maxLength={6}
+                    value={otpCode}
+                    disabled={loading}
+                    onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                    placeholder="Enter 6-digit OTP"
+                    aria-label="6-digit login OTP"
+                    style={{
+                      flex: 1,
+                      border: "1.5px solid #C7D2FE",
+                      borderRadius: "8px",
+                      padding: "10px 12px",
+                      fontSize: "14px",
+                      letterSpacing: "3px",
+                      outline: "none"
+                    }}
+                  />
+                  <button
+                    type="button"
+                    disabled={loading || otpCode.length !== 6}
+                    onClick={handleVerifyOtp}
+                    style={{
+                      border: "none",
+                      borderRadius: "8px",
+                      padding: "0 14px",
+                      background: otpCode.length === 6 ? "#10B981" : "#CBD5E1",
+                      color: "#fff",
+                      fontWeight: "700",
+                      cursor: otpCode.length === 6 ? "pointer" : "not-allowed"
+                    }}
+                  >
+                    Verify
+                  </button>
+                </div>
+              )}
+              {otpSent && (
+                <p style={{ margin: "6px 0 0", color: "#475569", fontSize: "12px", lineHeight: "1.4" }}>
+                  Check your Gmail inbox or spam folder for your 6-digit verification code.
+                </p>
+              )}
+            </div>
+
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", fontSize: "13.5px", marginTop: "2px" }}>
               <label style={{ display: "flex", alignItems: "center", gap: "8px", color: "#4B5563", cursor: "pointer", userSelect: "none" }}>
                 <input
@@ -581,7 +718,7 @@ export default function AuthModal({ isOpen, onClose, initialTab = "login" }) {
               disabled={loading}
               style={{
                 width: "100%",
-                background: "linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%)",
+                background: "linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%)",
                 color: "#ffffff",
                 border: "none",
                 borderRadius: "var(--radius-sm, 8px)",
@@ -598,7 +735,7 @@ export default function AuthModal({ isOpen, onClose, initialTab = "login" }) {
                 marginTop: "8px"
               }}
               onMouseEnter={(e) => {
-                e.currentTarget.style.background = "linear-gradient(135deg, var(--primary-hover) 0%, var(--secondary-hover) 100%)";
+                e.currentTarget.style.background = "linear-gradient(135deg, #1D4ED8 0%, #1E40AF 100%)";
                 e.currentTarget.style.boxShadow = "0 8px 24px rgba(37, 99, 235, 0.35)";
                 e.currentTarget.style.transform = "translateY(-1px)";
               }}
@@ -611,7 +748,7 @@ export default function AuthModal({ isOpen, onClose, initialTab = "login" }) {
               {loading ? (
                 <>
                   <Loader2 size={16} className="animate-spin" />
-                  Signing In...
+                  Signing In Securely...
                 </>
               ) : (
                 "Sign In"

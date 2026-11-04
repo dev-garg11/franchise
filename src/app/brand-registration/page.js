@@ -8,6 +8,7 @@ import {
   RotateCw, ZoomIn, Trash2, Download, AlertCircle, Info, Sparkles, Building
 } from "lucide-react";
 import { clearBrandsCache } from "@/lib/brandsCache";
+import { toast, Swal } from "@/lib/swal";
 import { REGISTRATION_INVESTMENT_OPTIONS, getFilteredMaxLimits } from "@/lib/investmentData";
 import { BRAND_CATEGORIES, BRAND_SECTORS_MAP, ALL_INDIAN_STATES } from "@/lib/brandConstants";
 import { DISTRICTS_BY_STATE } from "@/lib/districtsData";
@@ -369,6 +370,25 @@ export default function BrandRegistration() {
       return;
     }
 
+    // Phase 1 Validation
+    const nameVal = validateBrandName(formData.name);
+    if (!nameVal.isValid) {
+      setError(nameVal.reason || "Invalid brand name. Test/dummy names cannot be submitted.");
+      setLoading(false);
+      return;
+    }
+
+    let sanitizedArea = formData.areaRequired;
+    if (formData.areaRequired && formData.areaRequired.trim()) {
+      const areaVal = validateArea(formData.areaRequired);
+      if (!areaVal.isValid) {
+        setError(`Invalid Area: ${areaVal.reason}. Space required must be between 50 and 50,000 sq ft.`);
+        setLoading(false);
+        return;
+      }
+      sanitizedArea = areaVal.value;
+    }
+
     try {
       const rangeMinVal = mapRangeToNumeric(formData.investment_range, false);
       const rangeMaxVal = mapRangeToNumeric(formData.max_investment_limit, true);
@@ -377,6 +397,7 @@ export default function BrandRegistration() {
         ...formData,
         minInvestment: rangeMinVal,
         maxInvestment: rangeMaxVal,
+        areaRequired: sanitizedArea,
         franchiseFee: Number(formData.franchiseFee) || 50000,
         status: "Pending", // Admin will approve it from dashboard!
       };
@@ -390,11 +411,11 @@ export default function BrandRegistration() {
       });
 
       if (res.ok) {
-        clearBrandsCache();
+        clearBrandsCache(); toast.success("Brand registered successfully! Pending admin approval.");
         setSubmitted(true);
       } else {
         const data = await res.json();
-        setError(data.error || "Something went wrong. Please try again.");
+        setError(data.error || "Something went wrong. Please try again."); toast.error(data.error || "Something went wrong. Please try again.");
       }
     } catch (err) {
       setError("Network error. Please verify server connection.");
@@ -882,6 +903,9 @@ export default function BrandRegistration() {
                   onChange={handleChange}
                   className="form-input"
                 />
+                <small style={{ fontSize: "11px", color: "var(--text-muted)", display: "block", marginTop: "4px" }}>
+                  Unit: sq ft. Allowed range: 50 to 50,000 sq ft. Leave blank if not applicable.
+                </small>
               </div>
 
               <div className="form-group form-grid-full" style={{ background: "rgba(99, 102, 241, 0.04)", border: "1px solid rgba(99, 102, 241, 0.15)", borderRadius: "12px", padding: "16px", marginTop: "10px" }}>

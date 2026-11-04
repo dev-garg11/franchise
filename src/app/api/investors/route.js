@@ -1,5 +1,9 @@
 import { NextResponse } from "next/server";
-import { getInvestors, saveInvestor } from "@/lib/db";
+import { getInvestors, resetDatabaseConnection, saveInvestor } from "@/lib/db";
+
+let investorsMemoryCache = null;
+let investorsCacheTime = 0;
+const INVESTORS_CACHE_TTL = 5000;
 
 export async function GET(request) {
   try {
@@ -8,39 +12,87 @@ export async function GET(request) {
     const filterBrand = searchParams.get("brand") || "";
     const filterCategory = searchParams.get("category") || "";
     const filterStatus = searchParams.get("status") || "";
+    const sort = searchParams.get("sort") || "newest";
     const pageParam = searchParams.get("page");
     const limitParam = searchParams.get("limit");
 
-    let investors = await getInvestors();
+    let investors;
+    if (investorsMemoryCache && Date.now() - investorsCacheTime < INVESTORS_CACHE_TTL) {
+      investors = investorsMemoryCache;
+    } else {
+      investors = await getInvestors();
+      investorsMemoryCache = investors;
+      investorsCacheTime = Date.now();
+    }
 
-    if (search || filterBrand || filterCategory || filterStatus) {
+    const cleanBrand = (filterBrand || "").trim();
+    const isBrandAll = !cleanBrand || cleanBrand.toLowerCase() === "all" || cleanBrand.toLowerCase() === "brand: all";
+    const isGeneralOnly = cleanBrand.toLowerCase() === "general" || cleanBrand.toLowerCase() === "no-brand";
+
+    const cleanCategory = (filterCategory || "").trim();
+    const isCategoryAll = !cleanCategory || cleanCategory.toLowerCase() === "all" || cleanCategory.toLowerCase() === "category: all";
+
+    const cleanStatus = (filterStatus || "").trim();
+    const isStatusAll = !cleanStatus || cleanStatus.toLowerCase() === "all";
+
+    if (search || !isBrandAll || !isCategoryAll || !isStatusAll) {
       investors = investors.filter(i => {
-        const searchLower = search.toLowerCase();
-        const matchesSearch = !search ? true : (
-          (i.name && i.name.toLowerCase().includes(searchLower)) ||
-          (i.email && i.email.toLowerCase().includes(searchLower)) ||
-          (i.phone && i.phone.includes(search)) ||
-          (i.preferredLocation && i.preferredLocation.toLowerCase().includes(searchLower))
-        );
+        let matchesSearch = true;
+        if (search && search.trim()) {
+          const searchLower = search.trim().toLowerCase();
+          matchesSearch = (
+            (i.name && i.name.toLowerCase().includes(searchLower)) ||
+            (i.fullName && i.fullName.toLowerCase().includes(searchLower)) ||
+            (i.email && i.email.toLowerCase().includes(searchLower)) ||
+            (i.phone && i.phone.includes(searchLower)) ||
+            (i.preferredLocation && i.preferredLocation.toLowerCase().includes(searchLower)) ||
+            (i.city && i.city.toLowerCase().includes(searchLower)) ||
+            (i.brandName && i.brandName.toLowerCase().includes(searchLower))
+          );
+        }
 
-        const matchesBrand = !filterBrand ? true : (
-          (i.brandId && i.brandId === filterBrand) ||
-          (i.brandName && i.brandName.toLowerCase().includes(filterBrand.toLowerCase())) ||
-          (i.assignedBrands && i.assignedBrands.includes(filterBrand))
-        );
+        let matchesBrand = true;
+        if (isGeneralOnly) {
+          matchesBrand = !i.brandName && !i.brandId && (!i.assignedBrands || i.assignedBrands.length === 0);
+        } else if (!isBrandAll) {
+          const brandLower = cleanBrand.toLowerCase();
+          const iBrandName = (i.brandName || i.targetBrand || "").toLowerCase();
+          const iBrandId = String(i.brandId || i.targetBrandId || "").toLowerCase();
+          const isAssigned = Array.isArray(i.assignedBrands) && (
+            i.assignedBrands.some(ab => String(ab).toLowerCase() === brandLower || String(ab).toLowerCase().includes(brandLower) || brandLower.includes(String(ab).toLowerCase()))
+          );
+          matchesBrand = (
+            isAssigned ||
+            (iBrandId && (iBrandId === brandLower || brandLower.includes(iBrandId) || iBrandId.includes(brandLower))) ||
+            (iBrandName && (iBrandName.includes(brandLower) || brandLower.includes(iBrandName))) ||
+            (i.comments && i.comments.toLowerCase().includes(brandLower))
+          );
+        }
 
-        const matchesCategory = !filterCategory ? true : (
-          (i.category && i.category.toLowerCase() === filterCategory.toLowerCase()) ||
-          (i.industries && i.industries.some(ind => ind.toLowerCase() === filterCategory.toLowerCase()))
-        );
+        let matchesCategory = true;
+        if (!isCategoryAll) {
+          const catLower = cleanCategory.toLowerCase();
+          const iCat = (i.category || "").toLowerCase();
+          const iInds = Array.isArray(i.industries) ? i.industries.map(ind => String(ind).toLowerCase()) : [];
+          matchesCategory = (iCat && (iCat === catLower || iCat.includes(catLower) || catLower.includes(iCat))) ||
+            iInds.some(ind => ind && (ind === catLower || ind.includes(catLower) || catLower.includes(ind)));
+        }
 
-        const displayStatus = i.status || "Pending";
-        const matchesStatus = !filterStatus ? true : (
-          displayStatus.toLowerCase() === filterStatus.toLowerCase()
-        );
+        let matchesStatus = true;
+        if (!isStatusAll) {
+          const statusLower = cleanStatus.toLowerCase();
+          const displayStatus = (i.status || "Pending").toLowerCase();
+          matchesStatus = displayStatus === statusLower;
+        }
 
         return matchesSearch && matchesBrand && matchesCategory && matchesStatus;
       });
+    }
+
+    if (sort === "oldest") {
+      investors = [...investors].sort((a, b) => new Date(a.createdAt || a.appliedAt || 0) - new Date(b.createdAt || b.appliedAt || 0));
+    } else {
+      investors = [...investors].sort((a, b) => new Date(b.createdAt || b.appliedAt || 0) - new Date(a.createdAt || a.appliedAt || 0));
     }
 
     const total = investors.length;
@@ -61,9 +113,16 @@ export async function GET(request) {
       });
     }
 
-    return NextResponse.json(investors);
+    const response = NextResponse.json(investors);
+    response.headers.set("Cache-Control", "private, max-age=5, stale-while-revalidate=30");
+    return response;
   } catch (error) {
-    return NextResponse.json({ error: "Failed to fetch investors" }, { status: 500 });
+    try {
+      await resetDatabaseConnection();
+      return NextResponse.json(await getInvestors());
+    } catch (retryError) {
+      return NextResponse.json({ error: "Failed to fetch investors" }, { status: 503 });
+    }
   }
 }
 
@@ -77,10 +136,11 @@ export async function POST(request) {
 
     const name = body.name || body.fullName;
     const email = body.email;
-    const phone = body.phone;
+    const phoneStr = body.phone ? String(body.phone).trim() : "";
+    const cleanPhone = phoneStr.replace(/\D/g, "");
 
     // Validation for required contact fields
-    if (!name || !email || !phone || !body.password || !body.pincode || !body.investment_range || !body.max_investment_limit) {
+    if (!name || !email || !phoneStr) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
     }
 
@@ -88,26 +148,34 @@ export async function POST(request) {
       return NextResponse.json({ error: "Please enter a valid email address." }, { status: 400 });
     }
 
-    if (phone.length !== 10 || !/^\d{10}$/.test(phone)) {
+    if (cleanPhone.length !== 10) {
       return NextResponse.json({ error: "Phone number must be exactly 10 digits." }, { status: 400 });
     }
 
-    if (body.password.length < 6) {
+    // Password validation only when provided
+    if (body.password && body.password.length < 6) {
       return NextResponse.json({ error: "Password must be at least 6 characters." }, { status: 400 });
     }
 
-    if (body.pincode.length !== 6 || !/^\d{6}$/.test(body.pincode)) {
+    // Pincode validation only when provided
+    if (body.pincode && (body.pincode.length !== 6 || !/^\d{6}$/.test(body.pincode))) {
       return NextResponse.json({ error: "Pincode must be exactly 6 digits." }, { status: 400 });
     }
 
-    if (body.budgetMax < body.budgetMin) {
+    if (body.budgetMin && body.budgetMax && Number(body.budgetMax) < Number(body.budgetMin)) {
       return NextResponse.json({ error: "Maximum investment must be greater than or equal to minimum investment." }, { status: 400 });
     }
 
     const saved = await saveInvestor({
       ...body,
-      name
+      name,
+      phone: cleanPhone,
+      pincode: body.pincode || "000000",
+      investment_range: body.investment_range || body.investmentCapacity || "Not Specified",
+      max_investment_limit: body.max_investment_limit || body.investmentCapacity || "Not Specified"
     });
+    investorsMemoryCache = null;
+    investorsCacheTime = 0;
     return NextResponse.json({ success: true, investor: saved }, { status: 201 });
   } catch (error) {
     console.error("Error saving investor registration:", error);

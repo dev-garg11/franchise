@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import {
   ShieldCheck,
   Award,
@@ -26,6 +27,7 @@ import {
   ArrowUpRight
 } from "lucide-react";
 import SEOGeoTags from "@/components/SEOGeoTags";
+import PageHeader from "@/components/public/PageHeader";
 
 const STATS = [
   { value: "15+", label: "Years of Excellence", desc: "Established in 2009 in Chandigarh" },
@@ -153,13 +155,29 @@ export default function AboutUsPage() {
       />
 
       {/* 1. Hero Section */}
-      <section style={{
-        background: "linear-gradient(135deg, #0d173c 0%, #1e1b4b 55%, #0f172a 100%)",
-        color: "#ffffff",
-        padding: "85px 0 100px 0",
-        position: "relative",
-        overflow: "hidden"
-      }}>
+      <PageHeader
+        theme="about"
+        breadcrumb={<><Link href="/">Home</Link><span>/</span><span>About Us</span></>}
+        eyebrow={<><Sparkles size={15} /> INDIA&apos;S PREMIER BUSINESS &amp; FRANCHISE MATCHMAKING PLATFORM · EST. 2009</>}
+        titleBefore="Empowering Entrepreneurs. "
+        titleAccent="Scaling Brands Across India."
+        subtitle="Franchise Roots bridges the gap between ambitious business investors and industry-leading brands. For over 15 years, we have provided transparent due diligence, strategic advisory, and master franchise expansion across the Indian subcontinent."
+        leftExtra={(
+          <div className="page-header-actions">
+            <Link href="/brands" className="page-header-action page-header-action--primary">Explore Opportunities <ArrowRight size={16} /></Link>
+            <button type="button" onClick={handleOpenAskExperts} className="page-header-action page-header-action--secondary">Consult an Advisor</button>
+          </div>
+        )}
+        rightVisual={(
+          <div className="about-header-photo-wrap">
+            <Image src="/Modern%20Franchise%20Roots%20Office%20at%20Dusk.png" alt="Franchise Roots office" fill priority sizes="(max-width: 999px) 100vw, 42vw" className="about-header-photo" />
+            <span className="about-header-badge about-header-badge--top"><strong>Est. 2009</strong><small>Trusted for years</small></span>
+            <span className="about-header-badge about-header-badge--bottom"><strong>1,200+</strong><small>Vetted brands</small></span>
+          </div>
+        )}
+      />
+      {/* Legacy hero content replaced by the shared animated PageHeader. */}
+      {false && <section style={{}}>
         {/* Ambient Gradient Orbs */}
         <div style={{
           position: "absolute",
@@ -280,17 +298,11 @@ export default function AboutUsPage() {
             </button>
           </div>
         </div>
-      </section>
+      </section>}
 
       {/* 2. Key Stats Floating Card */}
-      <section style={{ marginTop: "-55px", position: "relative", zIndex: 10, padding: "0 20px" }}>
-        <div className="container" style={{
-          background: "#ffffff",
-          borderRadius: "24px",
-          border: "1px solid #e2e8f0",
-          boxShadow: "0 20px 45px -10px rgba(15, 23, 42, 0.12)",
-          padding: "36px 30px"
-        }}>
+      <section className="about-stats-section">
+        <div className="container about-stats-card">
           <div style={{
             display: "grid",
             gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
@@ -298,23 +310,20 @@ export default function AboutUsPage() {
             textAlign: "center"
           }}>
             {STATS.map((item, idx) => (
-              <div key={idx} style={{
-                borderRight: idx < STATS.length - 1 ? "1px solid #f1f5f9" : "none",
-                padding: "10px 14px"
-              }}>
+              <div key={idx} className="about-stat-item">
                 <div style={{
                   fontSize: "clamp(28px, 3.5vw, 40px)",
                   fontWeight: "900",
-                  color: "#0d173c",
+                  color: "#15803d",
                   letterSpacing: "-0.03em",
                   marginBottom: "4px"
                 }}>
                   {item.value}
                 </div>
-                <div style={{ fontSize: "14px", fontWeight: "800", color: "#0f172a", marginBottom: "4px" }}>
+                <div style={{ fontSize: "11px", fontWeight: "800", color: "#4a5878", marginBottom: "4px", textTransform: "uppercase" }}>
                   {item.label}
                 </div>
-                <div style={{ fontSize: "12px", color: "#64748b" }}>
+                <div style={{ fontSize: "11px", color: "#64748b" }}>
                   {item.desc}
                 </div>
               </div>

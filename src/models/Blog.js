@@ -20,4 +20,7 @@ const BlogSchema = new mongoose.Schema({
     }
 });
 
+BlogSchema.set('bufferCommands', false);
+BlogSchema.set('autoIndex', false);
+
 module.exports = mongoose.models.Blog || mongoose.model('Blog', BlogSchema);

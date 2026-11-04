@@ -4,86 +4,71 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { Wrench, ArrowRight, MessageCircle, Building2, CheckCircle2, ShieldCheck, Sparkles, Search } from "lucide-react";
 import SEOGeoTags from "@/components/SEOGeoTags";
+import PageHeader from "@/components/public/PageHeader";
+import { DEFAULT_SERVICES } from "@/lib/defaultContent";
 
 export default function ServicesPage() {
-    const [services, setServices] = useState([]);
-    const [loading, setLoading] = useState(true);
+    const [services, setServices] = useState(DEFAULT_SERVICES);
+    const [loading, setLoading] = useState(false);
     const [searchTerm, setSearchTerm] = useState("");
 
     useEffect(() => {
-        fetch("/api/services")
-            .then((res) => res.json())
+        const controller = new AbortController();
+        const timeout = window.setTimeout(() => controller.abort(), 8000);
+        fetch("/api/services", { signal: controller.signal })
+            .then((res) => (res.ok ? res.json() : []))
             .then((data) => {
-                if (Array.isArray(data)) setServices(data);
+                if (Array.isArray(data) && data.length > 0) setServices(data);
             })
-            .catch((err) => console.error("Failed to fetch services:", err))
-            .finally(() => setLoading(false));
+            .catch((err) => {
+                if (err.name !== "AbortError") console.error("Failed to fetch services:", err);
+            })
+            .finally(() => window.clearTimeout(timeout));
+        return () => {
+            window.clearTimeout(timeout);
+            controller.abort();
+        };
     }, []);
 
     const filteredServices = services.filter((s) =>
-        s.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        s.content.toLowerCase().includes(searchTerm.toLowerCase())
+        (s.title || "").toLowerCase().includes((searchTerm || "").toLowerCase()) ||
+        (s.content || "").toLowerCase().includes((searchTerm || "").toLowerCase())
     );
+    const headerServices = services.filter((service) => service?.isActive !== false).slice(0, 4);
 
     return (
         <div style={{ background: "#f8fafc", minHeight: "100vh", display: "flex", flexDirection: "column" }}>
-            {/* Hero Header Banner */}
-            <section style={{
-                background: "linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #311042 100%)",
-                color: "#ffffff",
-                padding: "80px 0 60px 0",
-                position: "relative",
-                overflow: "hidden"
-            }}>
-                <div className="container" style={{ textAlign: "center", maxWidth: "800px" }}>
-                    <span style={{
-                        display: "inline-flex",
-                        alignItems: "center",
-                        gap: "6px",
-                        background: "rgba(255,255,255,0.12)",
-                        color: "#a7f3d0",
-                        padding: "6px 16px",
-                        borderRadius: "30px",
-                        fontSize: "13px",
-                        fontWeight: "700",
-                        marginBottom: "20px"
-                    }}>
-                        <Sparkles size={16} /> Admin-Managed Services & Advisory
-                    </span>
-                    <h1 style={{ fontSize: "42px", fontWeight: "900", color: "#ffffff", marginBottom: "16px", lineHeight: "1.2" }}>
-                        Comprehensive Franchise & Business Services
-                    </h1>
-                    <p style={{ fontSize: "17px", color: "#cbd5e1", lineHeight: "1.6", marginBottom: "32px" }}>
-                        From initial brand evaluation and investor matchmaking to legal compliance and national expansion, our expert team manages end-to-end solutions.
-                    </p>
-
-                    {/* Search Input */}
-                    <div style={{
-                        maxWidth: "500px",
-                        margin: "0 auto",
-                        position: "relative"
-                    }}>
-                        <Search size={20} style={{ position: "absolute", left: "16px", top: "50%", transform: "translateY(-50%)", color: "#94a3b8" }} />
+            <PageHeader
+                theme="services"
+                eyebrow={<><Sparkles size={15} /> ADMIN-MANAGED SERVICES &amp; ADVISORY</>}
+                titleBefore="Comprehensive Franchise & "
+                titleAccent="Business Services"
+                subtitle="From initial brand evaluation and investor matchmaking to legal compliance and national expansion, our expert team manages end-to-end solutions."
+                leftExtra={(
+                    <form className="page-header-search" onSubmit={(event) => event.preventDefault()}>
+                        <Search size={19} aria-hidden="true" />
+                        <label className="sr-only" htmlFor="services-page-search">Search services</label>
                         <input
+                            id="services-page-search"
                             type="text"
                             placeholder="Search services by keyword..."
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
-                            style={{
-                                width: "100%",
-                                padding: "14px 16px 14px 48px",
-                                borderRadius: "12px",
-                                border: "1px solid rgba(255,255,255,0.2)",
-                                background: "rgba(255,255,255,0.1)",
-                                backdropFilter: "blur(10px)",
-                                color: "#ffffff",
-                                fontSize: "15px",
-                                outline: "none"
-                            }}
                         />
+                        <button type="submit">Search</button>
+                    </form>
+                )}
+                rightVisual={headerServices.length > 0 ? (
+                    <div className="page-header-tile-grid">
+                        {headerServices.map((service, index) => (
+                            <div className="page-header-tile" key={service.id || service._id || service.title} style={{ "--tile-delay": `${index * 120}ms` }}>
+                                <span className="page-header-tile-icon"><Building2 size={21} /></span>
+                                <span><strong>{service.title}</strong><small>Business service</small></span>
+                            </div>
+                        ))}
                     </div>
-                </div>
-            </section>
+                ) : null}
+            />
 
             {/* Services Grid Content */}
             <main style={{ flex: 1, padding: "60px 0 100px 0" }}>

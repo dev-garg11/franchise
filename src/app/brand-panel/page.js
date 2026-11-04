@@ -16,6 +16,7 @@ import { BRAND_CATEGORIES, BRAND_SECTORS_MAP, ALL_INDIAN_STATES } from "@/lib/br
 import { DISTRICTS_BY_STATE } from "@/lib/districtsData";
 import { getFilteredMaxLimits } from "@/lib/investmentData";
 import { decodeHtmlEntities, sanitizeBrandHtml, cleanBrandPlainText } from "@/lib/brandFormatters";
+import { toast, Swal } from "@/lib/swal";
 
 const INVESTMENT_OPTIONS = [
   "Rs. 10,000 - 50,000",
@@ -226,7 +227,12 @@ export default function BrandPanel({ initialTab = "dashboard" }) {
             const invBrandName = (inv.brandName || inv.targetBrand || "").trim().toLowerCase();
             const invBrandId = (inv.brandId || inv.targetBrandId || "").toString();
 
+            const isAssigned = Array.isArray(inv.assignedBrands) && inv.assignedBrands.some(
+              ab => String(ab) === brandIdStr || (userBrand._id && String(ab) === String(userBrand._id)) || (userBrand.id && String(ab) === String(userBrand.id))
+            );
+
             return (
+              isAssigned ||
               (brandIdStr && invBrandId === brandIdStr) ||
               (brandNameLower && invBrandName === brandNameLower) ||
               (brandNameLower && comments.includes(brandNameLower)) ||
@@ -322,6 +328,7 @@ export default function BrandPanel({ initialTab = "dashboard" }) {
       if (res.ok) {
         setUpdateError("");
         setUpdateSuccess("Brand listing updated successfully! Your updates are now Under Review by our admin team.");
+        toast.success("Brand listing updated! Submitted for admin review.");
         clearBrandsCache();
         try {
           await loadBrandData(email);
@@ -352,7 +359,7 @@ export default function BrandPanel({ initialTab = "dashboard" }) {
     const file = e.target.files?.[0];
     if (!file) return;
     if (!file.type.startsWith("image/")) {
-      alert("Please select a valid image file (PNG, JPG, WEBP).");
+      toast.error("Please select a valid image file (PNG, JPG, WEBP).");
       return;
     }
     const reader = new FileReader();

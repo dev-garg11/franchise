@@ -1,20 +1,35 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
   Building, Users, FileText, CheckCircle, CheckCircle2, XCircle, Trash2, LogOut,
   Home, Search, LayoutDashboard, ShieldCheck, Mail, Phone, MapPin,
-  UploadCloud, Eye, Edit3, Wrench, Megaphone, Image as ImageIcon, RefreshCw, Filter, Clock, UserCheck, X
+  UploadCloud, Eye, Edit3, Wrench, Megaphone, Image as ImageIcon, RefreshCw, Filter, Clock, UserCheck, X, Menu
 } from "lucide-react";
+import AdminSidebar from "@/components/admin/AdminSidebar";
+import DashboardTab from "@/components/admin/DashboardTab";
+import BrandsTab from "@/components/admin/BrandsTab";
+import InvestorsTab from "@/components/admin/InvestorsTab";
+import BlogsTab from "@/components/admin/BlogsTab";
+import AdsTab from "@/components/admin/AdsTab";
+import LogsTab from "@/components/admin/LogsTab";
+import ServicesTab from "@/components/admin/ServicesTab";
+import SeoTab from "@/components/admin/SeoTab";
+import SeoEditModal from "@/components/admin/SeoEditModal";
+import SkeletonLoader from "@/components/admin/SkeletonLoader";
 import Pagination from "@/components/Pagination";
 import { clearBrandsCache } from "@/lib/brandsCache";
+import { getAdminCache, setAdminCache, invalidateAdminCache } from "@/lib/adminCache";
 import { logActivity } from "@/lib/logger";
 import { REGISTRATION_INVESTMENT_OPTIONS, getFilteredMaxLimits } from "@/lib/investmentData";
 import { BRAND_CATEGORIES, BRAND_SECTORS_MAP, ALL_INDIAN_STATES } from "@/lib/brandConstants";
 import { DISTRICTS_BY_STATE } from "@/lib/districtsData";
 import { decodeHtmlEntities, cleanBrandPlainText, sanitizeBrandHtml } from "@/lib/brandFormatters";
+import { generateBrandSeoData } from "@/lib/brandSeoGenerator";
+import { validateArea, validateBrandName, validateImageUrl } from "@/lib/seo/validate";
+import { toast, Swal } from "@/lib/swal";
 
 const mapRangeToNumeric = (rangeStr, isMax = false) => {
   if (!rangeStr) return 0;
@@ -44,10 +59,119 @@ const stripHtmlTags = (str) => {
   return cleanBrandPlainText(str, {}, 250);
 };
 
+const ADMIN_OVERVIEW_CACHE_KEY = "admin_overview_v3";
+
+const getListPayload = (payload) => {
+  if (Array.isArray(payload)) return payload;
+  if (payload && !payload.error && Array.isArray(payload.data)) return payload.data;
+  return null;
+};
+
+async function fetchAdminJson(url, attempts = 3) {
+  for (let attempt = 0; attempt < attempts; attempt += 1) {
+    try {
+      const response = await Promise.race([
+        fetch(url, { cache: "no-store" }),
+        new Promise((_, reject) => window.setTimeout(() => {
+          const timeoutError = new Error("Request timed out");
+          timeoutError.name = "TimeoutError";
+          reject(timeoutError);
+        }, 20000))
+      ]);
+      if (response.ok) {
+        return await response.json();
+      }
+    } catch (error) {
+      if (attempt === attempts - 1 && error?.name !== "TimeoutError") {
+        console.warn(`Admin request failed: ${url}`, error?.message || error);
+      }
+    }
+    await new Promise((resolve) => window.setTimeout(resolve, 700 * (attempt + 1)));
+  }
+  return null;
+}
+
+async function fetchAdminJsonWithTimeout(url, timeoutMs = 12000) {
+  try {
+    const response = await Promise.race([
+      fetch(url, { cache: "no-store" }),
+      new Promise((_, reject) => window.setTimeout(() => {
+        const timeoutError = new Error("Request timed out");
+        timeoutError.name = "TimeoutError";
+        reject(timeoutError);
+      }, timeoutMs))
+    ]);
+    if (!response.ok) return null;
+    return await response.json();
+  } catch (error) {
+    if (error?.name !== "TimeoutError") {
+      console.warn(`Admin request failed: ${url}`, error?.message || error);
+    }
+    return null;
+  }
+}
+
 export default function AdminDashboard({ initialTab = "dashboard" }) {
   const router = useRouter();
   const [authorized, setAuthorized] = useState(false);
   const [activeTab, setActiveTab] = useState(initialTab); // dashboard, brands, investors, blogs, services, ads, logs
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+  const [brandStatusFilter, setBrandStatusFilter] = useState("all");
+  const [brandCategoryFilter, setBrandCategoryFilter] = useState("");
+  const [brandStateFilter, setBrandStateFilter] = useState("");
+  const [brandSortOrder, setBrandSortOrder] = useState("newest");
+  const [investorSortOrder, setInvestorSortOrder] = useState("newest");
+  const [blogStatusFilter, setBlogStatusFilter] = useState("all");
+  const [blogSortOrder, setBlogSortOrder] = useState("newest");
+  const [adPositionFilter, setAdPositionFilter] = useState("all");
+  const [adStatusFilter, setAdStatusFilter] = useState("all");
+  const [searchTerm, setSearchTerm] = useState("");
+
+
+  const handleTabChange = (tabId) => {
+    setActiveTab(tabId);
+    setSearchTerm("");
+    setMobileSidebarOpen(false);
+    const hrefMap = {
+      dashboard: "/admin",
+      brands: "/admin/brands",
+      investors: "/admin/investors",
+      blogs: "/admin/blogs",
+      services: "/admin/services",
+      ads: "/admin/ads",
+      logs: "/admin/logs",
+      seo: "/admin/seo"
+    };
+    if (hrefMap[tabId] && typeof window !== "undefined") {
+      window.history.pushState(null, "", hrefMap[tabId]);
+    }
+  };
+
+  useEffect(() => {
+    const handlePopState = () => {
+      if (typeof window === "undefined") return;
+      const path = window.location.pathname.replace(/\/+$/, "") || "/admin";
+      const pathMap = {
+        "/admin": "dashboard",
+        "/admin/brands": "brands",
+        "/admin/investors": "investors",
+        "/admin/blogs": "blogs",
+        "/admin/services": "services",
+        "/admin/ads": "ads",
+        "/admin/logs": "logs",
+        "/admin/seo": "seo"
+      };
+      const matchedTab = pathMap[path];
+      if (matchedTab) {
+        setActiveTab(matchedTab);
+        setSearchTerm("");
+        setMobileSidebarOpen(false);
+      }
+    };
+
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, []);
 
   useEffect(() => {
     if (initialTab) {
@@ -58,35 +182,179 @@ export default function AdminDashboard({ initialTab = "dashboard" }) {
   // Activity Logs State
   const [logs, setLogs] = useState([]);
   const [totalLogs, setTotalLogs] = useState(0);
-  const [logsLoading, setLogsLoading] = useState(false);
+  const [allLogsCount, setAllLogsCount] = useState({ admin: 0, brand: 0, investor: 0 });
+  const [logsLoading, setLogsLoading] = useState(true);
   const [logPanelFilter, setLogPanelFilter] = useState("all");
   const [logSearch, setLogSearch] = useState("");
   const [logPage, setLogPage] = useState(1);
   const [logsPerPage, setLogsPerPage] = useState(10);
 
+    // SEO & AI Optimization Engine State
+  const [seoBrands, setSeoBrands] = useState([]);
+  const [seoLoading, setSeoLoading] = useState(false);
+  const [selectedSeoBrandId, setSelectedSeoBrandId] = useState(null);
+  const [isSeoModalOpen, setIsSeoModalOpen] = useState(false);
+  const [isSeoSaving, setIsSeoSaving] = useState(false);
+  const [regeneratingSeoId, setRegeneratingSeoId] = useState(null);
+  const [isBatchGeneratingSeo, setIsBatchGeneratingSeo] = useState(false);
+
+  const fetchSeoTab = async () => {
+    setSeoLoading(true);
+    try {
+      const res = await fetchAdminJsonWithTimeout("/api/admin/seo");
+      if (res && res.success && Array.isArray(res.brands)) {
+        setSeoBrands(res.brands);
+      }
+    } catch (err) {
+      console.error("Failed to fetch SEO tab brands:", err);
+    } finally {
+      setSeoLoading(false);
+    }
+  };
+
+  const handleOpenSeoModal = (brandId) => {
+    setSelectedSeoBrandId(brandId);
+    setIsSeoModalOpen(true);
+  };
+
+  const handleSaveSeo = async ({ brandId, seoData, faqs, schemaData, seoStatus }) => {
+    setIsSeoSaving(true);
+    try {
+      const res = await fetch(`/api/admin/seo/${brandId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ seoData, faqs, schemaData, seoStatus })
+      });
+      const data = await res.json();
+      if (data.success) {
+        const score = data.brand?.seoData?.rankMathScore;
+        toast.success(`SEO saved successfully — live score: ${Number.isFinite(score) ? score : 0}/100`);
+        setIsSeoModalOpen(false);
+        fetchSeoTab();
+      } else {
+        toast.error(data.error || "Failed to save SEO strategy");
+      }
+    } catch (err) {
+      console.error("Error saving SEO:", err);
+      toast.error("Network error while saving SEO strategy");
+    } finally {
+      setIsSeoSaving(false);
+    }
+  };
+
+  const handleRegenerateSeo = async (brandId) => {
+    setRegeneratingSeoId(brandId);
+    try {
+      const res = await fetch(`/api/admin/seo/${brandId}`, {
+        method: "POST"
+      });
+      const data = await res.json();
+      if (data.success) {
+        toast.success(data.message || "SEO generated successfully!");
+        fetchSeoTab();
+        return data;
+      } else {
+        toast.error(data.error || "Failed to generate SEO");
+      }
+    } catch (err) {
+      console.error("Error regenerating SEO:", err);
+      toast.error("Network error during AI SEO generation");
+    } finally {
+      setRegeneratingSeoId(null);
+    }
+    return null;
+  };
+
+  const handleBatchGenerateSeo = async () => {
+    const isConfirmed = await Swal.confirm(
+      "Are you sure you want to run AI SEO optimization for all brands? This will update Rank Math metadata, 850+ words pillar guides, and Schema.org markup.",
+      "Batch AI SEO Optimization"
+    );
+    if (!isConfirmed) return;
+
+    setIsBatchGeneratingSeo(true);
+    try {
+      const res = await fetch("/api/admin/seo", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "batch-generate" })
+      });
+      const data = await res.json();
+      if (data.success) {
+        toast.success(data.message || "Batch SEO generation complete!");
+        fetchSeoTab();
+      } else {
+        toast.error(data.error || "Batch generation failed");
+      }
+    } catch (err) {
+      console.error("Batch SEO error:", err);
+      toast.error("Network error during batch SEO generation");
+    } finally {
+      setIsBatchGeneratingSeo(false);
+    }
+  };
+
   // Custom Message Action Modal State
   const [customMsgModal, setCustomMsgModal] = useState(null); // { isOpen: boolean, type: string, targetItem: object, extraPayload?: object }
   const [customMessageText, setCustomMessageText] = useState("");
+  const [investmentAmount, setInvestmentAmount] = useState("");
+  const [investedBrandId, setInvestedBrandId] = useState("");
+  const [investedBrandName, setInvestedBrandName] = useState("");
   const [isSubmittingCustomMsg, setIsSubmittingCustomMsg] = useState(false);
 
-  const fetchLogs = async () => {
-    setLogsLoading(true);
+  const fetchLogs = async ({ dashboard = false } = {}) => {
+    const requestPage = dashboard ? 1 : logPage;
+    const requestLimit = dashboard ? 10 : logsPerPage;
+    const cacheKey = dashboard
+      ? "admin_logs_dashboard"
+      : `admin_logs_${requestPage}_${requestLimit}_${logPanelFilter}_${logSearch}`;
+    const cached = getAdminCache(cacheKey);
+    if (cached) {
+      setLogs(cached.logs);
+      setTotalLogs(cached.total);
+      if (cached.allLogsCount) setAllLogsCount(cached.allLogsCount);
+    } else if (logs.length === 0) {
+      setLogsLoading(true);
+    }
     try {
       const query = new URLSearchParams();
-      query.set("page", logPage);
-      query.set("limit", logsPerPage);
-      if (logPanelFilter && logPanelFilter !== "all") query.set("panel", logPanelFilter);
-      if (logSearch) query.set("search", logSearch);
-      const res = await fetch(`/api/logs?${query.toString()}`);
-      if (res.ok) {
-        const data = await res.json();
+      query.set("page", requestPage);
+      query.set("limit", requestLimit);
+      if (!dashboard && logPanelFilter && logPanelFilter !== "all") query.set("panel", logPanelFilter);
+      if (!dashboard && logSearch) query.set("search", logSearch);
+
+      const [data, allData] = await Promise.all([
+        fetchAdminJsonWithTimeout(`/api/logs?${query.toString()}`),
+        dashboard ? Promise.resolve(null) : fetchAdminJsonWithTimeout(`/api/logs?limit=1000`)
+      ]);
+
+      let logsList = [];
+      let totalCount = 0;
+      if (data) {
         if (data.data) {
-          setLogs(data.data);
-          setTotalLogs(data.total);
+          logsList = data.data;
+          totalCount = data.total;
         } else {
-          setLogs(data);
-          setTotalLogs(data.length);
+          logsList = data;
+          totalCount = data.length;
         }
+        setLogs(logsList);
+        setTotalLogs(totalCount);
+      }
+
+      let counts = allLogsCount;
+      if (allData) {
+        const fullList = Array.isArray(allData) ? allData : (allData.data || []);
+        counts = {
+          admin: fullList.filter(l => (l.panel || "").toLowerCase() === "admin").length,
+          brand: fullList.filter(l => (l.panel || "").toLowerCase() === "brand").length,
+          investor: fullList.filter(l => (l.panel || "").toLowerCase() === "investor").length
+        };
+        setAllLogsCount(counts);
+      }
+
+      if (data) {
+        setAdminCache(cacheKey, { logs: logsList, total: totalCount, allLogsCount: counts });
       }
     } catch (err) {
       console.error("Failed to fetch logs:", err);
@@ -98,15 +366,19 @@ export default function AdminDashboard({ initialTab = "dashboard" }) {
   useEffect(() => {
     if (activeTab === "logs") {
       fetchLogs();
+    } else if (activeTab === "dashboard") {
+      fetchLogs({ dashboard: true });
     }
   }, [activeTab, logPage, logsPerPage, logPanelFilter, logSearch]);
 
   const handleDeleteLog = async (id) => {
-    if (!confirm("Are you sure you want to delete this log entry?")) return;
+    const isConfirmed = await Swal.confirm("Are you sure you want to delete this audit log entry?", "Delete Log Entry");
+    if (!isConfirmed) return;
     try {
       const res = await fetch(`/api/logs?id=${id}`, { method: "DELETE" });
       if (res.ok) {
-        setLogs(logs.filter(l => l.id !== id && l._id !== id));
+        invalidateAdminCache("admin_logs");
+        setLogs(logs.filter(l => l.id !== id && l._id !== id)); toast.success("Audit log entry deleted!");
         logActivity({
           panel: "admin",
           action: "LOG_DELETED",
@@ -120,11 +392,12 @@ export default function AdminDashboard({ initialTab = "dashboard" }) {
 
   const handleClearAllLogs = async () => {
     const panelText = logPanelFilter === "all" ? "all panels" : logPanelFilter;
-    if (!confirm(`Are you sure you want to clear all logs for ${panelText}? This action cannot be undone.`)) return;
+    const isConfirmed = await Swal.confirm(`Are you sure you want to clear all logs for ${panelText}? This action cannot be undone.`, "Clear Activity Logs"); if (!isConfirmed) return;
     try {
       const query = logPanelFilter !== "all" ? `?clearAll=true&panel=${logPanelFilter}` : `?clearAll=true`;
       const res = await fetch(`/api/logs${query}`, { method: "DELETE" });
       if (res.ok) {
+        invalidateAdminCache("admin_logs");
         fetchLogs();
         logActivity({
           panel: "admin",
@@ -142,7 +415,9 @@ export default function AdminDashboard({ initialTab = "dashboard" }) {
   const [totalBrands, setTotalBrands] = useState(0);
   const [pendingBrandsCount, setPendingBrandsCount] = useState(0);
   const [investors, setInvestors] = useState([]);
+  const [allInvestors, setAllInvestors] = useState([]);
   const [totalInvestors, setTotalInvestors] = useState(0);
+  const investorAssignPool = (allInvestors && allInvestors.length > 0) ? allInvestors : (investors || []);
   const [blogs, setBlogs] = useState([]);
   const [totalBlogs, setTotalBlogs] = useState(0);
   const [services, setServices] = useState([]);
@@ -151,7 +426,7 @@ export default function AdminDashboard({ initialTab = "dashboard" }) {
   const [totalAds, setTotalAds] = useState(0);
   const [allBrandsForSelect, setAllBrandsForSelect] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState("");
+
 
   // Blog Management State
   const [blogModalOpen, setBlogModalOpen] = useState(false);
@@ -171,6 +446,8 @@ export default function AdminDashboard({ initialTab = "dashboard" }) {
     title: "",
     subtitle: "",
     image: "",
+    mediaType: "image",
+    textColor: "#ffffff",
     link: "/brand-registration",
     badge: "SPONSORED",
     position: "homepage_banner",
@@ -269,50 +546,72 @@ export default function AdminDashboard({ initialTab = "dashboard" }) {
     });
   };
 
-  const handleAdminImageFileSelect = (e) => {
+  const handleAdminImageFileSelect = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
     if (!file.type.startsWith("image/")) {
-      alert("Please select a valid image file (PNG, JPG, WEBP).");
+      toast.error("Please select a valid image file (PNG, JPG, WEBP).");
       return;
     }
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const img = new Image();
-      img.onload = () => {
-        const canvas = document.createElement("canvas");
-        let width = img.width;
-        let height = img.height;
-        const maxDim = 1200;
-        if (width > maxDim || height > maxDim) {
-          if (width > height) {
-            height = Math.round((height * maxDim) / width);
-            width = maxDim;
-          } else {
-            width = Math.round((width * maxDim) / height);
-            height = maxDim;
-          }
-        }
-        canvas.width = width;
-        canvas.height = height;
-        const ctx = canvas.getContext("2d");
-        ctx.drawImage(img, 0, 0, width, height);
-        const base64 = canvas.toDataURL("image/jpeg", 0.85);
-        setAdminBrandForm((prev) => ({ ...prev, image: base64 }));
-      };
-      img.src = event.target?.result;
-    };
-    reader.readAsDataURL(file);
+    try {
+      toast.info("Uploading image...");
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("slug", adminBrandForm.name || "brand");
+
+      const res = await fetch("/api/upload", {
+        method: "POST",
+        body: formData,
+      });
+
+      const data = await res.json();
+      if (res.ok && data.url) {
+        setAdminBrandForm((prev) => ({ ...prev, image: data.url }));
+        toast.success("Image uploaded successfully!");
+      } else {
+        toast.error(data.error || "Failed to upload image.");
+      }
+    } catch (err) {
+      console.error("Upload error:", err);
+      toast.error("Network error while uploading image.");
+    }
   };
 
   const handleSaveAdminBrand = async (e) => {
     e.preventDefault();
     if (!editingBrand) return;
 
+    // Phase 1 Validation
+    const nameVal = validateBrandName(adminBrandForm.name);
+    if (!nameVal.isValid) {
+      toast.warning(nameVal.reason || "Invalid brand name. Test/dummy names cannot be approved.");
+      return;
+    }
+
+    let sanitizedArea = adminBrandForm.areaRequired;
+    if (adminBrandForm.areaRequired && String(adminBrandForm.areaRequired).trim()) {
+      const areaVal = validateArea(adminBrandForm.areaRequired);
+      if (!areaVal.isValid) {
+        toast.warning(`Invalid Area: ${areaVal.reason}. Must be between 50 and 50,000 sq ft.`);
+        return;
+      }
+      sanitizedArea = areaVal.value;
+    } else {
+      sanitizedArea = null;
+    }
+
+    if (adminBrandForm.image && String(adminBrandForm.image).trim()) {
+      const imgVal = validateImageUrl(adminBrandForm.image);
+      if (!imgVal.isValid) {
+        toast.warning(`Invalid Image: ${imgVal.reason}`);
+        return;
+      }
+    }
+
     const rangeIndex = REGISTRATION_INVESTMENT_OPTIONS.indexOf(adminBrandForm.investment_range);
     const maxIndex = REGISTRATION_INVESTMENT_OPTIONS.indexOf(adminBrandForm.max_investment_limit);
     if (adminBrandForm.investment_range && adminBrandForm.max_investment_limit && maxIndex < rangeIndex) {
-      alert("Max Investment Limit cannot be lower than the selected Investment Range.");
+      toast.warning("Max Investment Limit cannot be lower than the selected Investment Range.");
       return;
     }
 
@@ -324,6 +623,7 @@ export default function AdminDashboard({ initialTab = "dashboard" }) {
 
       const payload = {
         ...adminBrandForm,
+        areaRequired: sanitizedArea,
         minInvestment: rangeMinVal || editingBrand.minInvestment || 0,
         maxInvestment: rangeMaxVal || editingBrand.maxInvestment || 0,
       };
@@ -334,8 +634,12 @@ export default function AdminDashboard({ initialTab = "dashboard" }) {
         body: JSON.stringify(payload)
       });
       if (res.ok) {
+        toast.success("Brand updated successfully!");
         clearBrandsCache();
+        invalidateAdminCache("admin_brands");
+        invalidateAdminCache(ADMIN_OVERVIEW_CACHE_KEY);
         fetchData();
+        if (activeTab === "brands") fetchBrandsTab();
         setEditBrandModalOpen(false);
         setEditingBrand(null);
         if (selectedItem && (selectedItem.id === brandId || selectedItem._id === brandId)) {
@@ -343,11 +647,11 @@ export default function AdminDashboard({ initialTab = "dashboard" }) {
         }
       } else {
         const data = await res.json();
-        alert(data.error || "Failed to update brand.");
+        toast.error(data.error || "Failed to update brand.");
       }
     } catch (err) {
       console.error("Failed to save brand edits:", err);
-      alert("Error updating brand.");
+      toast.error("Error updating brand.");
     } finally {
       setIsSavingAdminBrand(false);
     }
@@ -367,75 +671,137 @@ export default function AdminDashboard({ initialTab = "dashboard" }) {
 
   // Tab AJAX Fetchers
   const fetchBrandsTab = async () => {
+    const cacheKey = `admin_brands_${brandsPage}_${brandsPerPage}_${searchTerm}_${brandStatusFilter}_${brandCategoryFilter}_${brandStateFilter}_${brandSortOrder}`;
+    const cached = getAdminCache(cacheKey);
+    if (cached) {
+      setTotalBrands(cached.total);
+      setBrands(cached.brands);
+    }
     try {
       const query = new URLSearchParams();
-      query.set("page", brandsPage);
-      query.set("limit", brandsPerPage);
+      if (brandStatusFilter && brandStatusFilter !== "all") query.set("status", brandStatusFilter);
       if (searchTerm) query.set("search", searchTerm);
       const res = await fetch(`/api/brands?${query.toString()}`);
       if (res.ok) {
         const result = await res.json();
-        if (result.data) {
-          setBrands(result.data);
-          setTotalBrands(result.total);
-        } else {
-          setBrands(result);
-          setTotalBrands(result.length);
+        let list = Array.isArray(result) ? result : (result.data || []);
+        if (brandCategoryFilter) {
+          list = list.filter(b => (b.category || "").toLowerCase() === brandCategoryFilter.toLowerCase());
         }
+        if (brandStateFilter) {
+          list = list.filter(b => 
+            (b.hq || "").toLowerCase().includes(brandStateFilter.toLowerCase()) || 
+            (b.location || "").toLowerCase().includes(brandStateFilter.toLowerCase())
+          );
+        }
+        if (brandSortOrder === "oldest") {
+          list = [...list].sort((a, b) => new Date(a.createdAt || 0) - new Date(b.createdAt || 0));
+        } else {
+          list = [...list].sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+        }
+        setTotalBrands(list.length);
+        const start = (brandsPage - 1) * brandsPerPage;
+        const pageSlice = list.slice(start, start + brandsPerPage);
+        setBrands(pageSlice);
+        setAdminCache(cacheKey, { total: list.length, brands: pageSlice });
       }
     } catch (err) {
       console.error("Failed to fetch brands tab:", err);
+    } finally {
+      setLoading(false);
     }
   };
 
   const fetchInvestorsTab = async () => {
+    const cacheKey = `admin_investors_${investorsPage}_${investorsPerPage}_${searchTerm}_${filterBrand}_${filterCategory}_${filterStatus}_${investorSortOrder}`;
+    const cached = getAdminCache(cacheKey);
+    if (cached) {
+      setInvestors(cached.investors);
+      setTotalInvestors(cached.total);
+    }
     try {
       const query = new URLSearchParams();
       query.set("page", investorsPage);
       query.set("limit", investorsPerPage);
       if (searchTerm) query.set("search", searchTerm);
-      if (filterBrand) query.set("brand", filterBrand);
-      if (filterCategory) query.set("category", filterCategory);
-      if (filterStatus) query.set("status", filterStatus);
-      const res = await fetch(`/api/investors?${query.toString()}`);
+      if (filterBrand && filterBrand.toLowerCase() !== "all" && filterBrand.toLowerCase() !== "brand: all") query.set("brand", filterBrand);
+      if (filterCategory && filterCategory.toLowerCase() !== "all" && filterCategory.toLowerCase() !== "category: all") query.set("category", filterCategory);
+      if (filterStatus && filterStatus.toLowerCase() !== "all") query.set("status", filterStatus);
+      const res = await Promise.race([
+        fetch(`/api/investors?${query.toString()}`, { cache: "no-store" }),
+        new Promise((_, reject) => window.setTimeout(() => {
+          const timeoutError = new Error("Investor data request timed out");
+          timeoutError.name = "TimeoutError";
+          reject(timeoutError);
+        }, 20000))
+      ]);
       if (res.ok) {
         const result = await res.json();
-        if (result.data) {
-          setInvestors(result.data);
-          setTotalInvestors(result.total);
+        let list = result.data || result;
+        if (investorSortOrder === "oldest") {
+          list = [...list].sort((a, b) => new Date(a.createdAt || 0) - new Date(b.createdAt || 0));
         } else {
-          setInvestors(result);
-          setTotalInvestors(result.length);
+          list = [...list].sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
         }
+        const total = result.total || (Array.isArray(list) ? list.length : 0);
+        setInvestors(list);
+        setTotalInvestors(total);
+        setAdminCache(cacheKey, { total, investors: list });
       }
     } catch (err) {
-      console.error("Failed to fetch investors tab:", err);
+      // A navigation, hot reload or temporary API disconnect should not open
+      // the Next.js error overlay. Cached data remains visible when available.
+      if (err?.name !== "AbortError" && err?.name !== "TimeoutError") {
+        console.warn("Investor data temporarily unavailable:", err?.message || err);
+      }
+    } finally {
+      setLoading(false);
     }
   };
 
   const fetchBlogsTab = async () => {
+    const cacheKey = `admin_blogs_${blogsPage}_${blogsPerPage}_${searchTerm}_${blogStatusFilter}_${blogSortOrder}`;
+    const cached = getAdminCache(cacheKey);
+    if (cached) {
+      setTotalBlogs(cached.total);
+      setBlogs(cached.blogs);
+    }
     try {
       const query = new URLSearchParams();
-      query.set("page", blogsPage);
-      query.set("limit", blogsPerPage);
       if (searchTerm) query.set("search", searchTerm);
       const res = await fetch(`/api/blogs?${query.toString()}`);
       if (res.ok) {
         const result = await res.json();
-        if (result.data) {
-          setBlogs(result.data);
-          setTotalBlogs(result.total);
-        } else {
-          setBlogs(result);
-          setTotalBlogs(result.length);
+        let list = Array.isArray(result) ? result : (result.data || []);
+        if (blogStatusFilter && blogStatusFilter !== "all") {
+          if (blogStatusFilter === "Published") list = list.filter(b => b.status === "Published" || !b.status);
+          if (blogStatusFilter === "Drafts") list = list.filter(b => b.status === "Draft");
         }
+        if (blogSortOrder === "oldest") {
+          list = [...list].sort((a, b) => new Date(a.createdAt || 0) - new Date(b.createdAt || 0));
+        } else {
+          list = [...list].sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+        }
+        setTotalBlogs(list.length);
+        const start = (blogsPage - 1) * blogsPerPage;
+        const pageSlice = list.slice(start, start + blogsPerPage);
+        setBlogs(pageSlice);
+        setAdminCache(cacheKey, { total: list.length, blogs: pageSlice });
       }
     } catch (err) {
       console.error("Failed to fetch blogs tab:", err);
+    } finally {
+      setLoading(false);
     }
   };
 
   const fetchServicesTab = async () => {
+    const cacheKey = `admin_services_${servicesPage}_${servicesPerPage}_${searchTerm}`;
+    const cached = getAdminCache(cacheKey);
+    if (cached) {
+      setServices(cached.services);
+      setTotalServices(cached.total);
+    }
     try {
       const query = new URLSearchParams();
       query.set("page", servicesPage);
@@ -444,38 +810,50 @@ export default function AdminDashboard({ initialTab = "dashboard" }) {
       const res = await fetch(`/api/services?${query.toString()}`);
       if (res.ok) {
         const result = await res.json();
-        if (result.data) {
-          setServices(result.data);
-          setTotalServices(result.total);
-        } else {
-          setServices(result);
-          setTotalServices(result.length);
-        }
+        const list = result.data || result;
+        const total = result.total !== undefined ? result.total : (Array.isArray(list) ? list.length : 0);
+        setServices(list);
+        setTotalServices(total);
+        setAdminCache(cacheKey, { total, services: list });
       }
     } catch (err) {
       console.error("Failed to fetch services tab:", err);
+    } finally {
+      setLoading(false);
     }
   };
 
   const fetchAdsTab = async () => {
+    const cacheKey = `admin_ads_${adsPage}_${adsPerPage}_${searchTerm}_${adPositionFilter}_${adStatusFilter}`;
+    const cached = getAdminCache(cacheKey);
+    if (cached) {
+      setTotalAds(cached.total);
+      setAds(cached.ads);
+    }
     try {
       const query = new URLSearchParams();
-      query.set("page", adsPage);
-      query.set("limit", adsPerPage);
       if (searchTerm) query.set("search", searchTerm);
       const res = await fetch(`/api/advertisements?${query.toString()}`);
       if (res.ok) {
         const result = await res.json();
-        if (result.data) {
-          setAds(result.data);
-          setTotalAds(result.total);
-        } else {
-          setAds(result);
-          setTotalAds(result.length);
+        let list = Array.isArray(result) ? result : (result.data || []);
+        if (adPositionFilter && adPositionFilter !== "all") {
+          list = list.filter(a => adPositionFilter === "brand_sidebar" ? (a.position === "brand_sidebar" || a.position === "brands_sidebar") : a.position === adPositionFilter);
         }
+        if (adStatusFilter && adStatusFilter !== "all") {
+          if (adStatusFilter === "active") list = list.filter(a => a.isActive !== false);
+          if (adStatusFilter === "paused") list = list.filter(a => a.isActive === false);
+        }
+        setTotalAds(list.length);
+        const start = (adsPage - 1) * adsPerPage;
+        const pageSlice = list.slice(start, start + adsPerPage);
+        setAds(pageSlice);
+        setAdminCache(cacheKey, { total: list.length, ads: pageSlice });
       }
     } catch (err) {
       console.error("Failed to fetch ads tab:", err);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -486,27 +864,160 @@ export default function AdminDashboard({ initialTab = "dashboard" }) {
     setServicesPage(1);
     setAdsPage(1);
     setLogPage(1);
-  }, [searchTerm, filterBrand, filterCategory, filterStatus, logPanelFilter, logSearch]);
+  }, [
+    searchTerm,
+    filterBrand,
+    filterCategory,
+    filterStatus,
+    logPanelFilter,
+    logSearch,
+    brandStatusFilter,
+    brandCategoryFilter,
+    brandStateFilter,
+    brandSortOrder,
+    investorSortOrder,
+    blogStatusFilter,
+    blogSortOrder,
+    adPositionFilter,
+    adStatusFilter
+  ]);
 
   useEffect(() => {
-    if (activeTab === "brands") fetchBrandsTab();
-  }, [activeTab, brandsPage, brandsPerPage, searchTerm]);
+    if (authorized && activeTab === "brands") fetchBrandsTab();
+  }, [authorized, activeTab, brandsPage, brandsPerPage, searchTerm, brandStatusFilter, brandCategoryFilter, brandStateFilter, brandSortOrder]);
 
   useEffect(() => {
-    if (activeTab === "investors") fetchInvestorsTab();
-  }, [activeTab, investorsPage, investorsPerPage, searchTerm, filterBrand, filterCategory, filterStatus]);
+    if (authorized && activeTab === "investors") fetchInvestorsTab();
+  }, [authorized, activeTab, investorsPage, investorsPerPage, searchTerm, filterBrand, filterCategory, filterStatus, investorSortOrder]);
+
+  // Investor deep-links load all brand names needed by the Brand filter
+  useEffect(() => {
+    if (!authorized || activeTab !== "investors" || allBrandsForSelect.length > 0) return;
+    let cancelled = false;
+    fetchAdminJson("/api/brands").then((payload) => {
+      if (cancelled) return;
+      const list = getListPayload(payload) || [];
+      setAllBrandsForSelect(list.filter((brand) => {
+        const status = String(brand.status || "Approved").toLowerCase();
+        return status !== "declined" && status !== "rejected";
+      }));
+    });
+    return () => { cancelled = true; };
+  }, [authorized, activeTab, allBrandsForSelect.length]);
 
   useEffect(() => {
-    if (activeTab === "blogs") fetchBlogsTab();
-  }, [activeTab, blogsPage, blogsPerPage, searchTerm]);
+    if (authorized && activeTab === "blogs") fetchBlogsTab();
+  }, [authorized, activeTab, blogsPage, blogsPerPage, searchTerm, blogStatusFilter, blogSortOrder]);
 
   useEffect(() => {
-    if (activeTab === "services") fetchServicesTab();
-  }, [activeTab, servicesPage, servicesPerPage, searchTerm]);
+    if (authorized && activeTab === "services") fetchServicesTab();
+  }, [authorized, activeTab, servicesPage, servicesPerPage, searchTerm]);
 
   useEffect(() => {
-    if (activeTab === "ads") fetchAdsTab();
-  }, [activeTab, adsPage, adsPerPage, searchTerm]);
+    if (authorized && activeTab === "ads") fetchAdsTab();
+  }, [authorized, activeTab, adsPage, adsPerPage, searchTerm, adPositionFilter, adStatusFilter]);
+
+    useEffect(() => {
+    if (authorized && activeTab === "seo") fetchSeoTab();
+  }, [authorized, activeTab]);
+
+  const applyOverviewData = (data) => {
+    if (!data) return;
+    const { brandsData, investorsData, blogsData, servicesData, adsData } = data;
+
+    const brandsList = getListPayload(brandsData);
+    const investorsList = getListPayload(investorsData);
+    const blogsList = getListPayload(blogsData);
+    const servicesList = getListPayload(servicesData);
+    const adsList = getListPayload(adsData);
+
+    if (brandsList) {
+      const list = brandsList;
+      setAllBrandsForSelect(list);
+      setTotalBrands(list.length);
+      setPendingBrandsCount(list.filter(b => b.status === "Pending").length);
+      if (activeTab === "dashboard") {
+        setBrands(list.slice(0, 10));
+      }
+    }
+    if (investorsList) {
+      const list = investorsList;
+      setAllInvestors(list);
+      setTotalInvestors(list.length);
+      if (activeTab === "dashboard") {
+        setInvestors(list.slice(0, 10));
+      }
+    }
+    if (blogsList) {
+      const list = blogsList;
+      setTotalBlogs(list.length);
+      if (activeTab === "dashboard") {
+        setBlogs(list.slice(0, 10));
+      }
+    }
+    if (servicesList) {
+      const list = servicesList;
+      setTotalServices(list.length);
+      if (activeTab === "dashboard") {
+        setServices(list.slice(0, 10));
+      }
+    }
+    if (adsList) {
+      const list = adsList;
+      setTotalAds(list.length);
+      if (activeTab === "dashboard") {
+        setAds(list.slice(0, 10));
+      }
+    }
+  };
+
+  const fetchData = async () => {
+    const cachedOverview = getAdminCache(ADMIN_OVERVIEW_CACHE_KEY);
+    if (cachedOverview) {
+      applyOverviewData(cachedOverview);
+    }
+    if (!cachedOverview && activeTab === "dashboard") {
+      setLoading(true);
+    }
+    try {
+      const [brandsData, investorsData, blogsData, servicesData, adsData] = await Promise.all([
+        fetchAdminJsonWithTimeout("/api/brands", 15000),
+        fetchAdminJsonWithTimeout("/api/investors", 15000),
+        fetchAdminJsonWithTimeout("/api/blogs", 15000),
+        fetchAdminJsonWithTimeout("/api/services", 15000),
+        fetchAdminJsonWithTimeout("/api/advertisements", 15000)
+      ]);
+
+      const overviewPayload = { brandsData, investorsData, blogsData, servicesData, adsData };
+      const hasCompleteOverview = [brandsData, investorsData, blogsData, servicesData, adsData]
+        .every((payload) => getListPayload(payload) !== null);
+      if (hasCompleteOverview) {
+        setAdminCache(ADMIN_OVERVIEW_CACHE_KEY, overviewPayload);
+      }
+      applyOverviewData(overviewPayload);
+    } catch (error) {
+      console.error("Error loading overview data:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const initialFetchDoneRef = useRef(false);
+  useEffect(() => {
+    if (authorized) {
+      const cached = getAdminCache(ADMIN_OVERVIEW_CACHE_KEY);
+      if (cached) {
+        applyOverviewData(cached);
+        setLoading(false);
+      }
+      if (!initialFetchDoneRef.current) {
+        initialFetchDoneRef.current = true;
+        fetchData();
+      } else if (activeTab === "dashboard" && !getAdminCache(ADMIN_OVERVIEW_CACHE_KEY)) {
+        fetchData();
+      }
+    }
+  }, [activeTab, authorized]);
 
   // Helper function to check if investor's selected sectors match brand category
   const isInvestorSectorMatch = (inv, brand) => {
@@ -567,15 +1078,35 @@ export default function AdminDashboard({ initialTab = "dashboard" }) {
 
   useEffect(() => {
     if (selectedItem && modalType === "brand") {
+      const loadInvestorsPool = async () => {
+        if (allInvestors.length === 0) {
+          try {
+            const res = await fetch("/api/investors", { cache: "no-store" });
+            if (res.ok) {
+              const data = await res.json();
+              const list = Array.isArray(data) ? data : (data.data || []);
+              if (Array.isArray(list) && list.length > 0) {
+                setAllInvestors(list);
+                setTotalInvestors(list.length);
+              }
+            }
+          } catch (e) {
+            console.warn("Could not load full investors pool for brand modal:", e);
+          }
+        }
+      };
+      loadInvestorsPool();
+
+      const pool = allInvestors.length > 0 ? allInvestors : investors;
       const brandId = selectedItem.id || selectedItem._id;
-      const attached = investors
+      const attached = pool
         .filter(inv => inv.assignedBrands && (inv.assignedBrands.includes(brandId) || inv.assignedBrands.includes(selectedItem._id)))
         .map(inv => inv.id || inv._id);
       setSelectedInvestorsForBrand(attached);
       setAssignFilterMode("matching");
       setAssignSearch("");
     }
-  }, [selectedItem, modalType, investors]);
+  }, [selectedItem, modalType, allInvestors.length, investors]);
 
   const openCustomMsgModal = (type, targetItem, extraPayload = {}) => {
     setCustomMsgModal({
@@ -584,7 +1115,24 @@ export default function AdminDashboard({ initialTab = "dashboard" }) {
       targetItem,
       extraPayload
     });
-    setCustomMessageText("");
+    setCustomMessageText(targetItem?.investmentNotes || "");
+    if (type === "MARK_INVESTED" && targetItem) {
+      let initBrandId = targetItem.brandId || "";
+      let initBrandName = targetItem.brandName || "";
+      if (!initBrandId && Array.isArray(targetItem.assignedBrands) && targetItem.assignedBrands.length > 0) {
+        initBrandId = targetItem.assignedBrands[0];
+      }
+      if (initBrandId && !initBrandName) {
+        const found = (allBrandsForSelect || []).find(b => String(b.id || b._id) === String(initBrandId));
+        if (found) initBrandName = found.name;
+      }
+      setInvestedBrandId(initBrandId);
+      setInvestedBrandName(initBrandName);
+    } else {
+      setInvestedBrandId("");
+      setInvestedBrandName("");
+    }
+    setInvestmentAmount(targetItem?.investmentAmount ? String(targetItem.investmentAmount) : "");
   };
 
   const handleConfirmCustomMsgAction = async () => {
@@ -593,6 +1141,15 @@ export default function AdminDashboard({ initialTab = "dashboard" }) {
     const { type, targetItem, extraPayload } = customMsgModal;
     const adminEmail = localStorage.getItem("adminEmail") || "admin@franchiseroots.com";
     const adminName = "Administrator";
+
+    if (type === "MARK_INVESTED") {
+      const amount = Number(String(investmentAmount).replace(/[^0-9.]/g, ""));
+      if (!Number.isFinite(amount) || amount <= 0) {
+        toast.error("Enter a valid investment amount.");
+        setIsSubmittingCustomMsg(false);
+        return;
+      }
+    }
 
     try {
       if (type === "APPROVE_BRAND" || type === "DECLINE_BRAND") {
@@ -610,17 +1167,20 @@ export default function AdminDashboard({ initialTab = "dashboard" }) {
         });
         if (res.ok) {
           clearBrandsCache();
+          invalidateAdminCache("admin_brands");
+          invalidateAdminCache(ADMIN_OVERVIEW_CACHE_KEY);
           fetchData();
+          if (activeTab === "brands") fetchBrandsTab(); toast.success(`Brand ${status.toLowerCase()} successfully!`);
           fetchLogs();
           if (selectedItem && (selectedItem.id === brandId || selectedItem._id === brandId)) {
             setSelectedItem(null);
           }
         } else {
-          alert(`Failed to ${status.toLowerCase()} brand.`);
+          toast.error(`Failed to ${status.toLowerCase()} brand.`);
         }
       } else if (type === "APPROVE_INVESTOR" || type === "DECLINE_INVESTOR") {
         const status = type === "APPROVE_INVESTOR" ? "Approved" : "Rejected";
-        const invId = targetItem.id || targetItem._id;
+        const invId = targetItem._id || targetItem.id;
         const res = await fetch(`/api/investors/${invId}`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
@@ -632,13 +1192,59 @@ export default function AdminDashboard({ initialTab = "dashboard" }) {
           })
         });
         if (res.ok) {
+          invalidateAdminCache("admin_investors");
+          invalidateAdminCache(ADMIN_OVERVIEW_CACHE_KEY);
           fetchData();
+          if (activeTab === "investors") fetchInvestorsTab(); toast.success(`Investor lead ${status.toLowerCase()} successfully!`);
           fetchLogs();
           if (selectedItem && (selectedItem.id === invId || selectedItem._id === invId)) {
             setSelectedItem(null);
           }
         } else {
-          alert(`Failed to ${status === "Approved" ? "approve" : "decline"} investor lead.`);
+          toast.error(`Failed to ${status === "Approved" ? "approve" : "decline"} investor lead.`);
+        }
+      } else if (type === "MARK_INVESTED") {
+        const invId = targetItem._id || targetItem.id;
+        const amount = Number(String(investmentAmount).replace(/[^0-9.]/g, ""));
+        const res = await fetch(`/api/investors/${invId}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            investmentStatus: "Invested",
+            investmentAmount: amount,
+            investmentDate: new Date().toISOString(),
+            investmentNotes: customMessageText,
+            ...(investedBrandId ? { brandId: investedBrandId, brandName: investedBrandName } : {}),
+            adminEmail,
+            adminName
+          })
+        });
+        if (res.ok) {
+          invalidateAdminCache("admin_investors");
+          invalidateAdminCache("admin_brands");
+          invalidateAdminCache(ADMIN_OVERVIEW_CACHE_KEY);
+          fetchData();
+          if (activeTab === "investors") fetchInvestorsTab();
+          if (activeTab === "brands") fetchBrandsTab();
+          fetchLogs();
+          setCustomMsgModal(null);
+          toast.success("Investment marked successfully.");
+          setInvestors(prev => (prev || []).map(inv => {
+            const isMatch = (inv._id && (inv._id === invId || inv._id === targetItem._id)) ||
+                            (inv.id && (inv.id === invId || inv.id === targetItem.id));
+            if (isMatch) {
+              return {
+                ...inv,
+                investmentStatus: "Invested",
+                investmentAmount: amount,
+                ...(investedBrandId ? { brandId: investedBrandId, brandName: investedBrandName } : {})
+              };
+            }
+            return inv;
+          }));
+        } else {
+          const errData = await res.json().catch(() => ({}));
+          toast.error(errData.error || "Failed to save investment.");
         }
       } else if (type === "ASSIGN_BRAND") {
         const brandId = targetItem.id || targetItem._id;
@@ -654,11 +1260,16 @@ export default function AdminDashboard({ initialTab = "dashboard" }) {
           })
         });
         if (res.ok) {
-          alert("Brand assignment and custom log updated successfully!");
+          toast.success("Brand assignment and custom log updated successfully!");
+          invalidateAdminCache("admin_investors");
+          invalidateAdminCache("admin_brands");
+          invalidateAdminCache(ADMIN_OVERVIEW_CACHE_KEY);
           fetchData();
+          if (activeTab === "investors") fetchInvestorsTab();
+          if (activeTab === "brands") fetchBrandsTab();
           fetchLogs();
         } else {
-          alert("Failed to save brand assignment.");
+          toast.error("Failed to save brand assignment.");
         }
       }
     } catch (err) {
@@ -668,6 +1279,9 @@ export default function AdminDashboard({ initialTab = "dashboard" }) {
       setIsSubmittingCustomMsg(false);
       setCustomMsgModal(null);
       setCustomMessageText("");
+      setInvestedBrandId("");
+      setInvestedBrandName("");
+      setInvestmentAmount("");
     }
   };
 
@@ -683,59 +1297,9 @@ export default function AdminDashboard({ initialTab = "dashboard" }) {
       router.push("/login");
     } else {
       setAuthorized(true);
-      fetchData();
     }
   }, [router]);
 
-  const fetchData = async () => {
-    setLoading(true);
-    try {
-      const [brandsRes, investorsRes, blogsRes, servicesRes, adsRes] = await Promise.all([
-        fetch("/api/brands"),
-        fetch("/api/investors"),
-        fetch("/api/blogs"),
-        fetch("/api/services"),
-        fetch("/api/advertisements")
-      ]);
-
-      if (brandsRes.ok) {
-        const brandsData = await brandsRes.json();
-        const list = Array.isArray(brandsData) ? brandsData : brandsData.data || [];
-        setAllBrandsForSelect(list);
-        setTotalBrands(list.length);
-        setPendingBrandsCount(list.filter(b => b.status === "Pending").length);
-        if (activeTab === "dashboard") setBrands(list);
-      }
-      if (investorsRes.ok) {
-        const investorsData = await investorsRes.json();
-        const list = Array.isArray(investorsData) ? investorsData : investorsData.data || [];
-        setTotalInvestors(list.length);
-        if (activeTab === "dashboard") setInvestors(list);
-      }
-      if (blogsRes.ok) {
-        const blogsData = await blogsRes.json();
-        const list = Array.isArray(blogsData) ? blogsData : blogsData.data || [];
-        setTotalBlogs(list.length);
-        if (activeTab === "dashboard") setBlogs(list);
-      }
-      if (servicesRes.ok) {
-        const servicesData = await servicesRes.json();
-        const list = Array.isArray(servicesData) ? servicesData : servicesData.data || [];
-        setTotalServices(list.length);
-        if (activeTab === "dashboard") setServices(list);
-      }
-      if (adsRes.ok) {
-        const adsData = await adsRes.json();
-        const list = Array.isArray(adsData) ? adsData : adsData.data || [];
-        setTotalAds(list.length);
-        if (activeTab === "dashboard") setAds(list);
-      }
-    } catch (error) {
-      console.error("Error loading overview data:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleLogout = () => {
     localStorage.removeItem("adminLoggedIn");
@@ -756,16 +1320,19 @@ export default function AdminDashboard({ initialTab = "dashboard" }) {
 
   // Delete Brand Listing
   const handleDeleteBrand = async (id) => {
-    if (!confirm("Are you sure you want to permanently delete this brand registration?")) return;
+    const isConfirmed = await Swal.confirm("Are you sure you want to permanently delete this brand registration?", "Delete Brand Registration"); if (!isConfirmed) return;
     try {
       const res = await fetch(`/api/brands/${id}`, {
         method: "DELETE"
       });
       if (res.ok) {
         clearBrandsCache();
+        invalidateAdminCache("admin_brands");
+        invalidateAdminCache(ADMIN_OVERVIEW_CACHE_KEY);
         fetchData();
+        if (activeTab === "brands") fetchBrandsTab();
         fetchLogs();
-        if (selectedItem && selectedItem.id === id) setSelectedItem(null);
+        if (selectedItem && selectedItem.id === id) setSelectedItem(null); toast.success("Brand registration deleted successfully!");
       }
     } catch (err) {
       console.error("Failed to delete brand:", err);
@@ -786,13 +1353,17 @@ export default function AdminDashboard({ initialTab = "dashboard" }) {
 
   // Delete Investor Lead
   const handleDeleteInvestor = async (id) => {
-    if (!confirm("Are you sure you want to permanently delete this investor lead?")) return;
+    const isConfirmed = await Swal.confirm("Are you sure you want to permanently delete this investor lead?", "Delete Investor Lead"); if (!isConfirmed) return;
     try {
       const res = await fetch(`/api/investors/${id}`, {
         method: "DELETE"
       });
       if (res.ok) {
+        invalidateAdminCache("admin_investors");
+        invalidateAdminCache(ADMIN_OVERVIEW_CACHE_KEY);
         fetchData();
+        if (activeTab === "investors") fetchInvestorsTab(); toast.success("Investor lead deleted successfully!");
+        fetchLogs();
         setSelectedItem(null);
       }
     } catch (err) {
@@ -822,7 +1393,7 @@ export default function AdminDashboard({ initialTab = "dashboard" }) {
   const handleSaveBlog = async (e) => {
     e.preventDefault();
     if (!blogForm.title || !blogForm.content) {
-      alert("Title and content are required.");
+      toast.warning("Title and content are required.");
       return;
     }
     setIsSavingBlog(true);
@@ -835,16 +1406,19 @@ export default function AdminDashboard({ initialTab = "dashboard" }) {
         body: JSON.stringify(blogForm)
       });
       if (res.ok) {
-        alert(editingBlogId ? "Blog updated successfully!" : "Blog created successfully!");
+        toast.success(editingBlogId ? "Blog updated successfully!" : "Blog created successfully!");
         setBlogModalOpen(false);
+        invalidateAdminCache("admin_blogs");
+        invalidateAdminCache(ADMIN_OVERVIEW_CACHE_KEY);
         fetchData();
+        if (activeTab === "blogs") fetchBlogsTab();
       } else {
         const errorData = await res.json();
-        alert(errorData.error || "Failed to save blog post.");
+        toast.error(errorData.error || "Failed to save blog post.");
       }
     } catch (err) {
       console.error("Failed to save blog:", err);
-      alert("An error occurred while saving the blog.");
+      toast.error("An error occurred while saving the blog.");
     } finally {
       setIsSavingBlog(false);
     }
@@ -852,15 +1426,18 @@ export default function AdminDashboard({ initialTab = "dashboard" }) {
 
   // Delete Blog record
   const handleDeleteBlog = async (id) => {
-    if (!confirm("Are you sure you want to permanently delete this blog post?")) return;
+    const isConfirmed = await Swal.confirm("Are you sure you want to permanently delete this blog post?", "Delete Blog Post"); if (!isConfirmed) return;
     try {
       const res = await fetch(`/api/blogs/${id}`, {
         method: "DELETE"
       });
       if (res.ok) {
+        invalidateAdminCache("admin_blogs");
+        invalidateAdminCache(ADMIN_OVERVIEW_CACHE_KEY);
         fetchData();
+        if (activeTab === "blogs") fetchBlogsTab();
       } else {
-        alert("Failed to delete blog post.");
+        toast.error("Failed to delete blog post.");
       }
     } catch (err) {
       console.error("Failed to delete blog:", err);
@@ -874,7 +1451,7 @@ export default function AdminDashboard({ initialTab = "dashboard" }) {
     // Check size limit: e.g. 5MB
     const maxSize = 5 * 1024 * 1024;
     if (file.size > maxSize) {
-      alert("File is too large. Maximum size allowed is 5 MB.");
+      toast.error("File is too large. Maximum size allowed is 5 MB.");
       return;
     }
 
@@ -944,7 +1521,7 @@ export default function AdminDashboard({ initialTab = "dashboard" }) {
   const handleSaveService = async (e) => {
     e.preventDefault();
     if (!serviceForm.title || !serviceForm.content) {
-      alert("Title and content are required.");
+      toast.warning("Title and content are required.");
       return;
     }
     setIsSavingService(true);
@@ -957,16 +1534,19 @@ export default function AdminDashboard({ initialTab = "dashboard" }) {
         body: JSON.stringify(serviceForm)
       });
       if (res.ok) {
-        alert(editingServiceId ? "Service updated successfully!" : "Service created successfully!");
+        toast.success(editingServiceId ? "Service updated successfully!" : "Service created successfully!");
         setServiceModalOpen(false);
+        invalidateAdminCache("admin_services");
+        invalidateAdminCache(ADMIN_OVERVIEW_CACHE_KEY);
         fetchData();
+        if (activeTab === "services") fetchServicesTab();
       } else {
         const errorData = await res.json();
-        alert(errorData.error || "Failed to save service.");
+        toast.error(errorData.error || "Failed to save service.");
       }
     } catch (err) {
       console.error("Failed to save service:", err);
-      alert("An error occurred while saving the service.");
+      toast.error("An error occurred while saving the service.");
     } finally {
       setIsSavingService(false);
     }
@@ -974,15 +1554,18 @@ export default function AdminDashboard({ initialTab = "dashboard" }) {
 
   // Delete Service record
   const handleDeleteService = async (id) => {
-    if (!confirm("Are you sure you want to permanently delete this service?")) return;
+    const isConfirmed = await Swal.confirm("Are you sure you want to permanently delete this service?", "Delete Service"); if (!isConfirmed) return;
     try {
       const res = await fetch(`/api/services/${id}`, {
         method: "DELETE"
       });
       if (res.ok) {
+        invalidateAdminCache("admin_services");
+        invalidateAdminCache(ADMIN_OVERVIEW_CACHE_KEY);
         fetchData();
+        if (activeTab === "services") fetchServicesTab();
       } else {
-        alert("Failed to delete service.");
+        toast.error("Failed to delete service.");
       }
     } catch (err) {
       console.error("Failed to delete service:", err);
@@ -995,7 +1578,7 @@ export default function AdminDashboard({ initialTab = "dashboard" }) {
 
     const maxSize = 5 * 1024 * 1024;
     if (file.size > maxSize) {
-      alert("File is too large. Maximum size allowed is 5 MB.");
+      toast.error("File is too large. Maximum size allowed is 5 MB.");
       return;
     }
 
@@ -1047,6 +1630,8 @@ export default function AdminDashboard({ initialTab = "dashboard" }) {
       title: "",
       subtitle: "",
       image: "",
+      mediaType: "image",
+      textColor: "#ffffff",
       link: "/brand-registration",
       badge: "SPONSORED",
       position: "homepage_banner",
@@ -1062,6 +1647,8 @@ export default function AdminDashboard({ initialTab = "dashboard" }) {
       title: ad.title || "",
       subtitle: ad.subtitle || "",
       image: ad.image || "",
+      mediaType: ad.mediaType === "video" ? "video" : "image",
+      textColor: /^#[0-9a-f]{6}$/i.test(String(ad.textColor || "")) ? ad.textColor : "#ffffff",
       link: ad.link || "/brand-registration",
       badge: ad.badge || "SPONSORED",
       position: ad.position || "homepage_banner",
@@ -1071,11 +1658,27 @@ export default function AdminDashboard({ initialTab = "dashboard" }) {
     setAdModalOpen(true);
   };
 
+  const refreshAdsAfterMutation = async () => {
+    invalidateAdminCache("admin_ads");
+    invalidateAdminCache(ADMIN_OVERVIEW_CACHE_KEY);
+    await fetchData();
+    if (activeTab === "ads") await fetchAdsTab();
+  };
+
   // Create or Update ad banner DB record
   const handleSaveAd = async (e) => {
     e.preventDefault();
-    if (!adForm.title || !adForm.image) {
-      alert("Title and Image are required.");
+    const normalizedAd = {
+      ...adForm,
+      title: adForm.title.trim(),
+      subtitle: adForm.subtitle.trim(),
+      link: adForm.link.trim() || "/brand-registration",
+      badge: adForm.badge.trim() || "SPONSORED",
+      mediaType: adForm.mediaType === "video" ? "video" : "image",
+      textColor: /^#[0-9a-f]{6}$/i.test(String(adForm.textColor || "")) ? adForm.textColor : "#ffffff"
+    };
+    if (!normalizedAd.title || !normalizedAd.image) {
+      toast.warning("Title and Image are required.");
       return;
     }
     setIsSavingAd(true);
@@ -1085,19 +1688,19 @@ export default function AdminDashboard({ initialTab = "dashboard" }) {
       const res = await fetch(url, {
         method,
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(adForm)
+        body: JSON.stringify(normalizedAd)
       });
       if (res.ok) {
-        alert(editingAdId ? "Ad Banner updated successfully!" : "Ad Banner created successfully!");
+        toast.success(editingAdId ? "Ad Banner updated successfully!" : "Ad Banner created successfully!");
         setAdModalOpen(false);
-        fetchData();
+        await refreshAdsAfterMutation();
       } else {
         const errorData = await res.json();
-        alert(errorData.error || "Failed to save ad banner.");
+        toast.error(errorData.error || "Failed to save ad banner.");
       }
     } catch (err) {
       console.error("Failed to save ad banner:", err);
-      alert("An error occurred while saving the ad banner.");
+      toast.error("An error occurred while saving the ad banner.");
     } finally {
       setIsSavingAd(false);
     }
@@ -1105,32 +1708,43 @@ export default function AdminDashboard({ initialTab = "dashboard" }) {
 
   // Toggle active status of an ad banner
   const handleToggleAdActive = async (ad) => {
+    const id = ad.id || ad._id;
+    const nextIsActive = ad.isActive === false;
+    const previousAds = ads;
+    setAds((currentAds) => currentAds.map((item) => (
+      (item.id || item._id) === id ? { ...item, isActive: nextIsActive } : item
+    )));
     try {
-      const id = ad.id || ad._id;
       const res = await fetch(`/api/advertisements/${id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ isActive: !ad.isActive })
+        body: JSON.stringify({ isActive: nextIsActive })
       });
       if (res.ok) {
-        fetchData();
+        await refreshAdsAfterMutation();
+      } else {
+        setAds(previousAds);
+        toast.error("Failed to update ad status.");
       }
     } catch (err) {
+      setAds(previousAds);
       console.error("Failed to toggle ad status:", err);
+      toast.error("Failed to update ad status.");
     }
   };
 
   // Delete Ad record
   const handleDeleteAd = async (id) => {
-    if (!confirm("Are you sure you want to permanently delete this ad banner?")) return;
+    const isConfirmed = await Swal.confirm("Are you sure you want to permanently delete this ad banner?", "Delete Ad Banner"); if (!isConfirmed) return;
     try {
       const res = await fetch(`/api/advertisements/${id}`, {
         method: "DELETE"
       });
       if (res.ok) {
-        fetchData();
+        toast.success("Ad banner deleted successfully!");
+        await refreshAdsAfterMutation();
       } else {
-        alert("Failed to delete ad banner.");
+        toast.error("Failed to delete ad banner.");
       }
     } catch (err) {
       console.error("Failed to delete ad banner:", err);
@@ -1143,7 +1757,16 @@ export default function AdminDashboard({ initialTab = "dashboard" }) {
 
     const maxSize = 5 * 1024 * 1024;
     if (file.size > maxSize) {
-      alert("File is too large. Maximum size allowed is 5 MB.");
+      toast.error("File is too large. Maximum size allowed is 5 MB.");
+      return;
+    }
+
+    if (file.type.startsWith("video/")) {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        setAdForm((prev) => ({ ...prev, image: event.target.result, mediaType: "video" }));
+      };
+      reader.readAsDataURL(file);
       return;
     }
 
@@ -1210,6 +1833,61 @@ export default function AdminDashboard({ initialTab = "dashboard" }) {
   const totalBrandsCount = totalBrands;
   const totalInvestorsCount = totalInvestors;
 
+  // Status-tab counts must describe the currently active search/category/location
+  // scope, not the unfiltered overview totals.
+  const brandFilterScope = (allBrandsForSelect.length > 0 ? allBrandsForSelect : brands).filter((brand) => {
+    const term = searchTerm.trim().toLowerCase();
+    const matchesSearch = !term || [brand.name, brand.company, brand.category, brand.email]
+      .filter(Boolean)
+      .some((value) => String(value).toLowerCase().includes(term));
+    const matchesCategory = !brandCategoryFilter || (brand.category || "").toLowerCase() === brandCategoryFilter.toLowerCase();
+    const stateTerm = brandStateFilter.toLowerCase();
+    const matchesState = !stateTerm || (brand.hq || "").toLowerCase().includes(stateTerm) || (brand.location || "").toLowerCase().includes(stateTerm);
+    return matchesSearch && matchesCategory && matchesState;
+  });
+  const brandScopeCounts = {
+    all: brandFilterScope.length,
+    approved: brandFilterScope.filter((brand) => brand.status === "Approved").length,
+    pending: brandFilterScope.filter((brand) => brand.status === "Pending").length,
+    declined: brandFilterScope.filter((brand) => brand.status === "Declined" || brand.status === "Rejected").length
+  };
+
+  const investorFilterScope = (allInvestors.length > 0 ? allInvestors : investors).filter((investor) => {
+    const term = searchTerm.trim().toLowerCase();
+    const matchesSearch = !term || [investor.name, investor.email, investor.phone, investor.preferredLocation]
+      .filter(Boolean)
+      .some((value) => String(value).toLowerCase().includes(term));
+    const cleanBrand = (filterBrand || "").trim().toLowerCase();
+    const isBrandAll = !cleanBrand || cleanBrand === "all" || cleanBrand === "brand: all";
+    const isGeneralOnly = cleanBrand === "general" || cleanBrand === "no-brand";
+    let matchesBrand = true;
+    if (isGeneralOnly) {
+      matchesBrand = !investor.brandName && !investor.brandId && (!investor.assignedBrands || investor.assignedBrands.length === 0);
+    } else if (!isBrandAll) {
+      const iBrandName = (investor.brandName || investor.targetBrand || "").toLowerCase();
+      const iBrandId = String(investor.brandId || investor.targetBrandId || "").toLowerCase();
+      const isAssigned = Array.isArray(investor.assignedBrands) && (
+        investor.assignedBrands.some(ab => String(ab).toLowerCase() === cleanBrand || String(ab).toLowerCase().includes(cleanBrand) || cleanBrand.includes(String(ab).toLowerCase()))
+      );
+      matchesBrand = isAssigned || (iBrandId && (iBrandId === cleanBrand || cleanBrand.includes(iBrandId) || iBrandId.includes(cleanBrand))) || (iBrandName && (iBrandName.includes(cleanBrand) || cleanBrand.includes(iBrandName))) || ((investor.comments || "").toLowerCase().includes(cleanBrand));
+    }
+    const cleanCat = (filterCategory || "").trim().toLowerCase();
+    const isCatAll = !cleanCat || cleanCat === "all" || cleanCat === "category: all";
+    let matchesCategory = true;
+    if (!isCatAll) {
+      const iCat = (investor.category || "").toLowerCase();
+      const iInds = Array.isArray(investor.industries) ? investor.industries.map(ind => String(ind).toLowerCase()) : [];
+      matchesCategory = (iCat && (iCat === cleanCat || iCat.includes(cleanCat) || cleanCat.includes(iCat))) || iInds.some(ind => ind && (ind === cleanCat || ind.includes(cleanCat) || cleanCat.includes(ind)));
+    }
+    return matchesSearch && matchesBrand && matchesCategory;
+  });
+  const investorScopeCounts = {
+    all: investorFilterScope.length,
+    pending: investorFilterScope.filter((investor) => (investor.status || "Pending") === "Pending").length,
+    approved: investorFilterScope.filter((investor) => investor.status === "Approved").length,
+    rejected: investorFilterScope.filter((investor) => investor.status === "Declined" || investor.status === "Rejected").length
+  };
+
   // Paginated Data Slices (fetched server-side via AJAX)
   const paginatedBrands = brands;
   const paginatedInvestors = investors;
@@ -1218,1177 +1896,274 @@ export default function AdminDashboard({ initialTab = "dashboard" }) {
   const paginatedAds = ads;
 
   return (
-    <div className="admin-layout">
-      {/* Sidebar Navigation */}
-      <aside className="admin-sidebar" style={{ padding: "0 0 40px 0" }}>
-        <div className="admin-sidebar-top" style={{ padding: 0 }}>
-          <div style={{
-            display: "flex",
-            justifyContent: "center",
+    <div
+      className="admin-redesign-layout"
+      style={{
+        display: "flex",
+        minHeight: "100vh",
+        backgroundColor: "#f1f5ff",
+        fontFamily: "'Inter', sans-serif"
+      }}
+    >
+      {/* 1. Dedicated Reusable Admin Sidebar with live badge counts and mobile drawer */}
+      <AdminSidebar
+        activeTab={activeTab}
+        onTabChange={handleTabChange}
+        counts={{
+          totalBrands,
+          pendingBrandsCount: allBrandsForSelect.filter(b => b.status === "Pending").length || pendingBrandsCount,
+          totalInvestors,
+          totalBlogs,
+          totalServices,
+          totalAds
+        }}
+        adminName="Administrator"
+        onLogout={handleLogout}
+        mobileOpen={mobileSidebarOpen}
+        onMobileClose={() => setMobileSidebarOpen(false)}
+      />
+
+      {/* 2. Main Viewport */}
+      <div
+        className="admin-main-viewport"
+        style={{
+          flexGrow: 1,
+          minWidth: 0,
+          marginLeft: "270px",
+          width: "calc(100% - 270px)",
+          padding: "32px 36px",
+          display: "flex",
+          flexDirection: "column",
+          gap: "24px",
+          minHeight: "100vh"
+        }}
+      >
+        {/* Mobile Header Bar (< 900px) */}
+        <div
+          className="admin-mobile-top-bar"
+          style={{
+            display: "none",
             alignItems: "center",
-            width: "100%",
-            padding: "20px 16px 16px 16px",
-            borderBottom: "1px solid rgba(255, 255, 255, 0.08)",
-            marginBottom: "16px",
-            background: "transparent"
-          }}>
-            <Link href="/admin" style={{ display: "block" }}>
-              <img
-                src="/logo-footer.png"
-                alt="Franchise Roots Admin"
-                className="sidebar-logo-img"
-              />
-            </Link>
+            justifyContent: "space-between",
+            backgroundColor: "#1d4ed8",
+            color: "#ffffff",
+            padding: "12px 18px",
+            borderRadius: "14px",
+            marginBottom: "8px"
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+            <button
+              type="button"
+              onClick={() => setMobileSidebarOpen(true)}
+              aria-label="Open Admin Menu"
+              style={{
+                background: "rgba(255, 255, 255, 0.15)",
+                border: "none",
+                color: "#ffffff",
+                padding: "8px",
+                borderRadius: "8px",
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center"
+              }}
+            >
+              <Menu size={20} />
+            </button>
+            <div style={{ display: "flex", flexDirection: "column", lineHeight: 1 }}>
+              <span style={{ fontWeight: "900", fontSize: "14px", letterSpacing: "0.05em" }}>FRANCHISE ROOTS</span>
+              <span style={{ fontSize: "9px", opacity: 0.8, textTransform: "uppercase" }}>Admin Panel</span>
+            </div>
           </div>
-
-          <div style={{ padding: "0 28px" }}>
-            <ul className="admin-nav" style={{ marginTop: 0 }}>
-              <li className="admin-nav-item">
-                <Link
-                  href="/admin"
-                  className={`admin-nav-link ${activeTab === "dashboard" ? "active" : ""}`}
-                  onClick={() => { setActiveTab("dashboard"); setSearchTerm(""); }}
-                >
-                  <LayoutDashboard size={18} />
-                  Dashboard Overview
-                </Link>
-              </li>
-              <li className="admin-nav-item">
-                <Link
-                  href="/admin/brands"
-                  className={`admin-nav-link ${activeTab === "brands" ? "active" : ""}`}
-                  onClick={() => { setActiveTab("brands"); setSearchTerm(""); }}
-                >
-                  <Building size={18} />
-                  Manage Brands ({totalBrands})
-                  {pendingBrandsCount > 0 && (
-                    <span style={{ background: "var(--secondary)", color: "white", padding: "2px 6px", borderRadius: "50%", fontSize: "10px", marginLeft: "auto" }}>
-                      {pendingBrandsCount}
-                    </span>
-                  )}
-                </Link>
-              </li>
-              <li className="admin-nav-item">
-                <Link
-                  href="/admin/investors"
-                  className={`admin-nav-link ${activeTab === "investors" ? "active" : ""}`}
-                  onClick={() => { setActiveTab("investors"); setSearchTerm(""); }}
-                >
-                  <Users size={18} />
-                  Investor Leads ({totalInvestors})
-                </Link>
-              </li>
-              <li className="admin-nav-item">
-                <Link
-                  href="/admin/blogs"
-                  className={`admin-nav-link ${activeTab === "blogs" ? "active" : ""}`}
-                  onClick={() => { setActiveTab("blogs"); setSearchTerm(""); }}
-                >
-                  <FileText size={18} />
-                  Manage Blogs ({totalBlogs})
-                </Link>
-              </li>
-              <li className="admin-nav-item">
-                <Link
-                  href="/admin/services"
-                  className={`admin-nav-link ${activeTab === "services" ? "active" : ""}`}
-                  onClick={() => { setActiveTab("services"); setSearchTerm(""); }}
-                >
-                  <Wrench size={18} />
-                  Manage Services ({totalServices})
-                </Link>
-              </li>
-              <li className="admin-nav-item">
-                <Link
-                  href="/admin/ads"
-                  className={`admin-nav-link ${activeTab === "ads" ? "active" : ""}`}
-                  onClick={() => { setActiveTab("ads"); setSearchTerm(""); }}
-                >
-                  <Megaphone size={18} />
-                  Manage Ads ({totalAds})
-                </Link>
-              </li>
-              <li className="admin-nav-item">
-                <Link
-                  href="/admin/logs"
-                  className={`admin-nav-link ${activeTab === "logs" ? "active" : ""}`}
-                  onClick={() => { setActiveTab("logs"); setSearchTerm(""); }}
-                >
-                  <ShieldCheck size={18} />
-                  Activity & Audit Logs
-                </Link>
-              </li>
-            </ul>
-          </div>
+          <span style={{ fontSize: "12px", background: "rgba(255,255,255,0.2)", padding: "4px 10px", borderRadius: "12px", fontWeight: "600", textTransform: "capitalize" }}>
+            {activeTab}
+          </span>
         </div>
 
-        <div style={{ padding: "0 24px" }}>
-          <hr style={{ border: "0", borderTop: "1px solid var(--dark-border)", marginBottom: "20px" }} />
-          <button className="admin-nav-link" onClick={handleLogout} style={{ width: "100%", textAlign: "left" }}>
-            <LogOut size={18} />
-            Logout Session
-          </button>
-        </div>
-      </aside>
-
-      {/* Main Panel Content */}
-      <main className="admin-content">
-        <header className="admin-header">
-          <div>
-            <h1 style={{ fontSize: "28px" }}>
-              {activeTab === "dashboard" && "Dashboard Overview"}
-              {activeTab === "brands" && "Manage Franchise Brands"}
-              {activeTab === "investors" && "Investor Registration Leads"}
-              {activeTab === "blogs" && "Manage Blog Articles"}
-              {activeTab === "services" && "Manage Company Services"}
-              {activeTab === "ads" && "Manage Advertising Space"}
-              {activeTab === "logs" && "Activity & Audit Logs"}
-            </h1>
-            <p style={{ color: "var(--text-muted)", fontSize: "14px", marginTop: "4px" }}>
-              {activeTab === "blogs" ? "Create, publish, edit, and delete informational blog posts." : activeTab === "services" ? "Create, publish, edit, and delete managed company services." : activeTab === "ads" ? "Create, publish, toggle, and delete promotional ad banners." : activeTab === "logs" ? "Audit and monitor all platform activities, admin operations, brand updates, and investor leads." : "Welcome back, Administrator. Review pending listings submitted by brand owners."}
-            </p>
-          </div>
-
-          <Link href="/" className="btn btn-outline" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <Home size={16} /> View Portal
-          </Link>
-        </header>
-
-        {loading ? (
-          <div className="flex-center" style={{ minHeight: "300px", flexDirection: "column", gap: "16px" }}>
-            <div className="spinner" style={{ borderTopColor: "var(--primary)" }}></div>
-            <p style={{ color: "var(--text-muted)" }}>Loading records...</p>
-          </div>
-        ) : (
-          <>
-            {/* Overview Stats Grid */}
-            {activeTab === "dashboard" && (
-              <>
-                <section className="stats-grid" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))" }}>
-                  <div className="stat-card">
-                    <div className="stat-icon flex-center">
-                      <Building size={24} />
-                    </div>
-                    <div className="stat-info">
-                      <h3>{totalBrandsCount}</h3>
-                      <p>Total Registered Brands</p>
-                    </div>
-                  </div>
-
-                  <div className="stat-card">
-                    <div className="stat-icon flex-center" style={{ background: "rgba(245, 158, 11, 0.1)", color: "var(--warning)" }}>
-                      <FileText size={24} />
-                    </div>
-                    <div className="stat-info">
-                      <h3>{pendingBrandsCount}</h3>
-                      <p>Pending Approvals Queue</p>
-                    </div>
-                  </div>
-
-                  <div className="stat-card">
-                    <div className="stat-icon flex-center" style={{ background: "rgba(16, 185, 129, 0.1)", color: "var(--success)" }}>
-                      <Users size={24} />
-                    </div>
-                    <div className="stat-info">
-                      <h3>{totalInvestorsCount}</h3>
-                      <p>Registered Investor Leads</p>
-                    </div>
-                  </div>
-
-                  <div className="stat-card" style={{ cursor: "pointer" }} onClick={() => setActiveTab("blogs")}>
-                    <div className="stat-icon flex-center" style={{ background: "rgba(99, 102, 241, 0.1)", color: "var(--primary)" }}>
-                      <FileText size={24} />
-                    </div>
-                    <div className="stat-info">
-                      <h3>{totalBlogs}</h3>
-                      <p>Total Blog Posts</p>
-                    </div>
-                  </div>
-
-                  <div className="stat-card" style={{ cursor: "pointer" }} onClick={() => setActiveTab("services")}>
-                    <div className="stat-icon flex-center" style={{ background: "rgba(14, 165, 233, 0.1)", color: "#0ea5e9" }}>
-                      <Wrench size={24} />
-                    </div>
-                    <div className="stat-info">
-                      <h3>{totalServices}</h3>
-                      <p>Managed Services</p>
-                    </div>
-                  </div>
-
-                  <div className="stat-card" style={{ cursor: "pointer" }} onClick={() => setActiveTab("ads")}>
-                    <div className="stat-icon flex-center" style={{ background: "rgba(245, 158, 11, 0.1)", color: "#f59e0b" }}>
-                      <Megaphone size={24} />
-                    </div>
-                    <div className="stat-info">
-                      <h3>{totalAds}</h3>
-                      <p>Active Ad Banners</p>
-                    </div>
-                  </div>
-                </section>
-
-                {/* Dashboard Panels */}
-                <div style={{ display: "grid", gridTemplateColumns: "1.3fr 1fr", gap: "24px" }}>
-
-                  {/* Left: Pending Brands Queue */}
-                  <div className="table-container">
-                    <div className="table-header">
-                      <h3 style={{ fontSize: "18px" }}>Pending Approvals Queue</h3>
-                      <button className="btn btn-outline" style={{ fontSize: "12px", padding: "6px 12px" }} onClick={() => setActiveTab("brands")}>
-                        View All Brands
-                      </button>
-                    </div>
-
-                    {brands.filter(b => b.status === "Pending").length === 0 ? (
-                      <div className="flex-center" style={{ padding: "40px", flexDirection: "column", color: "var(--text-muted)" }}>
-                        <CheckCircle size={32} color="var(--success)" style={{ marginBottom: "12px" }} />
-                        <p style={{ fontWeight: "500" }}>All brand listings processed!</p>
-                      </div>
-                    ) : (
-                      <table className="admin-table">
-                        <thead>
-                          <tr>
-                            <th>Brand Name</th>
-                            <th>Category</th>
-                            <th>Investment</th>
-                            <th style={{ textAlign: "right" }}>Actions</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {brands.filter(b => b.status === "Pending").map((b) => (
-                            <tr key={b.id}>
-                              <td style={{ fontWeight: "600" }}>
-                                <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                                  <img
-                                    src={b.image || "https://images.unsplash.com/photo-1524178232363-1fb2b075b655?auto=format&fit=crop&q=80&w=100"}
-                                    alt={b.name}
-                                    style={{ width: "36px", height: "36px", borderRadius: "8px", objectFit: "contain", objectPosition: "center", display: "block", backgroundColor: "#ffffff", flexShrink: 0, border: "1px solid var(--border-color)" }}
-                                  />
-                                  <span>{b.name}</span>
-                                </div>
-                              </td>
-                              <td>{b.category}</td>
-                              <td>{formatLakhs(b.minInvestment)}</td>
-                              <td style={{ whiteSpace: "nowrap", textAlign: "right" }}>
-                                <div className="admin-actions-cell" style={{ justifyContent: "flex-end" }}>
-                                  <button className="admin-btn admin-btn-approve" onClick={() => handleApprove(b.id)}>
-                                    <CheckCircle2 size={13} /> Approve
-                                  </button>
-                                  <button className="admin-btn admin-btn-decline" onClick={() => handleDecline(b.id)}>
-                                    <XCircle size={13} /> Decline
-                                  </button>
-                                </div>
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    )}
-                  </div>
-
-                  {/* Right: Recent Investor Leads */}
-                  <div className="table-container">
-                    <div className="table-header">
-                      <h3 style={{ fontSize: "18px" }}>Recent Investor Enquiries</h3>
-                      <button className="btn btn-outline" style={{ fontSize: "12px", padding: "6px 12px" }} onClick={() => setActiveTab("investors")}>
-                        View All Leads
-                      </button>
-                    </div>
-
-                    {investors.length === 0 ? (
-                      <div className="flex-center" style={{ padding: "40px", color: "var(--text-muted)" }}>
-                        <p>No enquiries registered yet.</p>
-                      </div>
-                    ) : (
-                      <div style={{ padding: "16px", display: "flex", flexDirection: "column", gap: "12px" }}>
-                        {investors.slice(-4).reverse().map((lead) => (
-                          <div
-                            key={lead.id}
-                            style={{ background: "#f8fafc", border: "1px solid var(--light-border)", padding: "14px", borderRadius: "8px", cursor: "pointer" }}
-                            onClick={() => { setSelectedItem(lead); setModalType("investor"); }}
-                          >
-                            <div style={{ display: "flex", justifyBetween: "space-between", alignItems: "center", marginBottom: "4px" }}>
-                              <h4 style={{ fontSize: "14px", fontWeight: "600" }}>{lead.name}</h4>
-                              <span style={{ fontSize: "11px", color: "var(--text-muted)", marginLeft: "auto" }}>
-                                {new Date(lead.createdAt).toLocaleDateString()}
-                              </span>
-                            </div>
-                            <p style={{ fontSize: "12px", color: "var(--text-muted)" }}>Prefers: <strong>{lead.preferredLocation}</strong> | Budget Max: <strong>{formatLakhs(lead.budgetMax)}</strong></p>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </>
-            )}
-
-            {/* Brands Tab */}
-            {activeTab === "brands" && (
-              <div className="table-container">
-                <div className="table-header">
-                  <h3 style={{ fontSize: "18px" }}>Brand Directory List</h3>
-                  <div className="table-search">
-                    <Search size={16} color="var(--text-muted)" />
-                    <input
-                      type="text"
-                      placeholder="Search brands, parent company..."
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                    />
-                  </div>
-                </div>
-
-                <table className="admin-table">
-                  <thead>
-                    <tr>
-                      <th>Brand</th>
-                      <th>Category</th>
-                      <th>Investment Min-Max</th>
-                      <th>HQ</th>
-                      <th>Date Registered</th>
-                      <th>Status</th>
-                      <th>Attached Investors</th>
-                      <th>Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {brands.length === 0 ? (
-                      <tr>
-                        <td colSpan="8" style={{ textAlign: "center", padding: "30px", color: "var(--text-muted)" }}>
-                          No brands match search queries.
-                        </td>
-                      </tr>
-                    ) : (
-                      paginatedBrands.map((b) => {
-                        const attachedCount = investors.filter(inv => inv.assignedBrands && (inv.assignedBrands.includes(b.id) || inv.assignedBrands.includes(b._id))).length;
-                        return (
-                          <tr key={b.id}>
-                            <td>
-                              <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                                <img
-                                  src={b.image || "https://images.unsplash.com/photo-1524178232363-1fb2b075b655?auto=format&fit=crop&q=80&w=100"}
-                                  alt={b.name}
-                                  style={{ width: "40px", height: "40px", borderRadius: "8px", objectFit: "contain", objectPosition: "center", display: "block", backgroundColor: "#ffffff", flexShrink: 0, border: "1px solid var(--border-color)" }}
-                                />
-                                <div>
-                                  <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                                    <span style={{ fontWeight: "700" }}>{b.name}</span>
-                                    {isNew(b.createdAt) && (
-                                      <span style={{
-                                        background: "var(--primary)",
-                                        color: "white",
-                                        fontSize: "10px",
-                                        fontWeight: "800",
-                                        padding: "2px 6px",
-                                        borderRadius: "4px",
-                                        textTransform: "uppercase",
-                                        letterSpacing: "0.05em"
-                                      }}>NEW</span>
-                                    )}
-                                  </div>
-                                  <div style={{ fontSize: "12px", color: "var(--text-muted)" }}>{b.company}</div>
-                                </div>
-                              </div>
-                            </td>
-                            <td>{b.category}</td>
-                            <td style={{ fontWeight: "600" }}>
-                              {b.investment_range || formatLakhs(b.minInvestment)} - {b.max_investment_limit || formatLakhs(b.maxInvestment)}
-                            </td>
-                            <td>{b.hq} {b.pincode && `(${b.pincode})`}</td>
-                            <td style={{ fontSize: "13px", color: "var(--text-muted)" }}>
-                              {b.createdAt ? new Date(b.createdAt).toLocaleDateString("en-IN", { day: 'numeric', month: 'short', year: 'numeric' }) : "N/A"}
-                            </td>
-                            <td>
-                              <span className={`status-badge ${b.status.toLowerCase()}`}>
-                                {b.status}
-                              </span>
-                            </td>
-                            <td>
-                              <span style={{ fontWeight: "600", color: attachedCount > 0 ? "var(--primary)" : "var(--text-muted)" }}>
-                                {attachedCount} {attachedCount === 1 ? "Investor" : "Investors"}
-                              </span>
-                            </td>
-                            <td style={{ whiteSpace: "nowrap", textAlign: "right" }}>
-                              <div className="admin-actions-cell" style={{ justifyContent: "flex-end" }}>
-                                <button className="admin-btn admin-btn-details" onClick={() => { setSelectedItem(b); setModalType("brand"); }}>
-                                  <Eye size={13} /> Details
-                                </button>
-                                <button className="admin-btn admin-btn-details" style={{ background: "rgba(99, 102, 241, 0.1)", color: "var(--primary)", borderColor: "rgba(99, 102, 241, 0.2)" }} onClick={() => handleOpenEditBrand(b)}>
-                                  <Edit3 size={13} /> Edit
-                                </button>
-                                {b.status === "Pending" && (
-                                  <>
-                                    <button className="admin-btn admin-btn-approve" onClick={() => handleApprove(b.id)}>
-                                      <CheckCircle2 size={13} /> Approve
-                                    </button>
-                                    <button className="admin-btn admin-btn-decline" onClick={() => handleDecline(b.id)}>
-                                      <XCircle size={13} /> Decline
-                                    </button>
-                                  </>
-                                )}
-                                <button className="admin-btn admin-btn-delete" title="Delete Brand" onClick={() => handleDeleteBrand(b.id)}>
-                                  <Trash2 size={13} />
-                                </button>
-                              </div>
-                            </td>
-                          </tr>
-                        );
-                      })
-                    )}
-                  </tbody>
-                </table>
-
-                <Pagination
-                  totalItems={totalBrands}
-                  itemsPerPage={brandsPerPage}
-                  currentPage={brandsPage}
-                  onPageChange={(p) => setBrandsPage(p)}
-                  onItemsPerPageChange={(size) => { setBrandsPerPage(size); setBrandsPage(1); }}
-                />
-              </div>
-            )}
-
-            {/* Investors Tab */}
-            {activeTab === "investors" && (
-              <div className="table-container">
-                <div className="table-header">
-                  <h3 style={{ fontSize: "18px" }}>Investor Profiles & Leads</h3>
-                  <div className="table-search">
-                    <Search size={16} color="var(--text-muted)" />
-                    <input
-                      type="text"
-                      placeholder="Search investors, email..."
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                    />
-                  </div>
-                </div>
-
-                {/* Filter Bar */}
-                <div className="filter-bar" style={{
-                  display: "flex",
-                  gap: "16px",
-                  padding: "16px 24px",
-                  background: "#f8fafc",
-                  borderBottom: "1px solid var(--light-border)",
-                  alignItems: "center",
-                  flexWrap: "wrap"
-                }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "13px" }}>
-                    <span style={{ fontWeight: "600", color: "var(--text-muted)" }}>Brand:</span>
-                    <select
-                      value={filterBrand}
-                      onChange={(e) => setFilterBrand(e.target.value)}
-                      style={{ padding: "6px 12px", borderRadius: "6px", border: "1px solid var(--light-border)", fontSize: "13px", background: "white", minWidth: "150px" }}
-                    >
-                      <option value="">All Brands</option>
-                      {(allBrandsForSelect.length > 0 ? allBrandsForSelect : brands).map(b => (
-                        <option key={b.id || b._id} value={b.id || b._id}>{b.name}</option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "13px" }}>
-                    <span style={{ fontWeight: "600", color: "var(--text-muted)" }}>Category:</span>
-                    <select
-                      value={filterCategory}
-                      onChange={(e) => setFilterCategory(e.target.value)}
-                      style={{ padding: "6px 12px", borderRadius: "6px", border: "1px solid var(--light-border)", fontSize: "13px", background: "white", minWidth: "150px" }}
-                    >
-                      <option value="">All Categories</option>
-                      <option value="Food and Beverage">Food & Beverage</option>
-                      <option value="Retail">Retail</option>
-                      <option value="Education">Education</option>
-                      <option value="Automobiles">Automobiles</option>
-                      <option value="Health and Wellness">Health & Wellness</option>
-                      <option value="Business Services">Business Services</option>
-                    </select>
-                  </div>
-
-                  <div style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "13px" }}>
-                    <span style={{ fontWeight: "600", color: "var(--text-muted)" }}>Status:</span>
-                    <select
-                      value={filterStatus}
-                      onChange={(e) => setFilterStatus(e.target.value)}
-                      style={{ padding: "6px 12px", borderRadius: "6px", border: "1px solid var(--light-border)", fontSize: "13px", background: "white", minWidth: "120px" }}
-                    >
-                      <option value="">All Statuses</option>
-                      <option value="Pending">Pending</option>
-                      <option value="Approved">Approved</option>
-                      <option value="Rejected">Rejected</option>
-                    </select>
-                  </div>
-
-                  {(filterBrand || filterCategory || filterStatus) && (
-                    <button
-                      onClick={() => { setFilterBrand(""); setFilterCategory(""); setFilterStatus(""); }}
-                      style={{
-                        padding: "6px 14px",
-                        fontSize: "13px",
-                        fontWeight: "600",
-                        background: "none",
-                        border: "1px solid var(--primary)",
-                        color: "var(--primary)",
-                        borderRadius: "6px",
-                        cursor: "pointer"
-                      }}
-                    >
-                      Clear Filters
-                    </button>
-                  )}
-                </div>
-
-                <table className="admin-table">
-                  <thead>
-                    <tr>
-                      <th>Investor Name</th>
-                      <th>Contact Info</th>
-                      <th>Applied Brand</th>
-                      <th>Category</th>
-                      <th>Budget Range</th>
-                      <th>Location Target</th>
-                      <th>Status</th>
-                      <th>Applied Date</th>
-                      <th>Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {investors.length === 0 ? (
-                      <tr>
-                        <td colSpan="9" style={{ textAlign: "center", padding: "30px", color: "var(--text-muted)" }}>
-                          No investor profiles match queries.
-                        </td>
-                      </tr>
-                    ) : (
-                      paginatedInvestors.map((i) => {
-                        // Resolve brand connection
-                        let displayBrandName = "General Lead";
-                        let targetBrand = null;
-                        if (i.brandId) {
-                          targetBrand = brands.find(b => b.id === i.brandId || b._id === i.brandId);
-                          displayBrandName = i.brandName || (targetBrand ? targetBrand.name : "Unknown Brand");
-                        } else if (i.assignedBrands && i.assignedBrands.length > 0) {
-                          const firstBrandId = i.assignedBrands[0];
-                          targetBrand = brands.find(b => b.id === firstBrandId || b._id === firstBrandId);
-                          displayBrandName = targetBrand ? targetBrand.name : "General Lead";
-                        }
-
-                        const displayCategory = i.category || (i.industries && i.industries.length > 0 ? i.industries[0] : "General");
-                        const displayStatus = i.status || "Pending";
-                        const statusClass = displayStatus.toLowerCase() === "rejected" ? "declined" : displayStatus.toLowerCase();
-                        const displayDate = i.appliedAt || i.createdAt;
-
-                        return (
-                          <tr key={i.id || i._id} style={{ cursor: "pointer" }} onClick={() => { setSelectedItem(i); setModalType("investor"); }}>
-                            <td style={{ fontWeight: "700" }}>
-                              <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                                <span>{i.name}</span>
-                                {isNew(displayDate) && (
-                                  <span style={{
-                                    background: "var(--primary)",
-                                    color: "white",
-                                    fontSize: "10px",
-                                    fontWeight: "800",
-                                    padding: "2px 6px",
-                                    borderRadius: "4px",
-                                    textTransform: "uppercase",
-                                    letterSpacing: "0.05em"
-                                  }}>NEW</span>
-                                )}
-                              </div>
-                            </td>
-                            <td>
-                              <div>
-                                <div>{i.email}</div>
-                                <div style={{ fontSize: "12px", color: "var(--text-muted)" }}>{i.phone}</div>
-                              </div>
-                            </td>
-                            <td>
-                              {targetBrand ? (
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    setSelectedItem(targetBrand);
-                                    setModalType("brand");
-                                  }}
-                                  style={{
-                                    background: "none",
-                                    border: "none",
-                                    color: "var(--primary)",
-                                    textDecoration: "underline",
-                                    fontWeight: "600",
-                                    cursor: "pointer",
-                                    padding: 0,
-                                    textAlign: "left"
-                                  }}
-                                >
-                                  {displayBrandName}
-                                </button>
-                              ) : (
-                                <span style={{ color: "var(--text-muted)" }}>{displayBrandName}</span>
-                              )}
-                            </td>
-                            <td>{displayCategory}</td>
-                            <td style={{ fontWeight: "600", color: "var(--success)" }}>
-                              {formatLakhs(i.budgetMin)} - {formatLakhs(i.budgetMax)}
-                            </td>
-                            <td>{i.preferredLocation}</td>
-                            <td>
-                              <span className={`status-badge ${statusClass}`}>
-                                {displayStatus}
-                              </span>
-                            </td>
-                            <td style={{ fontSize: "13px", color: "var(--text-muted)" }}>
-                              {displayDate ? new Date(displayDate).toLocaleDateString("en-IN", { day: 'numeric', month: 'short', year: 'numeric' }) : "N/A"}
-                            </td>
-                            <td style={{ whiteSpace: "nowrap", textAlign: "right" }} onClick={(e) => e.stopPropagation()}>
-                              <div className="admin-actions-cell" style={{ justifyContent: "flex-end" }}>
-                                <button className="admin-btn admin-btn-details" onClick={() => { setSelectedItem(i); setModalType("investor"); }}>
-                                  <Eye size={13} /> Details
-                                </button>
-                                {displayStatus === "Pending" && (
-                                  <>
-                                    <button className="admin-btn admin-btn-approve" onClick={() => handleApproveInvestor(i.id || i._id)}>
-                                      <CheckCircle2 size={13} /> Approve
-                                    </button>
-                                    <button className="admin-btn admin-btn-decline" onClick={() => handleDeclineInvestor(i.id || i._id)}>
-                                      <XCircle size={13} /> Decline
-                                    </button>
-                                  </>
-                                )}
-                                <button className="admin-btn admin-btn-delete" title="Delete Lead" onClick={() => handleDeleteInvestor(i.id || i._id)}>
-                                  <Trash2 size={13} />
-                                </button>
-                              </div>
-                            </td>
-                          </tr>
-                        );
-                      })
-                    )}
-                  </tbody>
-                </table>
-
-                <Pagination
-                  totalItems={totalInvestors}
-                  itemsPerPage={investorsPerPage}
-                  currentPage={investorsPage}
-                  onPageChange={(p) => setInvestorsPage(p)}
-                  onItemsPerPageChange={(size) => { setInvestorsPerPage(size); setInvestorsPage(1); }}
-                />
-              </div>
-            )}
-
-            {/* Blogs Tab */}
-            {activeTab === "blogs" && (
-              <div className="table-container">
-                <div className="table-header">
-                  <h3 style={{ fontSize: "18px" }}>Blog Posts Directory</h3>
-                  <div style={{ display: "flex", gap: "16px", alignItems: "center" }}>
-                    <div className="table-search">
-                      <Search size={16} color="var(--text-muted)" />
-                      <input
-                        type="text"
-                        placeholder="Search blogs by title..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                      />
-                    </div>
-                    <button className="btn btn-primary" onClick={handleOpenCreateBlog} style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                      <FileText size={16} /> Create New Blog
-                    </button>
-                  </div>
-                </div>
-
-                <table className="admin-table">
-                  <thead>
-                    <tr>
-                      <th style={{ width: "120px" }}>Cover</th>
-                      <th>Title</th>
-                      <th>Snippet</th>
-                      <th>Date Published</th>
-                      <th>Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {blogs.length === 0 ? (
-                      <tr>
-                        <td colSpan="5" style={{ textAlign: "center", padding: "30px", color: "var(--text-muted)" }}>
-                          No blog posts found. Click "Create New Blog" to publish one.
-                        </td>
-                      </tr>
-                    ) : (
-                      paginatedBlogs.map((blog) => (
-                        <tr key={blog.id || blog._id}>
-                          <td>
-                            <img
-                              src={blog.image || "https://images.unsplash.com/photo-1546074177-ffedd79d494d?auto=format&fit=crop&q=80&w=150"}
-                              alt={blog.title}
-                              style={{ width: "80px", height: "50px", borderRadius: "6px", objectFit: "contain", objectPosition: "center", display: "block", backgroundColor: "#ffffff", border: "1px solid var(--border-color)" }}
-                            />
-                          </td>
-                          <td>
-                            <span style={{ fontWeight: "700" }}>{blog.title}</span>
-                          </td>
-                          <td>
-                            <span style={{ color: "var(--text-muted)", fontSize: "13px" }}>
-                              {(() => {
-                                const clean = stripHtmlTags(blog.content || "");
-                                return clean.length > 90 ? `${clean.substring(0, 90)}...` : clean;
-                              })()}
-                            </span>
-                          </td>
-                          <td style={{ fontSize: "13px", color: "var(--text-muted)" }}>
-                            {blog.createdAt ? new Date(blog.createdAt).toLocaleDateString("en-IN", { day: 'numeric', month: 'short', year: 'numeric' }) : "N/A"}
-                          </td>
-                          <td style={{ whiteSpace: "nowrap", textAlign: "right" }}>
-                            <div className="admin-actions-cell" style={{ justifyContent: "flex-end" }}>
-                              <button className="admin-btn admin-btn-details" onClick={() => handleOpenEditBlog(blog)}>
-                                <Edit3 size={13} /> Edit
-                              </button>
-                              <button className="admin-btn admin-btn-delete" title="Delete Post" onClick={() => handleDeleteBlog(blog.id || blog._id)}>
-                                <Trash2 size={13} />
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                      ))
-                    )}
-                  </tbody>
-                </table>
-
-                <Pagination
-                  totalItems={totalBlogs}
-                  itemsPerPage={blogsPerPage}
-                  currentPage={blogsPage}
-                  onPageChange={(p) => setBlogsPage(p)}
-                  onItemsPerPageChange={(size) => { setBlogsPerPage(size); setBlogsPage(1); }}
-                />
-              </div>
-            )}
-
-            {/* Services Tab */}
-            {activeTab === "services" && (
-              <div className="table-container">
-                <div className="table-header">
-                  <h3 style={{ fontSize: "18px" }}>Managed Company Services</h3>
-                  <div style={{ display: "flex", gap: "16px", alignItems: "center" }}>
-                    <div className="table-search">
-                      <Search size={16} color="var(--text-muted)" />
-                      <input
-                        type="text"
-                        placeholder="Search services by title..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                      />
-                    </div>
-                    <button className="btn btn-primary" onClick={handleOpenCreateService} style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                      <Wrench size={16} /> Create New Service
-                    </button>
-                  </div>
-                </div>
-
-                <table className="admin-table">
-                  <thead>
-                    <tr>
-                      <th style={{ width: "120px" }}>Cover</th>
-                      <th>Title</th>
-                      <th>Description</th>
-                      <th>Date Created</th>
-                      <th>Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {services.length === 0 ? (
-                      <tr>
-                        <td colSpan="5" style={{ textAlign: "center", padding: "30px", color: "var(--text-muted)" }}>
-                          No services found. Click "Create New Service" to add one.
-                        </td>
-                      </tr>
-                    ) : (
-                      paginatedServices.map((service) => (
-                        <tr key={service.id || service._id}>
-                          <td>
-                            <img
-                              src={service.image || "https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?auto=format&fit=crop&q=80&w=150"}
-                              alt={service.title}
-                              style={{ width: "80px", height: "50px", borderRadius: "6px", objectFit: "contain", objectPosition: "center", display: "block", backgroundColor: "#ffffff", border: "1px solid var(--border-color)" }}
-                            />
-                          </td>
-                          <td>
-                            <span style={{ fontWeight: "700" }}>{service.title}</span>
-                          </td>
-                          <td>
-                            <span style={{ color: "var(--text-muted)", fontSize: "13px" }}>
-                              {(() => {
-                                const clean = stripHtmlTags(service.content || "");
-                                return clean.length > 90 ? `${clean.substring(0, 90)}...` : clean;
-                              })()}
-                            </span>
-                          </td>
-                          <td style={{ fontSize: "13px", color: "var(--text-muted)" }}>
-                            {service.createdAt ? new Date(service.createdAt).toLocaleDateString("en-IN", { day: 'numeric', month: 'short', year: 'numeric' }) : "N/A"}
-                          </td>
-                          <td style={{ whiteSpace: "nowrap", textAlign: "right" }}>
-                            <div className="admin-actions-cell" style={{ justifyContent: "flex-end" }}>
-                              <button className="admin-btn admin-btn-details" onClick={() => handleOpenEditService(service)}>
-                                <Edit3 size={13} /> Edit
-                              </button>
-                              <button className="admin-btn admin-btn-delete" title="Delete Service" onClick={() => handleDeleteService(service.id || service._id)}>
-                                <Trash2 size={13} />
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                      ))
-                    )}
-                  </tbody>
-                </table>
-
-                <Pagination
-                  totalItems={totalServices}
-                  itemsPerPage={servicesPerPage}
-                  currentPage={servicesPage}
-                  onPageChange={(p) => setServicesPage(p)}
-                  onItemsPerPageChange={(size) => { setServicesPerPage(size); setServicesPage(1); }}
-                />
-              </div>
-            )}
-
-            {/* Advertisements Tab */}
-            {activeTab === "ads" && (
-              <div className="table-container">
-                <div className="table-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <div>
-                    <h3 style={{ fontSize: "18px" }}>Advertising Space Banners</h3>
-                    <p style={{ color: "var(--text-muted)", fontSize: "13px", margin: "2px 0 0 0" }}>
-                      Manage promotional ad banners displayed on homepage and brand listings.
-                    </p>
-                  </div>
-                  <button className="btn btn-primary" onClick={handleOpenCreateAd} style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                    <Megaphone size={16} /> Create New Ad Banner
-                  </button>
-                </div>
-
-                <div className="table-search" style={{ margin: "16px 20px" }}>
-                  <Search size={16} color="var(--text-muted)" />
-                  <input
-                    type="text"
-                    placeholder="Search ad banners by title..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                  />
-                </div>
-
-                <table className="admin-table">
-                  <thead>
-                    <tr>
-                      <th>Banner Image</th>
-                      <th>Title & Subtitle</th>
-                      <th>Badge</th>
-                      <th>Position</th>
-                      <th>Status</th>
-                      <th>Destination Link</th>
-                      <th style={{ textAlign: "right" }}>Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {ads.length === 0 ? (
-                      <tr>
-                        <td colSpan="7" style={{ textAlign: "center", padding: "30px", color: "var(--text-muted)" }}>
-                          No ad banners found. Click "Create New Ad Banner" to add one.
-                        </td>
-                      </tr>
-                    ) : (
-                      paginatedAds.map((ad) => (
-                        <tr key={ad.id || ad._id}>
-                          <td>
-                            <img
-                              src={ad.image || "https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&q=80&w=150"}
-                              alt={ad.title}
-                              style={{ width: "100px", height: "55px", borderRadius: "8px", objectFit: "contain", objectPosition: "center", display: "block", backgroundColor: "#ffffff", border: "1px solid var(--border-color)" }}
-                            />
-                          </td>
-                          <td>
-                            <span style={{ fontWeight: "700", display: "block" }}>{ad.title}</span>
-                            {ad.subtitle && <span style={{ color: "var(--text-muted)", fontSize: "12px" }}>{ad.subtitle}</span>}
-                          </td>
-                          <td>
-                            <span style={{ background: "#fef3c7", color: "#d97706", fontSize: "11px", fontWeight: "800", padding: "3px 8px", borderRadius: "12px", textTransform: "uppercase" }}>
-                              {ad.badge || "SPONSORED"}
-                            </span>
-                          </td>
-                          <td>
-                            <span style={{ fontSize: "12px", color: "var(--text-muted)" }}>{ad.position || "homepage_banner"}</span>
-                          </td>
-                          <td>
-                            <button
-                              onClick={() => handleToggleAdActive(ad)}
-                              style={{
-                                border: "none",
-                                background: ad.isActive ? "#dcfce7" : "#fee2e2",
-                                color: ad.isActive ? "#16a34a" : "#dc2626",
-                                fontSize: "11px",
-                                fontWeight: "700",
-                                padding: "4px 10px",
-                                borderRadius: "20px",
-                                cursor: "pointer"
-                              }}
-                            >
-                              {ad.isActive ? "ACTIVE" : "INACTIVE"}
-                            </button>
-                          </td>
-                          <td style={{ fontSize: "13px", color: "var(--primary)", fontWeight: "600" }}>
-                            {ad.link}
-                          </td>
-                          <td style={{ whiteSpace: "nowrap", textAlign: "right" }}>
-                            <div className="admin-actions-cell" style={{ justifyContent: "flex-end" }}>
-                              <button className="admin-btn admin-btn-details" onClick={() => handleOpenEditAd(ad)}>
-                                <Edit3 size={13} /> Edit
-                              </button>
-                              <button className="admin-btn admin-btn-delete" title="Delete Ad Banner" onClick={() => handleDeleteAd(ad.id || ad._id)}>
-                                <Trash2 size={13} />
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                      ))
-                    )}
-                  </tbody>
-                </table>
-
-                <Pagination
-                  totalItems={totalAds}
-                  itemsPerPage={adsPerPage}
-                  currentPage={adsPage}
-                  onPageChange={(p) => setAdsPage(p)}
-                  onItemsPerPageChange={(size) => { setAdsPerPage(size); setAdsPage(1); }}
-                />
-              </div>
-            )}
-
-            {/* Activity Logs Tab View */}
-            {activeTab === "logs" && (
-              <div>
-                {/* Log Stats Overview */}
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "16px", marginBottom: "24px" }}>
-                  <div style={{ background: "white", padding: "16px 20px", borderRadius: "12px", border: "1px solid var(--border-color)", display: "flex", alignItems: "center", gap: "14px" }}>
-                    <div style={{ width: "42px", height: "42px", borderRadius: "10px", background: "rgba(139, 92, 246, 0.1)", color: "#8b5cf6", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                      <ShieldCheck size={22} />
-                    </div>
-                    <div>
-                      <div style={{ fontSize: "22px", fontWeight: "700", color: "var(--dark)" }}>{logs.length}</div>
-                      <div style={{ fontSize: "12px", color: "var(--text-muted)", fontWeight: "500" }}>Total Audit Logs</div>
-                    </div>
-                  </div>
-                  <div style={{ background: "white", padding: "16px 20px", borderRadius: "12px", border: "1px solid var(--border-color)", display: "flex", alignItems: "center", gap: "14px" }}>
-                    <div style={{ width: "42px", height: "42px", borderRadius: "10px", background: "rgba(59, 130, 246, 0.1)", color: "#3b82f6", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                      <Building size={22} />
-                    </div>
-                    <div>
-                      <div style={{ fontSize: "22px", fontWeight: "700", color: "var(--dark)" }}>
-                        {logs.filter(l => l.panel === "admin").length}
-                      </div>
-                      <div style={{ fontSize: "12px", color: "var(--text-muted)", fontWeight: "500" }}>Admin Actions</div>
-                    </div>
-                  </div>
-                  <div style={{ background: "white", padding: "16px 20px", borderRadius: "12px", border: "1px solid var(--border-color)", display: "flex", alignItems: "center", gap: "14px" }}>
-                    <div style={{ width: "42px", height: "42px", borderRadius: "10px", background: "rgba(16, 185, 129, 0.1)", color: "#10b981", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                      <Building size={22} />
-                    </div>
-                    <div>
-                      <div style={{ fontSize: "22px", fontWeight: "700", color: "var(--dark)" }}>
-                        {logs.filter(l => l.panel === "brand").length}
-                      </div>
-                      <div style={{ fontSize: "12px", color: "var(--text-muted)", fontWeight: "500" }}>Brand Logs</div>
-                    </div>
-                  </div>
-                  <div style={{ background: "white", padding: "16px 20px", borderRadius: "12px", border: "1px solid var(--border-color)", display: "flex", alignItems: "center", gap: "14px" }}>
-                    <div style={{ width: "42px", height: "42px", borderRadius: "10px", background: "rgba(245, 158, 11, 0.1)", color: "#f59e0b", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                      <Users size={22} />
-                    </div>
-                    <div>
-                      <div style={{ fontSize: "22px", fontWeight: "700", color: "var(--dark)" }}>
-                        {logs.filter(l => l.panel === "investor").length}
-                      </div>
-                      <div style={{ fontSize: "12px", color: "var(--text-muted)", fontWeight: "500" }}>Investor Logs</div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Log Controls & Filter Toolbar */}
-                <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "space-between", alignItems: "center", gap: "16px", marginBottom: "20px" }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: "12px", flex: 1, minWidth: "300px", maxWidth: "650px" }}>
-                    <div className="search-box" style={{ flex: 1, margin: 0, height: "42px" }}>
-                      <Search size={18} />
-                      <input
-                        type="text"
-                        placeholder="Search by action, email, description..."
-                        value={logSearch}
-                        onChange={(e) => { setLogSearch(e.target.value); setLogPage(1); }}
-                      />
-                      {logSearch && (
-                        <button
-                          onClick={() => { setLogSearch(""); setLogPage(1); }}
-                          style={{ background: "none", border: "none", color: "#94a3b8", cursor: "pointer", padding: "0 2px", display: "flex", alignItems: "center" }}
-                          title="Clear search"
-                        >
-                          <X size={15} />
-                        </button>
-                      )}
-                    </div>
-                    <select
-                      value={logPanelFilter}
-                      onChange={(e) => { setLogPanelFilter(e.target.value); setLogPage(1); }}
-                      style={{
-                        height: "42px",
-                        padding: "0 14px",
-                        borderRadius: "10px",
-                        border: "1.5px solid var(--border-color, #e2e8f0)",
-                        fontSize: "13.5px",
-                        fontWeight: "500",
-                        background: "#f8fafc",
-                        color: "var(--dark, #0f172a)",
-                        outline: "none",
-                        cursor: "pointer",
-                        transition: "all 0.2s ease"
-                      }}
-                    >
-                      <option value="all">All Panels</option>
-                      <option value="admin">Admin Panel</option>
-                      <option value="brand">Brand Panel</option>
-                      <option value="investor">Investor Panel</option>
-                    </select>
-                  </div>
-
-                  <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                    <button
-                      onClick={fetchLogs}
-                      className="btn btn-outline"
-                      style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "13px", padding: "8px 14px" }}
-                      title="Refresh Logs"
-                    >
-                      <RefreshCw size={14} className={logsLoading ? "spinning" : ""} /> Refresh
-                    </button>
-                    <button
-                      onClick={handleClearAllLogs}
-                      className="btn"
-                      style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "13px", padding: "8px 14px", background: "var(--danger)", color: "white", border: "none" }}
-                    >
-                      <Trash2 size={14} /> Clear Logs
-                    </button>
-                  </div>
-                </div>
-
-                {/* Log Entries Table */}
-                {logsLoading ? (
-                  <div className="flex-center" style={{ minHeight: "200px", flexDirection: "column", gap: "12px" }}>
-                    <div className="spinner"></div>
-                    <p style={{ color: "var(--text-muted)" }}>Loading audit records...</p>
-                  </div>
-                ) : (
-                  <>
-                    <div style={{ overflowX: "auto", background: "white", borderRadius: "12px", border: "1px solid var(--border-color)" }}>
-                      <table className="admin-table" style={{ margin: 0 }}>
-                        <thead>
-                          <tr>
-                            <th style={{ width: "170px" }}>Timestamp</th>
-                            <th style={{ width: "100px" }}>Panel</th>
-                            <th style={{ width: "170px" }}>Action</th>
-                            <th>User / Email</th>
-                            <th>Description</th>
-                            <th style={{ textAlign: "right", width: "80px" }}>Action</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {logs.length === 0 ? (
-                            <tr>
-                              <td colSpan="6" style={{ textAlign: "center", padding: "40px 20px", color: "var(--text-muted)" }}>
-                                No log records found matching your filters.
-                              </td>
-                            </tr>
-                          ) : (
-                            logs.map((logItem) => {
-                              const panelBadgeStyle = logItem.panel === "admin"
-                                ? { background: "rgba(139, 92, 246, 0.1)", color: "#8b5cf6" }
-                                : logItem.panel === "brand"
-                                  ? { background: "rgba(16, 185, 129, 0.1)", color: "#10b981" }
-                                  : { background: "rgba(245, 158, 11, 0.1)", color: "#f59e0b" };
-
-                              return (
-                                <tr key={logItem.id || logItem._id}>
-                                  <td style={{ fontSize: "12px", color: "var(--text-muted)", whiteSpace: "nowrap" }}>
-                                    {new Date(logItem.createdAt).toLocaleString("en-IN", {
-                                      dateStyle: "medium",
-                                      timeStyle: "short"
-                                    })}
-                                  </td>
-                                  <td>
-                                    <span style={{
-                                      fontSize: "10px",
-                                      fontWeight: "700",
-                                      textTransform: "uppercase",
-                                      padding: "3px 8px",
-                                      borderRadius: "4px",
-                                      ...panelBadgeStyle
-                                    }}>
-                                      {logItem.panel}
-                                    </span>
-                                  </td>
-                                  <td>
-                                    <span style={{
-                                      fontSize: "11px",
-                                      fontWeight: "600",
-                                      fontFamily: "monospace",
-                                      background: "#f1f5f9",
-                                      color: "#334155",
-                                      padding: "2px 6px",
-                                      borderRadius: "4px"
-                                    }}>
-                                      {logItem.action}
-                                    </span>
-                                  </td>
-                                  <td style={{ fontSize: "13px" }}>
-                                    <div style={{ fontWeight: "600", color: "var(--dark)" }}>
-                                      {logItem.userName || logItem.userEmail || "System"}
-                                    </div>
-                                    {logItem.userEmail && (
-                                      <div style={{ fontSize: "11px", color: "var(--text-muted)" }}>{logItem.userEmail}</div>
-                                    )}
-                                  </td>
-                                  <td style={{ fontSize: "13px", color: "var(--text-color)" }}>
-                                    {logItem.description}
-                                  </td>
-                                  <td style={{ textAlign: "right" }}>
-                                    <button
-                                      className="admin-btn admin-btn-delete"
-                                      onClick={() => handleDeleteLog(logItem.id || logItem._id)}
-                                      title="Delete Log Record"
-                                    >
-                                      <Trash2 size={13} />
-                                    </button>
-                                  </td>
-                                </tr>
-                              );
-                            })
-                          )}
-                        </tbody>
-                      </table>
-                    </div>
-
-                    <Pagination
-                      totalItems={totalLogs}
-                      itemsPerPage={logsPerPage}
-                      currentPage={logPage}
-                      onPageChange={(p) => setLogPage(p)}
-                      onItemsPerPageChange={(size) => { setLogsPerPage(size); setLogPage(1); }}
-                    />
-                  </>
-                )}
-              </div>
-            )}
-          </>
+        {/* Dynamic Tab Views */}
+        {activeTab === "dashboard" && (
+          <DashboardTab
+            brands={allBrandsForSelect.length > 0 ? allBrandsForSelect : brands}
+            investors={investors}
+            allInvestors={allInvestors}
+            blogs={blogs}
+            services={services}
+            ads={ads}
+            logs={logs}
+            loading={loading}
+            onTabChange={handleTabChange}
+            onApproveBrand={handleApprove}
+            onDeclineBrand={handleDecline}
+            onOpenBlogModal={handleOpenCreateBlog}
+            onOpenServiceModal={handleOpenCreateService}
+            onOpenAdModal={handleOpenCreateAd}
+          />
         )}
-      </main>
+
+        {activeTab === "brands" && (
+          <BrandsTab
+            brands={brands}
+            allBrands={allBrandsForSelect}
+            totalBrands={totalBrands}
+            allCount={brandScopeCounts.all}
+            pendingCount={brandScopeCounts.pending}
+            approvedCount={brandScopeCounts.approved}
+            declinedCount={brandScopeCounts.declined}
+            searchTerm={searchTerm}
+            onSearchChange={(val) => setSearchTerm(val)}
+            onClearSearch={() => setSearchTerm("")}
+            statusFilter={brandStatusFilter}
+            onStatusFilterChange={(val) => { setBrandStatusFilter(val); setBrandsPage(1); }}
+            categoryFilter={brandCategoryFilter}
+            onCategoryFilterChange={(val) => { setBrandCategoryFilter(val); setBrandsPage(1); }}
+            stateFilter={brandStateFilter}
+            onStateFilterChange={(val) => { setBrandStateFilter(val); setBrandsPage(1); }}
+            sortOrder={brandSortOrder}
+            onSortOrderChange={(val) => { setBrandSortOrder(val); setBrandsPage(1); }}
+            currentPage={brandsPage}
+            itemsPerPage={brandsPerPage}
+            onPageChange={(p) => setBrandsPage(p)}
+            onPerPageChange={(size) => { setBrandsPerPage(size); setBrandsPage(1); }}
+            onViewDetails={(brand) => { setSelectedItem(brand); setModalType("brand"); }}
+            onEditBrand={handleOpenEditBrand}
+            onApproveBrand={handleApprove}
+            onDeclineBrand={handleDecline}
+            onOpenAddBrand={() => window.open("/brand-registration", "_blank")}
+            loading={loading}
+          />
+        )}
+
+        {activeTab === "investors" && (
+          <InvestorsTab
+            investors={investors}
+            allInvestors={allInvestors}
+            totalInvestors={totalInvestors}
+            allCount={investorScopeCounts.all}
+            pendingCount={investorScopeCounts.pending}
+            approvedCount={investorScopeCounts.approved}
+            rejectedCount={investorScopeCounts.rejected}
+            allBrands={allBrandsForSelect}
+            searchTerm={searchTerm}
+            onSearchChange={(val) => setSearchTerm(val)}
+            onClearSearch={() => setSearchTerm("")}
+            statusFilter={filterStatus || "all"}
+            onStatusFilterChange={(val) => { setFilterStatus(val === "all" ? "" : val); setInvestorsPage(1); }}
+            brandFilter={filterBrand}
+            onBrandFilterChange={(val) => { setFilterBrand(val); setInvestorsPage(1); }}
+            categoryFilter={filterCategory}
+            onCategoryFilterChange={(val) => { setFilterCategory(val); setInvestorsPage(1); }}
+            sortOrder={investorSortOrder}
+            onSortOrderChange={(val) => { setInvestorSortOrder(val); setInvestorsPage(1); }}
+            currentPage={investorsPage}
+            itemsPerPage={investorsPerPage}
+            onPageChange={(p) => setInvestorsPage(p)}
+            onPerPageChange={(size) => { setInvestorsPerPage(size); setInvestorsPage(1); }}
+            onViewDetails={(lead) => { setSelectedItem(lead); setModalType("investor"); }}
+            onApproveInvestor={handleApproveInvestor}
+            onDeclineInvestor={handleDeclineInvestor}
+            onMarkInvested={(investor) => openCustomMsgModal("MARK_INVESTED", investor)}
+            loading={loading}
+          />
+        )}
+
+        {activeTab === "blogs" && (
+          <BlogsTab
+            blogs={blogs}
+            totalBlogs={totalBlogs}
+            searchTerm={searchTerm}
+            onSearchChange={(val) => setSearchTerm(val)}
+            onClearSearch={() => setSearchTerm("")}
+            statusFilter={blogStatusFilter}
+            onStatusFilterChange={(val) => { setBlogStatusFilter(val); setBlogsPage(1); }}
+            sortOrder={blogSortOrder}
+            onSortOrderChange={(val) => { setBlogSortOrder(val); setBlogsPage(1); }}
+            currentPage={blogsPage}
+            itemsPerPage={blogsPerPage}
+            onPageChange={(p) => setBlogsPage(p)}
+            onPerPageChange={(size) => { setBlogsPerPage(size); setBlogsPage(1); }}
+            onOpenCreateBlog={handleOpenCreateBlog}
+            onEditBlog={handleOpenEditBlog}
+            onDeleteBlog={handleDeleteBlog}
+            loading={loading}
+          />
+        )}
+
+        {activeTab === "ads" && (
+          <AdsTab
+            ads={ads}
+            totalAds={totalAds}
+            searchTerm={searchTerm}
+            onSearchChange={(val) => setSearchTerm(val)}
+            onClearSearch={() => setSearchTerm("")}
+            positionFilter={adPositionFilter}
+            onPositionFilterChange={(val) => { setAdPositionFilter(val); setAdsPage(1); }}
+            statusFilter={adStatusFilter}
+            onStatusFilterChange={(val) => { setAdStatusFilter(val); setAdsPage(1); }}
+            currentPage={adsPage}
+            itemsPerPage={adsPerPage}
+            onPageChange={(p) => setAdsPage(p)}
+            onPerPageChange={(size) => { setAdsPerPage(size); setAdsPage(1); }}
+            onOpenCreateAd={handleOpenCreateAd}
+            onEditAd={handleOpenEditAd}
+            onToggleAdActive={handleToggleAdActive}
+            onDeleteAd={handleDeleteAd}
+            loading={loading}
+          />
+        )}
+
+        {activeTab === "logs" && (
+          <LogsTab
+            logs={logs}
+            totalLogs={totalLogs}
+            panelCounts={allLogsCount}
+            searchTerm={logSearch}
+            onSearchChange={(val) => setLogSearch(val)}
+            onClearSearch={() => setLogSearch("")}
+            panelFilter={logPanelFilter}
+            onPanelFilterChange={(val) => { setLogPanelFilter(val); setLogPage(1); }}
+            currentPage={logPage}
+            itemsPerPage={logsPerPage}
+            onPageChange={(p) => setLogPage(p)}
+            onPerPageChange={(size) => { setLogsPerPage(size); setLogPage(1); }}
+            onRefreshLogs={fetchLogs}
+            onDeleteLog={handleDeleteLog}
+            onClearAllLogs={handleClearAllLogs}
+            loading={logsLoading}
+          />
+        )}
+
+        
+        {activeTab === "seo" && (
+          <SeoTab
+            brands={seoBrands}
+            loading={seoLoading}
+            onRefresh={fetchSeoTab}
+            onOpenEditModal={handleOpenSeoModal}
+            onRegenerateSeo={handleRegenerateSeo}
+            onBatchGenerate={handleBatchGenerateSeo}
+            regeneratingId={regeneratingSeoId}
+            batchProcessing={isBatchGeneratingSeo}
+          />
+        )}
+        {activeTab === "services" && (
+          <ServicesTab
+            services={services}
+            totalServices={totalServices}
+            searchTerm={searchTerm}
+            onSearchChange={(val) => setSearchTerm(val)}
+            onClearSearch={() => setSearchTerm("")}
+            currentPage={servicesPage}
+            itemsPerPage={servicesPerPage}
+            onPageChange={(p) => setServicesPage(p)}
+            onPerPageChange={(size) => { setServicesPerPage(size); setServicesPage(1); }}
+            onOpenCreateService={handleOpenCreateService}
+            onEditService={handleOpenEditService}
+            onDeleteService={handleDeleteService}
+            loading={loading}
+          />
+        )}
+      </div>
 
       {/* Details Modals */}
       {selectedItem && modalType === "brand" && (
@@ -2424,6 +2199,9 @@ export default function AdminDashboard({ initialTab = "dashboard" }) {
                   <div>Space Required: <strong>{selectedItem.areaRequired || "Any Area"}</strong></div>
                   <div>Master Model: <strong>{selectedItem.masterFranchiseAvailable ? `Yes (${selectedItem.territoryOffered || "State Level"})` : "Unit Only"}</strong></div>
                   {selectedItem.masterInvestmentRange && <div>Master Budget: <strong>{selectedItem.masterInvestmentRange}</strong></div>}
+                  <div>Total Inquiries: <strong>{selectedItem.investorsCount || 0}</strong></div>
+                  <div>Approved Leads: <strong>{selectedItem.approvedLeadsCount || 0}</strong></div>
+                  <div>Deals Closed: <strong>{selectedItem.investedInvestorsCount || 0}</strong></div>
                 </div>
               </div>
 
@@ -2442,6 +2220,61 @@ export default function AdminDashboard({ initialTab = "dashboard" }) {
                 <p style={{ fontSize: "13px", display: "flex", gap: "6px", alignItems: "center", marginTop: "4px" }}><Phone size={12} /> {selectedItem.phone}</p>
                 {selectedItem.website && <p style={{ fontSize: "13px", display: "flex", gap: "6px", alignItems: "center", marginTop: "4px" }}><Building size={12} /> {selectedItem.website}</p>}
               </div>
+
+              {/* SEO, GEO & AEO Live Status Card */}
+              {(() => {
+                const autoSeo = (!selectedItem.seoData?.seoTitle || !selectedItem.faqs?.length)
+                  ? generateBrandSeoData(selectedItem)
+                  : { seoData: selectedItem.seoData, faqs: selectedItem.faqs };
+                const seoData = selectedItem.seoData?.seoTitle ? selectedItem.seoData : autoSeo.seoData;
+                const faqs = selectedItem.faqs?.length ? selectedItem.faqs : autoSeo.faqs;
+
+                return (
+                  <div style={{ marginTop: "20px", background: "linear-gradient(135deg, #f0fdf4 0%, #ffffff 100%)", padding: "18px", borderRadius: "12px", border: "1px solid #bbf7d0", boxShadow: "0 2px 8px rgba(0,0,0,0.02)" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px", flexWrap: "wrap", gap: "8px" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                        <span style={{ display: "inline-block", width: "10px", height: "10px", borderRadius: "50%", background: "#16a34a" }} />
+                        <h4 style={{ fontSize: "15px", fontWeight: "800", margin: 0, color: "#166534" }}>
+                          SEO, GEO & AEO Live Status
+                        </h4>
+                      </div>
+                      <span style={{ fontSize: "11px", fontWeight: "700", background: "#dcfce7", color: "#15803d", padding: "3px 10px", borderRadius: "9999px" }}>
+                        ✓ Automated & Schema Validated
+                      </span>
+                    </div>
+
+                    <div style={{ display: "flex", flexDirection: "column", gap: "10px", fontSize: "13px" }}>
+                      <div style={{ padding: "8px 12px", background: "#ffffff", borderRadius: "8px", border: "1px solid #e2e8f0" }}>
+                        <span style={{ fontSize: "11px", fontWeight: "700", color: "#64748b", display: "block" }}>🎯 TARGET FOCUS KEYWORD</span>
+                        <strong style={{ color: "#0f172a", fontSize: "13.5px" }}>{seoData.focusKeyword || `${selectedItem.name.toLowerCase()} franchise`}</strong>
+                      </div>
+
+                      <div style={{ padding: "8px 12px", background: "#ffffff", borderRadius: "8px", border: "1px solid #e2e8f0" }}>
+                        <span style={{ fontSize: "11px", fontWeight: "700", color: "#64748b", display: "block" }}>🏷️ GOOGLE META TITLE</span>
+                        <span style={{ color: "#1e293b", fontWeight: "600" }}>{seoData.seoTitle || `${selectedItem.name} Franchise in India - Cost, Profit & ROI (2026)`}</span>
+                      </div>
+
+                      <div style={{ padding: "8px 12px", background: "#ffffff", borderRadius: "8px", border: "1px solid #e2e8f0" }}>
+                        <span style={{ fontSize: "11px", fontWeight: "700", color: "#64748b", display: "block" }}>🤖 AEO FACT CITATION (PERPLEXITY & AI OVERVIEWS)</span>
+                        <p style={{ margin: "4px 0 0 0", color: "#475569", lineHeight: "1.5", fontSize: "12.5px" }}>{seoData.aeoContent || "Automated entity citation generated with verified budget and specifications."}</p>
+                      </div>
+
+                      <div style={{ padding: "8px 12px", background: "#ffffff", borderRadius: "8px", border: "1px solid #e2e8f0" }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                          <span style={{ fontSize: "11px", fontWeight: "700", color: "#64748b" }}>❓ FAQPAGE SCHEMA QUESTIONS</span>
+                          <span style={{ fontSize: "11px", fontWeight: "700", color: "#2563eb" }}>{faqs.length} Active FAQs</span>
+                        </div>
+                        <ul style={{ margin: "6px 0 0 0", paddingLeft: "18px", color: "#475569", fontSize: "12px", lineHeight: "1.6" }}>
+                          {faqs.slice(0, 3).map((f, i) => (
+                            <li key={i}>{f.question}</li>
+                          ))}
+                          {faqs.length > 3 && <li style={{ color: "#2563eb", fontWeight: "600" }}>+ {faqs.length - 3} more questions live on brand page</li>}
+                        </ul>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()}
 
               {/* Assign to Investors section */}
               <div style={{ marginTop: "20px", background: "#ffffff", padding: "18px", borderRadius: "12px", border: "1px solid var(--light-border)", boxShadow: "0 2px 8px rgba(0,0,0,0.03)" }}>
@@ -2492,7 +2325,7 @@ export default function AdminDashboard({ initialTab = "dashboard" }) {
                         transition: "all 0.2s ease"
                       }}
                     >
-                      All Investors ({investors.length})
+                      All Investors ({investorAssignPool.length})
                     </button>
                   </div>
 
@@ -2513,10 +2346,10 @@ export default function AdminDashboard({ initialTab = "dashboard" }) {
                 </div>
 
                 {/* Investors Checkbox List */}
-                {investors.length === 0 ? (
+                {investorAssignPool.length === 0 ? (
                   <p style={{ fontSize: "12px", color: "var(--text-muted)" }}>No investors registered yet.</p>
                 ) : (() => {
-                  const displayedAssignInvestors = investors.filter(inv => {
+                  const displayedAssignInvestors = investorAssignPool.filter(inv => {
                     const invId = inv.id || inv._id;
                     const isAlreadyAssigned = selectedInvestorsForBrand.includes(invId);
                     const isMatching = isInvestorSectorMatch(inv, selectedItem);
@@ -2546,7 +2379,7 @@ export default function AdminDashboard({ initialTab = "dashboard" }) {
                             onClick={() => setAssignFilterMode("all")}
                             style={{ fontSize: "12px", color: "#2563eb", background: "none", border: "none", cursor: "pointer", fontWeight: "700", textDecoration: "underline" }}
                           >
-                            Switch to view All Investors ({investors.length})
+                            Switch to view All Investors ({investorAssignPool.length})
                           </button>
                         )}
                       </div>
@@ -2831,9 +2664,13 @@ export default function AdminDashboard({ initialTab = "dashboard" }) {
                     <input
                       type="text"
                       className="form-input"
-                      value={adminBrandForm.areaRequired}
+                      placeholder="e.g. 500 - 1,500 sq ft"
+                      value={adminBrandForm.areaRequired || ""}
                       onChange={(e) => setAdminBrandForm({ ...adminBrandForm, areaRequired: e.target.value })}
                     />
+                    <small style={{ fontSize: "11px", color: "var(--text-muted)", display: "block", marginTop: "4px" }}>
+                      Unit: sq ft. Allowed range: 50 to 50,000 sq ft. Leave blank if not applicable.
+                    </small>
                   </div>
                   <div className="form-group">
                     <label>Training Support</label>
@@ -3115,6 +2952,18 @@ export default function AdminDashboard({ initialTab = "dashboard" }) {
 
               {selectedItem.comments && (
                 <div>
+              {selectedItem.investmentStatus && selectedItem.investmentStatus !== "Not Started" && (
+                <div style={{ background: "#f0fdf4", border: "1px solid #bbf7d0", padding: "14px 16px", borderRadius: "8px", marginBottom: "20px" }}>
+                  <h4 style={{ fontSize: "14px", marginBottom: "6px", color: "#166534" }}>Investment Completion Details</h4>
+                  <div style={{ fontSize: "13px", color: "#15803d", display: "flex", flexDirection: "column", gap: "4px" }}>
+                    <div>Status: <strong>{selectedItem.investmentStatus}</strong></div>
+                    {selectedItem.brandName && <div>Finalized Franchise: <strong>{selectedItem.brandName}</strong></div>}
+                    {Number(selectedItem.investmentAmount) > 0 && <div>Amount: <strong>₹{Number(selectedItem.investmentAmount).toLocaleString("en-IN")}</strong></div>}
+                    {selectedItem.investmentNotes && <div style={{ fontSize: "12px", color: "#4b5563", marginTop: "4px" }}>Note: {selectedItem.investmentNotes}</div>}
+                  </div>
+                </div>
+              )}
+
                   <h4 style={{ fontSize: "14px", marginBottom: "6px" }}>Enquiry Details / Message</h4>
                   <p style={{ fontSize: "13px", background: "#fffbeb", border: "1px solid #fef3c7", padding: "12px", borderRadius: "8px", color: "#b45309" }}>
                     {selectedItem.comments}
@@ -3132,6 +2981,18 @@ export default function AdminDashboard({ initialTab = "dashboard" }) {
                     <XCircle size={15} /> Decline Lead
                   </button>
                 </>
+              )}
+              {selectedItem.status === "Approved" && (
+                <button
+                  className="admin-btn admin-btn-approve"
+                  style={{ padding: "8px 16px", fontSize: "13px", backgroundColor: "#7c3aed" }}
+                  onClick={() => {
+                    openCustomMsgModal("MARK_INVESTED", selectedItem);
+                    setSelectedItem(null);
+                  }}
+                >
+                  <CheckCircle2 size={15} /> {selectedItem.investmentStatus === "Invested" ? "Edit Deal" : "Mark Invested"}
+                </button>
               )}
               <button className="admin-btn admin-btn-delete" style={{ padding: "8px 16px", fontSize: "13px" }} onClick={() => handleDeleteInvestor(selectedItem.id || selectedItem._id)}>
                 <Trash2 size={15} /> Delete Lead
@@ -3432,6 +3293,44 @@ export default function AdminDashboard({ initialTab = "dashboard" }) {
 
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
                   <div className="form-group">
+                    <label htmlFor="ad-media-type" style={{ fontWeight: 700, color: "var(--text-dark)", fontSize: "13.5px" }}>Banner Media Type</label>
+                    <select
+                      id="ad-media-type"
+                      className="form-input"
+                      value={adForm.mediaType}
+                      onChange={(e) => setAdForm({ ...adForm, mediaType: e.target.value, image: e.target.value === adForm.mediaType ? adForm.image : "" })}
+                    >
+                      <option value="image">Image Banner</option>
+                      <option value="video">Video Banner</option>
+                    </select>
+                    <small style={{ color: "var(--text-muted)", display: "block", marginTop: "5px" }}>Upload an image or a muted looping video below.</small>
+                  </div>
+                  <div className="form-group">
+                    <label htmlFor="ad-text-color" style={{ fontWeight: 700, color: "var(--text-dark)", fontSize: "13.5px" }}>Banner Text Colour</label>
+                    <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+                      <input
+                        id="ad-text-color"
+                        type="color"
+                        value={adForm.textColor}
+                        onChange={(e) => setAdForm({ ...adForm, textColor: e.target.value })}
+                        style={{ width: "48px", height: "42px", padding: "3px", cursor: "pointer" }}
+                        aria-label="Choose banner text colour"
+                      />
+                      <input
+                        type="text"
+                        className="form-input"
+                        value={adForm.textColor}
+                        onChange={(e) => setAdForm({ ...adForm, textColor: e.target.value })}
+                        pattern="^#[0-9A-Fa-f]{6}$"
+                        maxLength={7}
+                        aria-label="Banner text colour hex value"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
+                  <div className="form-group">
                     <label htmlFor="ad-position" style={{ fontWeight: 700, color: "var(--text-dark)", fontSize: "13.5px" }}>Placement Position</label>
                     <select
                       id="ad-position"
@@ -3439,9 +3338,9 @@ export default function AdminDashboard({ initialTab = "dashboard" }) {
                       value={adForm.position}
                       onChange={(e) => setAdForm({ ...adForm, position: e.target.value })}
                     >
-                      <option value="homepage_banner">Homepage Main Banner</option>
-                      <option value="homepage_middle">Homepage Middle Section</option>
-                      <option value="brands_sidebar">Brands Page Sidebar</option>
+                        <option value="homepage_banner">Homepage Banner + Partner Spotlight</option>
+                      <option value="brand_sidebar">Brand Details Sidebar</option>
+                      <option value="investor_dashboard">Investor Dashboard</option>
                     </select>
                   </div>
                   <div className="form-group" style={{ display: "flex", alignItems: "center", paddingTop: "24px" }}>
@@ -3460,11 +3359,15 @@ export default function AdminDashboard({ initialTab = "dashboard" }) {
                 {/* Banner Image Upload & Preview */}
                 <div className="form-group">
                   <label style={{ fontWeight: 700, color: "var(--text-dark)", fontSize: "13.5px", marginBottom: "8px", display: "block" }}>
-                    Ad Banner Image <span style={{ color: "var(--danger)" }}>*</span>
+                    Ad Banner {adForm.mediaType === "video" ? "Video" : "Image"} <span style={{ color: "var(--danger)" }}>*</span>
                   </label>
                   {adForm.image ? (
                     <div style={{ position: "relative", width: "100%", height: "160px", borderRadius: "10px", overflow: "hidden", border: "1px solid var(--border-color)" }}>
-                      <img src={adForm.image} alt="Ad Preview" style={{ width: "100%", height: "100%", objectFit: "contain", objectPosition: "center", display: "block", backgroundColor: "#ffffff" }} />
+                      {adForm.mediaType === "video" ? (
+                        <video src={adForm.image} aria-label="Ad video preview" muted loop autoPlay playsInline style={{ width: "100%", height: "100%", objectFit: "contain", display: "block", backgroundColor: "#0f172a" }} />
+                      ) : (
+                        <img src={adForm.image} alt="Ad Preview" style={{ width: "100%", height: "100%", objectFit: "contain", objectPosition: "center", display: "block", backgroundColor: "#ffffff" }} />
+                      )}
                       <button
                         type="button"
                         onClick={handleRemoveAdImage}
@@ -3485,9 +3388,9 @@ export default function AdminDashboard({ initialTab = "dashboard" }) {
                       background: "#f8fafc", textAlign: "center"
                     }}>
                       <UploadCloud size={32} style={{ color: "var(--text-muted)", marginBottom: "8px" }} />
-                      <span style={{ fontSize: "14px", fontWeight: "700", color: "var(--text-dark)" }}>Click to upload ad banner image</span>
-                      <span style={{ fontSize: "11px", color: "var(--text-muted)", marginTop: "2px" }}>PNG, JPG, WEBP up to 5 MB</span>
-                      <input type="file" onChange={handleAdImageUpload} accept=".png,.jpg,.jpeg,.webp" style={{ display: "none" }} />
+                      <span style={{ fontSize: "14px", fontWeight: "700", color: "var(--text-dark)" }}>Click to upload ad banner {adForm.mediaType === "video" ? "video" : "image"}</span>
+                      <span style={{ fontSize: "11px", color: "var(--text-muted)", marginTop: "2px" }}>PNG, JPG, WEBP or MP4 up to 5 MB</span>
+                      <input type="file" onChange={handleAdImageUpload} accept={adForm.mediaType === "video" ? "video/mp4,video/webm,video/quicktime" : ".png,.jpg,.jpeg,.webp"} style={{ display: "none" }} />
                     </label>
                   )}
                 </div>
@@ -3513,6 +3416,7 @@ export default function AdminDashboard({ initialTab = "dashboard" }) {
                 {customMsgModal.type === "DECLINE_BRAND" && <><XCircle style={{ color: "#ef4444" }} size={20} /> Decline Brand Listing</>}
                 {customMsgModal.type === "APPROVE_INVESTOR" && <><CheckCircle2 style={{ color: "#10b981" }} size={20} /> Approve Investor Lead</>}
                 {customMsgModal.type === "DECLINE_INVESTOR" && <><XCircle style={{ color: "#ef4444" }} size={20} /> Decline Investor Lead</>}
+                {customMsgModal.type === "MARK_INVESTED" && <><CheckCircle2 style={{ color: "#7c3aed" }} size={20} /> Mark Investment Complete</>}
                 {customMsgModal.type === "ASSIGN_BRAND" && <><UserCheck style={{ color: "#4f46e5" }} size={20} /> Update Brand Assignment</>}
               </h3>
               <button
@@ -3527,6 +3431,56 @@ export default function AdminDashboard({ initialTab = "dashboard" }) {
               <p style={{ fontSize: "14px", color: "#334155", marginBottom: "12px", lineHeight: "1.5" }}>
                 Target: <strong>{customMsgModal.targetItem?.name || customMsgModal.targetItem?.title || "Item"}</strong>
               </p>
+
+              {customMsgModal.type === "MARK_INVESTED" && (
+                <>
+                  <div style={{ marginBottom: "14px" }}>
+                    <label style={{ display: "block", fontSize: "13px", fontWeight: "600", color: "#475569", marginBottom: "6px" }}>
+                      Finalized Franchise Brand
+                    </label>
+                    <select
+                      value={investedBrandId}
+                      onChange={(e) => {
+                        const selId = e.target.value;
+                        setInvestedBrandId(selId);
+                        const match = (allBrandsForSelect || []).find(b => String(b.id || b._id) === String(selId));
+                        setInvestedBrandName(match ? match.name : "");
+                      }}
+                      style={{ width: "100%", borderRadius: "8px", border: "1px solid #cbd5e1", padding: "10px 12px", fontSize: "13px", color: "#0f172a", outline: "none", backgroundColor: "#fff" }}
+                    >
+                      <option value="">-- Select Finalized Franchise Brand --</option>
+                      {(allBrandsForSelect || []).map((b) => (
+                        <option key={b.id || b._id} value={b.id || b._id}>
+                          {b.name} ({b.category || "Franchise"})
+                        </option>
+                      ))}
+                    </select>
+                    <p style={{ fontSize: "11px", color: "#64748b", margin: "4px 0 0" }}>
+                      Select which franchise brand was finalized for this investor lead.
+                    </p>
+                  </div>
+                <div style={{ marginBottom: "14px" }}>
+                  <label style={{ display: "block", fontSize: "13px", fontWeight: "600", color: "#475569", marginBottom: "6px" }}>
+                    Investment Amount (₹) *
+                  </label>
+                  <input
+                    type="number"
+                    min="1"
+                    value={investmentAmount}
+                    onChange={(e) => setInvestmentAmount(e.target.value)}
+                    placeholder="e.g. 500000"
+                    style={{ width: "100%", borderRadius: "8px", border: "1px solid #cbd5e1", padding: "10px 12px", fontSize: "13px", color: "#0f172a", outline: "none" }}
+                  />
+                </div>
+              </>
+            )}
+            {false && (<div>
+              <input
+                placeholder="e.g. 500000"
+                    style={{ width: "100%", borderRadius: "8px", border: "1px solid #cbd5e1", padding: "10px 12px", fontSize: "13px", color: "#0f172a", outline: "none" }}
+                  />
+                </div>
+              )}
 
               <label style={{ display: "block", fontSize: "13px", fontWeight: "600", color: "#475569", marginBottom: "6px" }}>
                 Custom Message / Admin Note (Optional):
@@ -3574,12 +3528,22 @@ export default function AdminDashboard({ initialTab = "dashboard" }) {
                 disabled={isSubmittingCustomMsg}
                 style={{ padding: "8px 20px", fontSize: "13px", fontWeight: "700" }}
               >
-                {isSubmittingCustomMsg ? "Processing..." : "Confirm & Save to Log"}
+                {isSubmittingCustomMsg ? "Processing..." : customMsgModal.type === "MARK_INVESTED" ? "Mark as Invested" : "Confirm & Save to Log"}
               </button>
             </div>
           </div>
         </div>
       )}
+    
+      <SeoEditModal
+        isOpen={isSeoModalOpen}
+        onClose={() => setIsSeoModalOpen(false)}
+        brandId={selectedSeoBrandId}
+        onSave={handleSaveSeo}
+        onRegenerate={handleRegenerateSeo}
+        saving={isSeoSaving}
+        regenerating={regeneratingSeoId === selectedSeoBrandId}
+      />
     </div>
   );
 }

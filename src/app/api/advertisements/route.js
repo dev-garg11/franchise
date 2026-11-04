@@ -1,5 +1,10 @@
 import { NextResponse } from "next/server";
-import { getAdvertisements, saveAdvertisement } from "@/lib/db";
+import { getAdvertisements, getLocalAdvertisements, saveAdvertisement } from "@/lib/db";
+
+let publicAdsMemoryCache = null;
+let publicAdsSerializedCache = null;
+let publicAdsCacheTime = 0;
+const PUBLIC_ADS_CACHE_TTL = 30 * 1000;
 
 export async function GET(request) {
     try {
@@ -8,7 +13,20 @@ export async function GET(request) {
         const pageParam = searchParams.get("page");
         const limitParam = searchParams.get("limit");
 
-        let ads = await getAdvertisements();
+        // Homepage/header requests use the admin-synced local cache so a
+        // database cold start never delays the first public paint.
+        const isPublicRequest = searchParams.get("public") === "true";
+        let ads;
+        if (isPublicRequest && publicAdsMemoryCache && Date.now() - publicAdsCacheTime < PUBLIC_ADS_CACHE_TTL) {
+            ads = publicAdsMemoryCache;
+        } else {
+            ads = isPublicRequest ? getLocalAdvertisements() : await getAdvertisements();
+            if (isPublicRequest) {
+                publicAdsMemoryCache = ads;
+                publicAdsSerializedCache = JSON.stringify(ads);
+                publicAdsCacheTime = Date.now();
+            }
+        }
 
         if (search.trim()) {
             const term = search.trim().toLowerCase();
@@ -33,8 +51,22 @@ export async function GET(request) {
             });
         }
 
-        return NextResponse.json(ads);
+        const isSimplePublicRequest = isPublicRequest && !search.trim() && pageParam === null && limitParam === null;
+        if (isSimplePublicRequest && publicAdsSerializedCache) {
+            return new NextResponse(publicAdsSerializedCache, {
+                headers: {
+                    "Content-Type": "application/json",
+                    "Cache-Control": "public, max-age=30, stale-while-revalidate=120"
+                }
+            });
+        }
+        const response = NextResponse.json(ads);
+        if (searchParams.get("public") === "true") {
+            response.headers.set("Cache-Control", "public, max-age=30, stale-while-revalidate=120");
+        }
+        return response;
     } catch (error) {
+        console.error("GET /api/advertisements error:", error);
         return NextResponse.json({ error: "Failed to fetch advertisements" }, { status: 500 });
     }
 }
@@ -47,9 +79,20 @@ export async function POST(request) {
             return NextResponse.json({ error: "Missing required fields (title, image)" }, { status: 400 });
         }
 
-        const saved = await saveAdvertisement(body);
+        const normalizedBody = {
+            ...body,
+            mediaType: body.mediaType === "video" ? "video" : "image",
+            textColor: /^#[0-9a-f]{6}$/i.test(String(body.textColor || "")) ? body.textColor : "#ffffff",
+            position: String(body.position || "homepage_banner").trim().toLowerCase() || "homepage_banner",
+            isActive: body.isActive !== false
+        };
+        const saved = await saveAdvertisement(normalizedBody);
+        publicAdsMemoryCache = null;
+        publicAdsSerializedCache = null;
+        publicAdsCacheTime = 0;
         return NextResponse.json({ success: true, advertisement: saved }, { status: 201 });
     } catch (error) {
-        return NextResponse.json({ error: "Failed to save advertisement" }, { status: 500 });
+        console.error("POST /api/advertisements error:", error);
+        return NextResponse.json({ error: error?.message || "Failed to save advertisement" }, { status: 500 });
     }
 }

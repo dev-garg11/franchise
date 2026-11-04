@@ -3,32 +3,40 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { BookOpen, Calendar, ArrowRight, Search, Clock } from "lucide-react";
+import PageHeader from "@/components/public/PageHeader";
+import { DEFAULT_BLOGS } from "@/lib/defaultContent";
 
 export default function BlogsPage() {
-    const [blogs, setBlogs] = useState([]);
-    const [loading, setLoading] = useState(true);
+    const [blogs, setBlogs] = useState(DEFAULT_BLOGS);
+    const [loading, setLoading] = useState(false);
     const [searchTerm, setSearchTerm] = useState("");
 
     useEffect(() => {
+        const controller = new AbortController();
+        const timeout = window.setTimeout(() => controller.abort(), 8000);
         async function fetchBlogs() {
             try {
-                const res = await fetch("/api/blogs");
+                const res = await fetch("/api/blogs", { signal: controller.signal });
                 if (res.ok) {
                     const data = await res.json();
-                    setBlogs(data);
+                    if (Array.isArray(data) && data.length > 0) setBlogs(data);
                 }
             } catch (error) {
-                console.error("Failed to load blogs:", error);
+                if (error.name !== "AbortError") console.error("Failed to load blogs:", error);
             } finally {
-                setLoading(false);
+                window.clearTimeout(timeout);
             }
         }
         fetchBlogs();
+        return () => {
+            window.clearTimeout(timeout);
+            controller.abort();
+        };
     }, []);
 
     const filteredBlogs = blogs.filter(b =>
-        b.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        b.content.toLowerCase().includes(searchTerm.toLowerCase())
+        (b.title || "").toLowerCase().includes((searchTerm || "").toLowerCase()) ||
+        (b.content || "").toLowerCase().includes((searchTerm || "").toLowerCase())
     );
 
     const featuredBlog = filteredBlogs.length > 0 ? filteredBlogs[0] : null;
@@ -36,68 +44,22 @@ export default function BlogsPage() {
 
     return (
         <div style={{ background: "#f8fafc", minHeight: "100vh", padding: "60px 0" }}>
-            {/* Blog Hero Header */}
-            <section className="container" style={{ marginBottom: "50px", textAlign: "center" }}>
-                <div style={{
-                    background: "linear-gradient(135deg, #0F172A 0%, #1E293B 100%)",
-                    color: "white",
-                    borderRadius: "24px",
-                    padding: "50px 30px",
-                    boxShadow: "var(--shadow-lg)",
-                    position: "relative",
-                    overflow: "hidden"
-                }}>
-                    <div style={{
-                        position: "absolute",
-                        top: "-50px",
-                        right: "-50px",
-                        width: "300px",
-                        height: "300px",
-                        borderRadius: "50%",
-                        background: "radial-gradient(circle, rgba(124, 58, 237, 0.15), transparent 70%)",
-                        filter: "blur(60px)",
-                        pointerEvents: "none"
-                    }}></div>
-
-                    <BookOpen size={40} style={{ color: "var(--primary)", marginBottom: "16px" }} />
-                    <h1 style={{ color: "white", fontSize: "36px", fontWeight: "800", marginBottom: "12px" }}>
-                        Insights & Industry Updates
-                    </h1>
-                    <p style={{ color: "#94A3B8", fontSize: "16px", maxWidth: "600px", margin: "0 auto 30px auto" }}>
-                        Explore franchise tips, business startup advice, and market expansion strategies curated by our investment experts.
-                    </p>
-
-                    {/* Search Box */}
-                    <div style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "10px",
-                        background: "rgba(255, 255, 255, 0.08)",
-                        border: "1px solid rgba(255, 255, 255, 0.15)",
-                        padding: "8px 18px",
-                        borderRadius: "50px",
-                        maxWidth: "450px",
-                        margin: "0 auto",
-                        transition: "all 0.3s ease"
-                    }}>
-                        <Search size={18} style={{ color: "#94A3B8" }} />
-                        <input
-                            type="text"
-                            placeholder="Search articles..."
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                            style={{
-                                background: "transparent",
-                                border: "none",
-                                color: "white",
-                                width: "100%",
-                                fontSize: "14px",
-                                outline: "none"
-                            }}
-                        />
-                    </div>
-                </div>
-            </section>
+            <PageHeader
+                theme="blogs"
+                centered
+                eyebrow={<><span className="page-header-icon-tile"><BookOpen size={25} /></span><span>BLOG</span></>}
+                titleBefore="Insights & "
+                titleAccent="Industry Updates"
+                subtitle="Explore franchise tips, business startup advice, and market expansion strategies curated by our investment experts."
+                leftExtra={(
+                    <form className="page-header-search" onSubmit={(event) => event.preventDefault()}>
+                        <Search size={18} aria-hidden="true" />
+                        <label className="sr-only" htmlFor="blogs-page-search">Search articles</label>
+                        <input id="blogs-page-search" type="text" placeholder="Search articles..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+                        <button type="submit">Search</button>
+                    </form>
+                )}
+            />
 
             {/* Main Blog Content */}
             <section className="container">
@@ -108,7 +70,8 @@ export default function BlogsPage() {
                     </div>
                 ) : filteredBlogs.length === 0 ? (
                     <div style={{ textAlign: "center", padding: "60px 20px", background: "white", borderRadius: "16px", border: "1px solid var(--border-color)" }}>
-                        <p style={{ fontSize: "16px", color: "var(--text-muted)", fontWeight: "600" }}>No articles found matching "{searchTerm}"</p>
+                        <p style={{ fontSize: "16px", color: "var(--text-muted)", fontWeight: "600" }}>{searchTerm ? `No articles match "${searchTerm}"` : "Articles are coming soon"}</p>
+                        {searchTerm && <button type="button" className="page-header-clear-search" onClick={() => setSearchTerm("")}>Clear search</button>}
                     </div>
                 ) : (
                     <>

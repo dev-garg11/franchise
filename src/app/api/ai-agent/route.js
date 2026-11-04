@@ -34,12 +34,15 @@ function tokens(value) {
 
 function formatCurrency(value) {
   if (value === undefined || value === null || value === "") return "Not specified on the website";
-  if (typeof value === "string" && /lakh|lac|crore|cr|₹|rs\.?/i.test(value)) return value;
+  const rupee = "\u20B9";
+  if (typeof value === "string" && /lakh|lac|crore|cr|rs\.?/i.test(value)) {
+    return value.replace(/(?:ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¹|Ã¢â€šÂ¹|â‚¹)/g, rupee);
+  }
   const amount = Number(value);
   if (!Number.isFinite(amount)) return String(value);
-  if (amount >= 10000000) return `₹ ${(amount / 10000000).toFixed(2)} Cr`;
-  if (amount >= 100000) return `₹ ${(amount / 100000).toFixed(1)} Lakhs`;
-  return `₹ ${amount.toLocaleString("en-IN")}`;
+  if (amount >= 10000000) return `${rupee} ${(amount / 10000000).toFixed(2)} Cr`;
+  if (amount >= 100000) return `${rupee} ${(amount / 100000).toFixed(1)} Lakhs`;
+  return `${rupee} ${amount.toLocaleString("en-IN")}`;
 }
 
 function isHindiLike(query) {

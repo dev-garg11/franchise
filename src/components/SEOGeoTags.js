@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { ChevronDown, ChevronUp } from "lucide-react";
+import { ChevronDown, ChevronUp, MapPin, ArrowUpRight } from "lucide-react";
 
 export default function SEOGeoTags({ categoryName = "Business", basePath = "/brands" }) {
     const [expanded, setExpanded] = useState(false);
@@ -30,7 +30,7 @@ export default function SEOGeoTags({ categoryName = "Business", basePath = "/bra
     const visibleStates = expanded ? targetStates : targetStates.slice(0, initialCount);
 
     return (
-        <div style={{
+        <div className="seo-geo-panel" style={{
             marginTop: "60px",
             background: "#ffffff",
             border: "1px solid #e2e8f0",
@@ -38,16 +38,16 @@ export default function SEOGeoTags({ categoryName = "Business", basePath = "/bra
             padding: "24px 30px",
             boxShadow: "0 4px 12px rgba(0,0,0,0.02)"
         }}>
-            <h4 style={{
-                fontSize: "15px",
-                fontWeight: "700",
-                color: "#1e293b",
-                marginBottom: "16px",
-                textTransform: "uppercase",
-                letterSpacing: "0.05em"
-            }}>
-                Explore More Location Options
-            </h4>
+            <div className="seo-geo-header">
+                <div className="seo-geo-title-wrap">
+                    <span className="seo-geo-icon"><MapPin size={17} /></span>
+                    <div>
+                        <span className="seo-geo-kicker">Explore by location</span>
+                        <h4>Find opportunities near you</h4>
+                    </div>
+                </div>
+                <span className="seo-geo-count">{targetStates.length} locations</span>
+            </div>
 
             <div style={{
                 display: "flex",
@@ -58,45 +58,24 @@ export default function SEOGeoTags({ categoryName = "Business", basePath = "/bra
                 color: "#64748b",
                 lineHeight: "1.8"
             }}>
-                <span style={{ fontWeight: "700", color: "#334155", marginRight: "4px" }}>Tags:</span>
+                <span className="seo-geo-label">Popular locations</span>
 
                 {visibleStates.map((state, index) => (
-                    <span key={state} style={{ display: "inline-flex", alignItems: "center" }}>
+                    <span key={state} className="seo-geo-chip-wrap">
                         <Link
                             href={generateSEOLink(state)}
-                            style={{
-                                color: "var(--primary)",
-                                textDecoration: "none",
-                                fontWeight: "600",
-                                transition: "color 0.2s ease"
-                            }}
                             className="seo-geo-link"
                             title={`${categoryName} Business Franchise in ${state}`}
                         >
-                            {categoryName} Business Franchise in {state}
+                            <MapPin size={12} />
+                            <span>{state}</span>
+                            <ArrowUpRight size={12} />
                         </Link>
-                        {(index < visibleStates.length - 1 || expanded) && (
-                            <span style={{ color: "#cbd5e1", marginLeft: "10px" }}>|</span>
-                        )}
                     </span>
                 ))}
 
                 <button
                     onClick={() => setExpanded(!expanded)}
-                    style={{
-                        background: "none",
-                        border: "none",
-                        color: "#0f172a",
-                        cursor: "pointer",
-                        fontWeight: "700",
-                        display: "inline-flex",
-                        alignItems: "center",
-                        gap: "4px",
-                        fontSize: "13px",
-                        padding: "2px 8px",
-                        borderRadius: "6px",
-                        transition: "background 0.2s"
-                    }}
                     className="seo-geo-toggle"
                 >
                     {expanded ? "Show less" : "Show more"}

@@ -143,7 +143,12 @@ const BrandSchema = new mongoose.Schema({
         ogImage: { type: String, trim: true, default: '' },
         geoTitle: { type: String, trim: true, default: '' },
         geoDescription: { type: String, trim: true, default: '' },
-        aeoContent: { type: String, trim: true, default: '' }
+        aeoContent: { type: String, trim: true, default: '' },
+        pillarContent: { type: String, default: '' },
+        toc: { type: Array, default: [] },
+        keywords: { type: [String], default: [] },
+        rankMathScore: { type: Number, default: 0 },
+        lastGeneratedAt: { type: Date, default: null }
     },
     faqs: [{
         question: { type: String, trim: true },
@@ -159,5 +164,8 @@ const BrandSchema = new mongoose.Schema({
         default: 'Pending Review'
     }
 });
+
+BrandSchema.set('bufferCommands', false);
+BrandSchema.set('autoIndex', false);
 
 module.exports = mongoose.models.Brand || mongoose.model('Brand', BrandSchema);

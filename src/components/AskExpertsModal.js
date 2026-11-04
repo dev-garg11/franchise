@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { X, MessageCircle, CheckCircle, User, Phone, Mail, MapPin, Building, Briefcase, Store, TrendingUp } from "lucide-react";
+import { toast } from "@/lib/swal";
 
 export default function AskExpertsModal({ isOpen, onClose, initialMode = "buy" }) {
   const modalRef = useRef(null);
@@ -121,7 +122,8 @@ export default function AskExpertsModal({ isOpen, onClose, initialMode = "buy" }
             category: expandData.category,
             phone: expandData.phone,
             email: expandData.email || `${expandData.phone.replace(/[^0-9]/g, '')}@brand.com`,
-            pincode: "000000",
+            password: "ExpertInquiry123#",
+            pincode: "110001",
             investment_range: "Expand Brand Advisory",
             max_investment_limit: "N/A",
             hq: expandData.targetCities || "N/A",

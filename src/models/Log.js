@@ -47,4 +47,7 @@ const LogSchema = new mongoose.Schema({
   }
 });
 
+LogSchema.set('bufferCommands', false);
+LogSchema.set('autoIndex', false);
+
 export default mongoose.models.Log || mongoose.model("Log", LogSchema);

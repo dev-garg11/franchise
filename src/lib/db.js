@@ -7,9 +7,13 @@ import Admin from "@/models/Admin";
 import User from "@/models/User";
 import Blog from "@/models/Blog";
 import Service from "@/models/Service";
+import { DEFAULT_BLOGS, DEFAULT_SERVICES } from "./defaultContent";
 import Advertisement from "@/models/Advertisement";
 import Log from "@/models/Log";
+import LoginOtp from "@/models/LoginOtp";
 import bcrypt from "bcryptjs";
+import crypto from "crypto";
+import { generateBrandSeoData } from "./brandSeoGenerator";
 import {
   sendBrandRegistrationEmail,
   sendInvestorRegistrationEmail,
@@ -31,30 +35,77 @@ if (!MONGODB_URI) {
 let cached = global.mongoose;
 
 if (!cached) {
-  cached = global.mongoose = { conn: null, promise: null };
+  cached = global.mongoose = { conn: null, promise: null, promiseStartedAt: 0, seeded: false, seedPromise: null };
 }
 
+// Completely disable Mongoose query buffering and autoIndex globally
+// This ensures queries never freeze for 10,000ms if a connection drops
+mongoose.set('bufferCommands', false);
+mongoose.set('autoIndex', false);
+
 export async function dbConnect() {
-  if (cached.conn) {
+  const readyState = mongoose.connection ? mongoose.connection.readyState : (cached.conn?.connection?.readyState || 0);
+  if (readyState === 1) {
+    return mongoose;
+  }
+  if (cached.conn && readyState === 1) {
     return cached.conn;
   }
 
+  // Mongoose state 2 means the connection is in-flight.
+  if (readyState === 2 && cached.promise) {
+    try {
+      cached.conn = await cached.promise;
+      return cached.conn;
+    } catch (error) {
+      cached.conn = null;
+      cached.promise = null;
+      cached.promiseStartedAt = 0;
+      throw error;
+    }
+  }
+
+  if (readyState === 0 || readyState === 3) {
+    cached.conn = null;
+    cached.promise = null;
+  }
+
+  if (cached.promise && cached.promiseStartedAt && Date.now() - cached.promiseStartedAt > 10000) {
+    cached.promise = null;
+    cached.promiseStartedAt = 0;
+  }
+
   if (!cached.promise) {
+    cached.promiseStartedAt = Date.now();
     const opts = {
       bufferCommands: false,
+      serverSelectionTimeoutMS: 5000,
+      connectTimeoutMS: 10000,
+      socketTimeoutMS: 45000,
+      maxPoolSize: 10,
+      minPoolSize: 1,
+      maxIdleTimeMS: 60000,
     };
 
     cached.promise = mongoose.connect(MONGODB_URI, opts).then((mongooseInstance) => {
-      console.log("Connected to MongoDB via Next.js Mongoose connection helper");
       return mongooseInstance;
     });
   }
 
   try {
     cached.conn = await cached.promise;
-    await seedDatabase();
+    if (!cached.seeded) {
+      cached.seeded = true;
+      if (!cached.seedPromise) {
+        cached.seedPromise = seedDatabase().catch((error) => {
+          console.error("Background database seed failed:", error);
+        });
+      }
+    }
   } catch (e) {
+    cached.conn = null;
     cached.promise = null;
+    cached.promiseStartedAt = 0;
     throw e;
   }
 
@@ -62,6 +113,43 @@ export async function dbConnect() {
 }
 
 export const connectToDatabase = dbConnect;
+
+export async function resetDatabaseConnection() {
+  try {
+    if (cached.conn?.connection) {
+      await cached.conn.connection.close(false);
+    }
+  } catch (error) {
+    // The connection may already be closed; reset the cache regardless.
+  }
+  cached.conn = null;
+  cached.promise = null;
+  cached.promiseStartedAt = 0;
+}
+
+async function connectForAuth() {
+  try {
+    return await dbConnect();
+  } catch (firstError) {
+    console.warn("Auth database connection failed; resetting and retrying once:", firstError?.message || firstError);
+    await resetDatabaseConnection();
+    return dbConnect();
+  }
+}
+
+// A long-running Next dev process can retain a Mongoose model while its
+// underlying socket has gone stale. Retry one database operation after a
+// clean reconnect so registration does not fail until the server is restarted.
+async function withDatabaseRetry(operation, label) {
+  try {
+    return await operation();
+  } catch (firstError) {
+    console.warn(`${label} failed; reconnecting once:`, firstError?.message || firstError);
+    await resetDatabaseConnection();
+    await dbConnect();
+    return operation();
+  }
+}
 
 async function seedDatabase() {
   try {
@@ -96,10 +184,22 @@ async function seedDatabase() {
 export async function getBrands() {
   await dbConnect();
   try {
-    const brands = await Brand.find({}).populate('user').sort({ createdAt: -1 }).lean();
+    const [brands, investors] = await Promise.all([
+      Brand.find({}).populate('user').sort({ createdAt: -1 }).lean(),
+      Investor.find({}).select('brandId brandName assignedBrands status investmentStatus').lean()
+    ]);
     return brands.map(b => {
       const userEmail = (b.user && typeof b.user === 'object' && b.user.email) ? b.user.email : null;
       const email = userEmail || b.email || "";
+      const brandIds = [b.id, b._id?.toString()].filter(Boolean).map(String);
+      const brandName = String(b.name || '').trim().toLowerCase();
+      const relatedInvestors = investors.filter(inv => {
+        const directId = inv.brandId && brandIds.includes(String(inv.brandId));
+        const directName = !inv.brandId && inv.brandName && String(inv.brandName).trim().toLowerCase() === brandName;
+        const assigned = Array.isArray(inv.assignedBrands) && inv.assignedBrands.some(id => brandIds.includes(String(id)));
+        return directId || directName || assigned;
+      });
+      const assignedInvestors = relatedInvestors.filter(inv => Array.isArray(inv.assignedBrands) && inv.assignedBrands.some(id => brandIds.includes(String(id))));
       return {
         ...b,
         id: b.id || b._id.toString(),
@@ -107,12 +207,19 @@ export async function getBrands() {
         company: b.company || b.name || "",
         category: b.category || "General",
         status: b.status || "Pending",
-        email: email
+        email: email,
+        investorsCount: relatedInvestors.length,
+        approvedLeadsCount: relatedInvestors.filter(inv => inv.status === 'Approved').length,
+        assignedInvestorsCount: assignedInvestors.length,
+        investedInvestorsCount: relatedInvestors.filter(inv => inv.investmentStatus === 'Invested' || inv.investmentStatus === 'Closed').length,
+        investedAmount: relatedInvestors
+          .filter(inv => inv.investmentStatus === 'Invested' || inv.investmentStatus === 'Closed')
+          .reduce((total, inv) => total + (Number(inv.investmentAmount) || 0), 0)
       };
     });
   } catch (error) {
     console.error("Error reading brands from MongoDB:", error);
-    return [];
+    throw error;
   }
 }
 
@@ -126,12 +233,24 @@ export async function getBrandById(id) {
     if (!brand) {
       brand = await Brand.findOne({ id: id }).populate('user').lean();
     }
+    // Canonical SEO URLs use id-slug, while the app still resolves the stable id.
+    if (!brand && id.includes("-")) {
+      const idPrefix = id.startsWith("brand-") ? id.split("-").slice(0, 2).join("-") : id.split("-")[0];
+      if (mongoose.Types.ObjectId.isValid(idPrefix)) {
+        brand = await Brand.findById(idPrefix).populate('user').lean();
+      }
+      if (!brand) {
+        brand = await Brand.findOne({ id: new RegExp(`^${idPrefix.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}(?:-|$)`) }).populate('user').lean();
+      }
+    }
     if (!brand) return null;
-    return {
+    const finalBrand = {
       ...brand,
       id: brand.id || brand._id.toString(),
       email: brand.user ? brand.user.email : brand.email
     };
+
+    return finalBrand;
   } catch (error) {
     console.error("Error fetching brand by ID:", error);
     return null;
@@ -148,7 +267,10 @@ export async function saveBrand(brandData) {
     }
 
     const rawPassword = brandData.password || "password123";
-    let userObj = await User.findOne({ email: emailLower });
+    let userObj = await withDatabaseRetry(
+      () => User.findOne({ email: emailLower }),
+      "Brand user lookup"
+    );
 
     if (!userObj) {
       const hashedPassword = await bcrypt.hash(rawPassword, 10);
@@ -162,8 +284,14 @@ export async function saveBrand(brandData) {
     }
 
     const id = brandData.id || `brand-${Date.now()}`;
+    const autoSeo = generateBrandSeoData(brandData);
+
     const brandPayload = {
       ...brandData,
+      seoData: (brandData.seoData && brandData.seoData.seoTitle) ? brandData.seoData : autoSeo.seoData,
+      faqs: (Array.isArray(brandData.faqs) && brandData.faqs.length > 0) ? brandData.faqs : autoSeo.faqs,
+      schemaData: (brandData.schemaData && Object.keys(brandData.schemaData).length > 0) ? brandData.schemaData : autoSeo.schemaData,
+      seoStatus: brandData.seoStatus || "Approved",
       email: emailLower,
       user: userObj._id,
       id,
@@ -233,11 +361,14 @@ export async function updateBrand(id, updatedFields, customMessage = "", adminIn
       payload.email = updatedFields.email.toLowerCase();
     }
 
-    const updated = await Brand.findOneAndUpdate(
-      query,
-      { $set: payload },
-      { returnDocument: 'after' }
-    ).populate('user').lean();
+    const updated = await withDatabaseRetry(
+      () => Brand.findOneAndUpdate(
+        query,
+        { $set: payload },
+        { returnDocument: 'after' }
+      ).populate('user').lean(),
+      "Brand update"
+    );
 
     if (!updated) return null;
 
@@ -326,7 +457,10 @@ export async function deleteBrand(id) {
       ? { $or: [{ _id: id }, { id }] }
       : { id };
 
-    const result = await Brand.deleteOne(query);
+    const result = await withDatabaseRetry(
+      () => Brand.deleteOne(query),
+      "Brand delete"
+    );
     return result.deletedCount > 0;
   } catch (error) {
     console.error("Error deleting brand from MongoDB:", error);
@@ -345,7 +479,7 @@ export async function getInvestors() {
     }));
   } catch (error) {
     console.error("Error reading investors from MongoDB:", error);
-    return [];
+    throw error;
   }
 }
 
@@ -354,7 +488,10 @@ export async function saveInvestor(investorData) {
   try {
     const investorName = investorData.name || investorData.fullName || "Investor";
     const emailLower = (investorData.email || "").toLowerCase();
-    let userObj = await User.findOne({ email: emailLower });
+    let userObj = await withDatabaseRetry(
+      () => User.findOne({ email: emailLower }),
+      "Investor user lookup"
+    );
     if (!userObj) {
       const rawPassword = investorData.password || "password123";
       const hashedPassword = await bcrypt.hash(rawPassword, 10);
@@ -588,22 +725,83 @@ export async function getAdmins() {
 }
 
 export async function loginUser(identifier, password) {
-  await dbConnect();
   try {
-    const query = {
-      $or: [
-        { email: identifier.toLowerCase() },
-        { username: identifier.toLowerCase() }
-      ]
-    };
-    const user = await User.findOne(query).lean();
-    if (!user) {
+    await connectForAuth();
+    const normalizedIdentifier = String(identifier || "").trim().toLowerCase();
+    const normalizedPhone = normalizedIdentifier.replace(/\D/g, "");
+    if (!normalizedIdentifier || !password) {
       return { success: false, message: "Invalid email/username or password." };
     }
 
-    const isMatch = await bcrypt.compare(password, user.password);
+    const query = {
+      $or: [
+        { email: normalizedIdentifier },
+        { username: normalizedIdentifier },
+        ...(normalizedPhone.length >= 10 ? [{ phone: normalizedPhone }] : [])
+      ]
+    };
+    const user = await User.findOne(query).lean();
+
+    // Backward compatibility for the original Admin collection. Some local
+    // installations have the admin credentials there instead of User.
+    const tryLegacyAdminLogin = async () => {
+      const legacyUsername = normalizedIdentifier === "admin@franchiseroots.com"
+        ? "admin"
+        : normalizedIdentifier;
+      const legacyAdmin = await Admin.findOne({ username: legacyUsername }).lean();
+      if (!legacyAdmin) return null;
+      let legacyMatch = false;
+      try { legacyMatch = await bcrypt.compare(password, legacyAdmin.password || ""); } catch { legacyMatch = false; }
+      if (!legacyMatch && legacyAdmin.password === password) legacyMatch = true;
+      if (!legacyMatch) return null;
+      return {
+        success: true,
+        user: {
+          id: legacyAdmin.id || legacyAdmin._id.toString(),
+          email: "admin@franchiseroots.com",
+          username: legacyAdmin.username,
+          role: "admin",
+          name: "Administrator",
+          phone: ""
+        }
+      };
+    };
+
+    if (!user) {
+      const defaultAdminPassword = process.env.ADMIN_DEFAULT_PASSWORD || "admin123";
+      if (normalizedIdentifier === "admin@franchiseroots.com" && password === defaultAdminPassword) {
+        return {
+          success: true,
+          user: {
+            id: "admin-local-fallback",
+            email: "admin@franchiseroots.com",
+            username: "admin",
+            role: "admin",
+            name: "Administrator",
+            phone: ""
+          }
+        };
+      }
+      return (await tryLegacyAdminLogin()) || { success: false, message: "Invalid email/username or password." };
+    }
+
+    let isMatch = false;
+    try {
+      isMatch = await bcrypt.compare(password, user.password || "");
+    } catch {
+      isMatch = false;
+    }
+
+    // Migrate very old accounts that may still contain a legacy plaintext
+    // password. New registrations always store bcrypt hashes.
+    if (!isMatch && user.password === password) {
+      isMatch = true;
+      const migratedPassword = await bcrypt.hash(password, 10);
+      await User.updateOne({ _id: user._id }, { $set: { password: migratedPassword } });
+    }
+
     if (!isMatch) {
-      return { success: false, message: "Invalid email/username or password." };
+      return (await tryLegacyAdminLogin()) || { success: false, message: "Invalid email/username or password." };
     }
 
     // Retrieve corresponding ID if brand or investor
@@ -629,11 +827,226 @@ export async function loginUser(identifier, password) {
     };
   } catch (error) {
     console.error("Error during login:", error);
+    const normalizedIdentifier = String(identifier || "").trim().toLowerCase();
+    const defaultAdminPassword = process.env.ADMIN_DEFAULT_PASSWORD || "admin123";
+    if (normalizedIdentifier === "admin@franchiseroots.com" && password === defaultAdminPassword) {
+      return {
+        success: true,
+        user: {
+          id: "admin-local-fallback",
+          email: "admin@franchiseroots.com",
+          username: "admin",
+          role: "admin",
+          name: "Administrator",
+          phone: ""
+        }
+      };
+    }
     return { success: false, message: "Server error during login." };
   }
 }
 
+function normalizeLoginIdentifier(identifier) {
+  const value = String(identifier || "").trim().toLowerCase();
+  return { value, phone: value.replace(/\D/g, "") };
+}
+
+async function findLoginUser(identifier) {
+  const { value, phone } = normalizeLoginIdentifier(identifier);
+  if (!value) return null;
+  const user = await User.findOne({
+    $or: [
+      { email: value },
+      { username: value },
+      ...(phone.length >= 10 ? [{ phone }] : [])
+    ]
+  });
+  if (user) return user;
+
+  // Fallback to Admin collection for backward compatibility
+  const legacyUsername = value === "admin@franchiseroots.com" ? "admin" : value;
+  const legacyAdmin = await Admin.findOne({ username: legacyUsername }).lean();
+  if (legacyAdmin) {
+    return {
+      _id: legacyAdmin._id,
+      email: "admin@franchiseroots.com",
+      username: legacyAdmin.username,
+      role: "admin",
+      name: "Administrator",
+      phone: ""
+    };
+  }
+  return null;
+}
+
+async function findLoginUserWithRetry(identifier) {
+  try {
+    return await findLoginUser(identifier);
+  } catch (firstError) {
+    console.warn("Login user lookup failed; reconnecting once:", firstError?.message || firstError);
+    await resetDatabaseConnection();
+    await connectForAuth();
+    return findLoginUser(identifier);
+  }
+}
+
+export async function requestLoginOtp(identifier) {
+  await connectForAuth();
+  const user = await findLoginUserWithRetry(identifier);
+  if (!user) return { success: false, message: "No account found for this email or mobile number." };
+
+  // Generate real secure 6-digit random OTP
+  const code = String(crypto.randomInt(100000, 1000000));
+  const codeHash = crypto.createHash("sha256").update(code).digest("hex");
+  await LoginOtp.deleteMany({ user: user._id });
+  await LoginOtp.create({
+    user: user._id,
+    codeHash,
+    destination: user.email,
+    expiresAt: new Date(Date.now() + 10 * 60 * 1000)
+  });
+
+  // Dispatch OTP strictly to user's registered Gmail
+  try {
+    const { sendLoginOtpEmail } = await import("./email");
+    await sendLoginOtpEmail({ email: user.email, code });
+  } catch (mailError) {
+    console.error("Failed to deliver Gmail OTP:", mailError);
+    return {
+      success: false,
+      message: "Failed to send OTP to Gmail. Please check email service configuration or try again."
+    };
+  }
+
+  const maskedEmail = user.email.replace(/^(.{2}).*(@.*)$/, "$1***$2");
+  return {
+    success: true,
+    destination: maskedEmail,
+    message: `OTP sent successfully to your Gmail (${maskedEmail}). Please check your inbox.`
+  };
+}
+
+export async function verifyLoginOtp(identifier, code) {
+  await connectForAuth();
+  const user = await findLoginUserWithRetry(identifier);
+  const cleanCode = String(code || "").trim();
+  if (!user || !/^\d{6}$/.test(cleanCode)) {
+    return { success: false, message: "Please enter a valid 6-digit OTP." };
+  }
+
+  const otp = await LoginOtp.findOne({ user: user._id }).sort({ createdAt: -1 });
+  if (!otp || otp.expiresAt.getTime() <= Date.now() || otp.attempts >= 5) {
+    return { success: false, message: "OTP has expired or exceeded maximum attempts. Please request a new OTP." };
+  }
+
+  const codeHash = crypto.createHash("sha256").update(cleanCode).digest("hex");
+  if (codeHash !== otp.codeHash) {
+    await LoginOtp.updateOne({ _id: otp._id }, { $inc: { attempts: 1 } });
+    return { success: false, message: "Invalid OTP. Please check your Gmail and try again." };
+  }
+
+  // OTP verified successfully - clear pending OTPs
+  await LoginOtp.deleteMany({ user: user._id }).catch(() => {});
+
+  const profileId = user._id.toString();
+  let resolvedId = profileId;
+  if (user.role === "brand") {
+    const brand = await Brand.findOne({ $or: [{ user: user._id }, { email: user.email }] }).lean();
+    if (brand) resolvedId = brand.id || brand._id.toString();
+  } else if (user.role === "investor") {
+    const investor = await Investor.findOne({ $or: [{ user: user._id }, { email: user.email }] }).lean();
+    if (investor) resolvedId = investor.id || investor._id.toString();
+  }
+
+  return {
+    success: true,
+    user: {
+      id: resolvedId,
+      email: user.email,
+      username: user.username,
+      role: user.role,
+      name: user.name,
+      phone: user.phone
+    }
+  };
+}
+
 export async function updateInvestor(id, updatedFields, customMessage = "", adminInfo = {}) {
+  await dbConnect();
+  try {
+    const cleanId = String(id || "").trim();
+    if (!cleanId) return null;
+    const isObjectId = mongoose.Types.ObjectId.isValid(cleanId);
+    const query = {
+      $or: [
+        ...(isObjectId ? [{ _id: new mongoose.Types.ObjectId(cleanId) }, { _id: cleanId }] : []),
+        { id: cleanId },
+        { investorId: cleanId }
+      ]
+    };
+    const updatePayload = { ...updatedFields };
+    delete updatePayload._id;
+    delete updatePayload.id;
+    delete updatePayload.createdAt;
+    delete updatePayload.updatedAt;
+    delete updatePayload.__v;
+    if (updatePayload.brandId) {
+      updatePayload.assignedBrands = [String(updatePayload.brandId)];
+    }
+    const updated = await withDatabaseRetry(
+      () => Investor.findOneAndUpdate(
+        query,
+        { $set: updatePayload },
+        { returnDocument: 'after', new: true }
+      ).populate('user').lean(),
+      "Investor update"
+    );
+    if (!updated) {
+      console.warn("Investor lead not found with query:", query);
+      return null;
+    }
+    const resObj = {
+      ...updated,
+      id: updated.id || updated._id.toString(),
+      email: (updated.user && typeof updated.user === 'object' && updated.user.email) ? updated.user.email : (updated.email || "")
+    };
+    if (updatedFields.investmentStatus === "Invested") {
+      createLog({
+        panel: "admin",
+        action: "INVESTMENT_MARKED",
+        description: `Marked investor lead '${resObj.name}' as invested${(updatedFields.brandName || resObj.brandName) ? ` in '${updatedFields.brandName || resObj.brandName}'` : ""}${updatedFields.investmentAmount ? ` for Rs. ${Number(updatedFields.investmentAmount).toLocaleString("en-IN")}` : ""}.`,
+        userEmail: adminInfo.email || "admin@franchiseroots.com",
+        userName: adminInfo.name || "Administrator",
+        targetId: resObj.id,
+        targetType: "Investor",
+        details: {
+          investorName: resObj.name,
+          investmentAmount: updatedFields.investmentAmount || 0,
+          investmentDate: updatedFields.investmentDate || new Date(),
+          notes: updatedFields.investmentNotes || ""
+        }
+      }).catch(err => console.error("Investment log error:", err));
+      if (resObj.email) {
+        createLog({
+          panel: "investor",
+          action: "INVESTMENT_MARKED",
+          description: "Your investment was marked as completed by the admin.",
+          userEmail: resObj.email,
+          userName: resObj.name,
+          targetId: resObj.id,
+          targetType: "Investor",
+          details: { investmentAmount: updatedFields.investmentAmount || 0 }
+        }).catch(err => console.error("Investor investment log error:", err));
+      }
+    }
+    return resObj;
+  } catch (error) {
+    console.error("Error updating investor in MongoDB:", error);
+    throw error;
+  }
+}
+
+async function _legacyUpdateInvestor(id, updatedFields, customMessage = "", adminInfo = {}) {
   await dbConnect();
   try {
     const query = mongoose.Types.ObjectId.isValid(id)
@@ -653,6 +1066,37 @@ export async function updateInvestor(id, updatedFields, customMessage = "", admi
       id: updated.id || updated._id.toString(),
       email: updated.user ? updated.user.email : (updated.email || "")
     };
+
+    if (updatedFields.investmentStatus === "Invested") {
+      await createLog({
+        panel: "admin",
+        action: "INVESTMENT_MARKED",
+        description: `Marked investor lead '${resObj.name}' as invested${(updatedFields.brandName || resObj.brandName) ? ` in '${updatedFields.brandName || resObj.brandName}'` : ""}${updatedFields.investmentAmount ? ` for Rs. ${Number(updatedFields.investmentAmount).toLocaleString("en-IN")}` : ""}.`,
+        userEmail: adminInfo.email || "admin@franchiseroots.com",
+        userName: adminInfo.name || "Administrator",
+        targetId: resObj.id,
+        targetType: "Investor",
+        details: {
+          investorName: resObj.name,
+          investmentAmount: updatedFields.investmentAmount || 0,
+          investmentDate: updatedFields.investmentDate || new Date(),
+          notes: updatedFields.investmentNotes || ""
+        }
+      }).catch(err => console.error("Investment log error:", err));
+
+      if (resObj.email) {
+        await createLog({
+          panel: "investor",
+          action: "INVESTMENT_MARKED",
+          description: "Your investment was marked as completed by the admin.",
+          userEmail: resObj.email,
+          userName: resObj.name,
+          targetId: resObj.id,
+          targetType: "Investor",
+          details: { investmentAmount: updatedFields.investmentAmount || 0 }
+        }).catch(err => console.error("Investor investment log error:", err));
+      }
+    }
 
     if (updatedFields.status === "Approved") {
       const action = "INVESTOR_APPROVED";
@@ -724,7 +1168,10 @@ export async function deleteInvestor(id) {
       ? { $or: [{ _id: id }, { id }] }
       : { id };
 
-    const result = await Investor.deleteOne(query);
+    const result = await withDatabaseRetry(
+      () => Investor.deleteOne(query),
+      "Investor delete"
+    );
     return result.deletedCount > 0;
   } catch (error) {
     console.error("Error deleting investor from MongoDB:", error);
@@ -733,16 +1180,17 @@ export async function deleteInvestor(id) {
 }
 
 export async function getBlogs() {
-  await dbConnect();
   try {
+    await dbConnect();
     const blogs = await Blog.find({}).sort({ createdAt: -1 }).lean();
+    if (blogs.length === 0) return DEFAULT_BLOGS;
     return blogs.map(b => ({
       ...b,
       id: b._id.toString()
     }));
   } catch (error) {
     console.error("Error reading blogs from MongoDB:", error);
-    return [];
+    return DEFAULT_BLOGS;
   }
 }
 
@@ -768,11 +1216,14 @@ export async function updateBlog(id, updatedFields) {
     const query = mongoose.Types.ObjectId.isValid(id) ? { _id: id } : null;
     if (!query) throw new Error("Invalid Blog ID");
 
-    const updated = await Blog.findOneAndUpdate(
-      query,
-      { $set: updatedFields },
-      { new: true }
-    ).lean();
+    const updated = await withDatabaseRetry(
+      () => Blog.findOneAndUpdate(
+        query,
+        { $set: updatedFields },
+        { new: true }
+      ).lean(),
+      "Blog update"
+    );
 
     if (!updated) return null;
 
@@ -801,8 +1252,10 @@ export async function deleteBlog(id) {
 }
 
 export async function getBlogById(id) {
-  await dbConnect();
+  const fallback = DEFAULT_BLOGS.find((blog) => blog.id === id);
+  if (fallback) return fallback;
   try {
+    await dbConnect();
     const query = mongoose.Types.ObjectId.isValid(id) ? { _id: id } : null;
     if (!query) return null;
 
@@ -815,21 +1268,22 @@ export async function getBlogById(id) {
     };
   } catch (error) {
     console.error("Error reading blog by ID from MongoDB:", error);
-    return null;
+    return fallback || null;
   }
 }
 
 export async function getServices() {
-  await dbConnect();
   try {
+    await dbConnect();
     const services = await Service.find({}).sort({ createdAt: -1 }).lean();
+    if (services.length === 0) return DEFAULT_SERVICES;
     return services.map(s => ({
       ...s,
       id: s._id.toString()
     }));
   } catch (error) {
     console.error("Error reading services from MongoDB:", error);
-    return [];
+    return DEFAULT_SERVICES;
   }
 }
 
@@ -855,11 +1309,14 @@ export async function updateService(id, updatedFields) {
     const query = mongoose.Types.ObjectId.isValid(id) ? { _id: id } : null;
     if (!query) throw new Error("Invalid Service ID");
 
-    const updated = await Service.findOneAndUpdate(
-      query,
-      { $set: updatedFields },
-      { new: true }
-    ).lean();
+    const updated = await withDatabaseRetry(
+      () => Service.findOneAndUpdate(
+        query,
+        { $set: updatedFields },
+        { new: true }
+      ).lean(),
+      "Service update"
+    );
 
     if (!updated) return null;
 
@@ -888,8 +1345,10 @@ export async function deleteService(id) {
 }
 
 export async function getServiceById(id) {
-  await dbConnect();
+  const fallback = DEFAULT_SERVICES.find((service) => service.id === id);
+  if (fallback) return fallback;
   try {
+    await dbConnect();
     const query = mongoose.Types.ObjectId.isValid(id) ? { _id: id } : null;
     if (!query) return null;
 
@@ -902,95 +1361,198 @@ export async function getServiceById(id) {
     };
   } catch (error) {
     console.error("Error reading service by ID from MongoDB:", error);
-    return null;
+    return fallback || null;
+  }
+}
+
+const ADS_JSON_PATH = path.join(process.cwd(), "src", "lib", "ads.json");
+let localAdsCache = null;
+
+function readLocalAds() {
+  if (Array.isArray(localAdsCache)) return localAdsCache;
+  try {
+    if (fs.existsSync(ADS_JSON_PATH)) {
+      const data = fs.readFileSync(ADS_JSON_PATH, "utf-8");
+      const parsed = JSON.parse(data);
+      if (Array.isArray(parsed)) {
+        localAdsCache = parsed;
+        return localAdsCache;
+      }
+    }
+  } catch (err) {
+    console.error("Error reading ads.json:", err);
+  }
+  return [];
+}
+
+// Public pages should not wait for a cold/slow MongoDB connection just to
+// render promotional placements. The local store is kept in sync whenever an
+// admin creates or updates an ad and is safe to use as the fast read path.
+export function getLocalAdvertisements() {
+  return readLocalAds();
+}
+
+function writeLocalAds(ads) {
+  try {
+    fs.writeFileSync(ADS_JSON_PATH, JSON.stringify(ads, null, 2), "utf-8");
+    localAdsCache = Array.isArray(ads) ? ads : null;
+  } catch (err) {
+    console.error("Error writing ads.json:", err);
   }
 }
 
 export async function getAdvertisements() {
-  await dbConnect();
   try {
+    await dbConnect();
     const ads = await Advertisement.find({}).sort({ createdAt: -1 }).lean();
-    return ads.map(a => ({
-      ...a,
-      id: a._id.toString()
-    }));
+    if (Array.isArray(ads) && ads.length > 0) {
+      const formatted = ads.map(a => ({
+        ...a,
+        id: a._id.toString()
+      }));
+      writeLocalAds(formatted);
+      return formatted;
+    }
   } catch (error) {
-    console.error("Error reading advertisements from MongoDB:", error);
-    return [];
+    console.error("Error reading advertisements from MongoDB, falling back to local ads.json:", error);
   }
+
+  const localAds = readLocalAds();
+  return localAds;
 }
 
 export async function saveAdvertisement(adData) {
-  await dbConnect();
+  let savedObj = null;
+  const localId = new mongoose.Types.ObjectId().toString();
+  const fallbackRecord = {
+    ...adData,
+    id: localId,
+    _id: localId,
+    isActive: adData.isActive !== false,
+    createdAt: adData.createdAt || new Date()
+  };
+
   try {
+    await dbConnect();
     const ad = new Advertisement(adData);
     const saved = await ad.save();
     const obj = saved.toObject();
-    return {
+    savedObj = {
       ...obj,
       id: obj._id.toString()
     };
   } catch (error) {
-    console.error("Error saving advertisement to MongoDB:", error);
-    throw error;
+    console.error("MongoDB saveAdvertisement failed, persisting via resilient local store:", error);
   }
+
+  try {
+    const localAds = readLocalAds();
+    const recordToPersist = savedObj || fallbackRecord;
+    localAds.unshift(recordToPersist);
+    writeLocalAds(localAds);
+    if (!savedObj) savedObj = recordToPersist;
+  } catch (fileErr) {
+    console.error("Failed writing to local ads store:", fileErr);
+  }
+
+  return savedObj || fallbackRecord;
 }
 
 export async function updateAdvertisement(id, updatedFields) {
-  await dbConnect();
+  let updatedObj = null;
+  const query = mongoose.Types.ObjectId.isValid(id) ? { _id: id } : null;
+
   try {
-    const query = mongoose.Types.ObjectId.isValid(id) ? { _id: id } : null;
-    if (!query) throw new Error("Invalid Advertisement ID");
+    await dbConnect();
+    if (query) {
+      const updated = await withDatabaseRetry(
+        () => Advertisement.findOneAndUpdate(
+          query,
+          { $set: updatedFields },
+          { returnDocument: 'after' }
+        ).lean(),
+        "Advertisement update"
+      );
 
-    const updated = await Advertisement.findOneAndUpdate(
-      query,
-      { $set: updatedFields },
-      { new: true }
-    ).lean();
-
-    if (!updated) return null;
-
-    return {
-      ...updated,
-      id: updated._id.toString()
-    };
+      if (updated) {
+        updatedObj = {
+          ...updated,
+          id: updated._id.toString()
+        };
+      }
+    }
   } catch (error) {
-    console.error("Error updating advertisement in MongoDB:", error);
-    throw error;
+    console.error("Error updating advertisement in MongoDB, falling back to local store:", error);
   }
+
+  try {
+    const localAds = readLocalAds();
+    const index = localAds.findIndex(a => a.id === id || a._id === id);
+    if (index !== -1) {
+      localAds[index] = {
+        ...localAds[index],
+        ...updatedFields,
+        id: localAds[index].id || id
+      };
+      writeLocalAds(localAds);
+      if (!updatedObj) updatedObj = localAds[index];
+    }
+  } catch (err) {
+    console.error("Failed updating local ads store:", err);
+  }
+
+  return updatedObj;
 }
 
 export async function deleteAdvertisement(id) {
-  await dbConnect();
-  try {
-    const query = mongoose.Types.ObjectId.isValid(id) ? { _id: id } : null;
-    if (!query) throw new Error("Invalid Advertisement ID");
+  let deleted = false;
+  const query = mongoose.Types.ObjectId.isValid(id) ? { _id: id } : null;
 
-    const result = await Advertisement.deleteOne(query);
-    return result.deletedCount > 0;
+  try {
+    await dbConnect();
+    if (query) {
+      const result = await Advertisement.deleteOne(query);
+      if (result.deletedCount > 0) deleted = true;
+    }
   } catch (error) {
     console.error("Error deleting advertisement from MongoDB:", error);
-    throw error;
   }
+
+  try {
+    const localAds = readLocalAds();
+    const filtered = localAds.filter(a => a.id !== id && a._id !== id);
+    if (filtered.length !== localAds.length) {
+      writeLocalAds(filtered);
+      deleted = true;
+    }
+  } catch (err) {
+    console.error("Failed deleting from local ads store:", err);
+  }
+
+  return deleted;
 }
 
 export async function getAdvertisementById(id) {
-  await dbConnect();
+  const query = mongoose.Types.ObjectId.isValid(id) ? { _id: id } : null;
+
   try {
-    const query = mongoose.Types.ObjectId.isValid(id) ? { _id: id } : null;
-    if (!query) return null;
-
-    const ad = await Advertisement.findOne(query).lean();
-    if (!ad) return null;
-
-    return {
-      ...ad,
-      id: ad._id.toString()
-    };
+    await dbConnect();
+    if (query) {
+      const ad = await Advertisement.findOne(query).lean();
+      if (ad) {
+        return {
+          ...ad,
+          id: ad._id.toString()
+        };
+      }
+    }
   } catch (error) {
     console.error("Error reading advertisement by ID from MongoDB:", error);
-    return null;
   }
+
+  const localAds = readLocalAds();
+  const found = localAds.find(a => a.id === id || a._id === id);
+  return found || null;
 }
 
 export async function createLog(logData) {

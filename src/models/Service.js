@@ -20,4 +20,7 @@ const ServiceSchema = new mongoose.Schema({
     }
 });
 
+ServiceSchema.set('bufferCommands', false);
+ServiceSchema.set('autoIndex', false);
+
 module.exports = mongoose.models.Service || mongoose.model('Service', ServiceSchema);

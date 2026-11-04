@@ -138,11 +138,11 @@ export default function Footer() {
             <h4 style={{ color: 'white', fontSize: '13px', fontWeight: '800', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '24px' }}>Popular Categories</h4>
             <ul className="footer-links" style={{ listStyle: 'none' }}>
               {[
-                { name: 'Food & Beverage', url: '/brands/?category=Food and Beverage' },
-                { name: 'Retail Directory', url: '/brands/?category=Retail' },
-                { name: 'Educational Centers', url: '/brands/?category=Education' },
-                { name: 'Automobiles & EV', url: '/brands/?category=Automobiles' },
-                { name: 'Health & Wellness', url: '/brands/?category=Health and Wellness' }
+                { name: 'Food & Beverage', url: '/brands?category=Food and Beverage' },
+                { name: 'Retail Directory', url: '/brands?category=Retail' },
+                { name: 'Educational Centers', url: '/brands?category=Education' },
+                { name: 'Automotive & EV', url: '/brands?category=Automotive' },
+                { name: 'Beauty & Health', url: '/brands?category=Beauty & Health' }
               ].map((link, idx) => (
                 <li key={idx} style={{ marginBottom: '12px' }}>
                   <Link href={link.url} style={{ fontSize: '13.5px', color: '#94A3B8', display: 'inline-flex', alignItems: 'center', gap: '4px' }} className="footer-link-hover">

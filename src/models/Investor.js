@@ -104,6 +104,29 @@ const InvestorSchema = new mongoose.Schema({
         enum: ['Pending', 'Approved', 'Rejected'],
         default: 'Pending'
     },
+    investmentStatus: {
+        type: String,
+        enum: ['Not Started', 'Interested', 'Invested', 'Closed'],
+        default: 'Not Started'
+    },
+    investmentAmount: {
+        type: Number,
+        default: 0
+    },
+    investmentDate: {
+        type: Date,
+        default: null
+    },
+    investmentReference: {
+        type: String,
+        trim: true,
+        default: ''
+    },
+    investmentNotes: {
+        type: String,
+        trim: true,
+        default: ''
+    },
     appliedAt: {
         type: Date,
         default: Date.now
@@ -113,5 +136,8 @@ const InvestorSchema = new mongoose.Schema({
         default: Date.now
     }
 });
+
+InvestorSchema.set('bufferCommands', false);
+InvestorSchema.set('autoIndex', false);
 
 module.exports = mongoose.models.Investor || mongoose.model('Investor', InvestorSchema);
