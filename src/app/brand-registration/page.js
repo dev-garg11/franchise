@@ -75,6 +75,7 @@ export default function BrandRegistration() {
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [agreed, setAgreed] = useState(true);
 
   // Upload & preview states
   const [rawFile, setRawFile] = useState(null);
@@ -318,88 +319,85 @@ export default function BrandRegistration() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setLoading(true);
     setError("");
 
-    // Validation
-    if (
-      !formData.name ||
-      !formData.company ||
-      !formData.email ||
-      !formData.password ||
-      !formData.phone ||
-      !formData.pincode ||
-      !formData.investment_range ||
-      !formData.max_investment_limit
-    ) {
-      setError("Please fill in all mandatory fields marked with an asterisk (*).");
+    const scrollAndWarn = (name, msg) => {
+      setError(msg);
+      toast.warning(msg);
       setLoading(false);
-      return;
-    }
+      const el = name === "agree" ? document.getElementById("agree") : document.getElementsByName(name)[0];
+      if (el) {
+        el.focus();
+        el.scrollIntoView({ behavior: "smooth", block: "center" });
+      }
+    };
 
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(formData.email)) {
-      setError("Please enter a valid email address.");
-      setLoading(false);
-      return;
+    if (!formData.name?.trim()) {
+      return scrollAndWarn("name", "Please enter Brand Name.");
     }
-
-    if (formData.phone.length !== 10 || !/^\d{10}$/.test(formData.phone)) {
-      setError("Phone number must be exactly 10 digits.");
-      setLoading(false);
-      return;
+    if (!formData.company?.trim()) {
+      return scrollAndWarn("company", "Please enter Parent Company Name.");
     }
-
-    if (formData.password.length < 6) {
-      setError("Password must be at least 6 characters.");
-      setLoading(false);
-      return;
+    if (!formData.pincode?.trim() || !/^\d{6}$/.test(formData.pincode.trim())) {
+      return scrollAndWarn("pincode", "Please enter a valid 6-digit Pincode.");
     }
-
-    if (formData.pincode.length !== 6 || !/^\d{6}$/.test(formData.pincode)) {
-      setError("Pincode must be exactly 6 digits.");
-      setLoading(false);
-      return;
+    if (!formData.investment_range) {
+      return scrollAndWarn("investment_range", "Please select an Investment Range.");
     }
-
+    if (!formData.max_investment_limit) {
+      return scrollAndWarn("max_investment_limit", "Please select a Maximum Investment Limit.");
+    }
     const rangeIndex = INVESTMENT_OPTIONS.indexOf(formData.investment_range);
     const maxIndex = INVESTMENT_OPTIONS.indexOf(formData.max_investment_limit);
     if (maxIndex < rangeIndex) {
-      setError("Maximum investment must be greater than or equal to minimum investment.");
-      setLoading(false);
-      return;
+      return scrollAndWarn("max_investment_limit", "Maximum investment limit cannot be lower than the starting investment range.");
+    }
+    if (!formData.description?.trim()) {
+      return scrollAndWarn("description", "Please enter a brief Business Overview / Description.");
+    }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!formData.email?.trim() || !emailRegex.test(formData.email.trim())) {
+      return scrollAndWarn("email", "Please enter a valid Official Brand Email address.");
+    }
+    if (!formData.password || formData.password.length < 6) {
+      return scrollAndWarn("password", "Password must be at least 6 characters.");
+    }
+    const cleanPhone = String(formData.phone || "").replace(/\D/g, "");
+    if (cleanPhone.length !== 10) {
+      return scrollAndWarn("phone", "Please enter a valid 10-digit Mobile Number.");
+    }
+    if (!agreed) {
+      return scrollAndWarn("agree", "Please check the box to agree to the terms and conditions.");
     }
 
-    // Phase 1 Validation
+    // Phase 1 Validation: Brand name & Area
     const nameVal = validateBrandName(formData.name);
     if (!nameVal.isValid) {
-      setError(nameVal.reason || "Invalid brand name. Test/dummy names cannot be submitted.");
-      setLoading(false);
-      return;
+      return scrollAndWarn("name", nameVal.reason || "Invalid brand name. Test/dummy names cannot be submitted.");
     }
 
     let sanitizedArea = formData.areaRequired;
     if (formData.areaRequired && formData.areaRequired.trim()) {
       const areaVal = validateArea(formData.areaRequired);
       if (!areaVal.isValid) {
-        setError(`Invalid Area: ${areaVal.reason}. Space required must be between 50 and 50,000 sq ft.`);
-        setLoading(false);
-        return;
+        return scrollAndWarn("areaRequired", `Invalid Area: ${areaVal.reason}. Space required must be between 50 and 50,000 sq ft.`);
       }
       sanitizedArea = areaVal.value;
     }
 
+    setLoading(true);
     try {
       const rangeMinVal = mapRangeToNumeric(formData.investment_range, false);
       const rangeMaxVal = mapRangeToNumeric(formData.max_investment_limit, true);
 
       const payload = {
         ...formData,
+        phone: cleanPhone,
         minInvestment: rangeMinVal,
         maxInvestment: rangeMaxVal,
         areaRequired: sanitizedArea,
         franchiseFee: Number(formData.franchiseFee) || 50000,
-        status: "Pending", // Admin will approve it from dashboard!
+        status: "Pending",
       };
 
       const res = await fetch("/api/brands", {
@@ -411,14 +409,19 @@ export default function BrandRegistration() {
       });
 
       if (res.ok) {
-        clearBrandsCache(); toast.success("Brand registered successfully! Pending admin approval.");
+        clearBrandsCache();
+        toast.success("Brand registered successfully! Pending admin approval.");
         setSubmitted(true);
       } else {
         const data = await res.json();
-        setError(data.error || "Something went wrong. Please try again."); toast.error(data.error || "Something went wrong. Please try again.");
+        const errText = data.error || "Something went wrong. Please try again.";
+        setError(errText);
+        toast.error(errText);
       }
     } catch (err) {
+      console.error("Submission error:", err);
       setError("Network error. Please verify server connection.");
+      toast.error("Network error. Please verify server connection.");
     } finally {
       setLoading(false);
     }
@@ -470,7 +473,7 @@ export default function BrandRegistration() {
             </div>
           </div>
 
-          <form onSubmit={handleSubmit} className="form-body">
+          <form onSubmit={handleSubmit} noValidate className="form-body">
             {error && <div className="alert alert-danger">{error}</div>}
 
             <h3 className="form-section-title">1. Business Details</h3>
@@ -1089,9 +1092,34 @@ export default function BrandRegistration() {
             </div>
 
             <div style={{ marginTop: "32px" }}>
-              <div className="form-checkbox" style={{ marginBottom: "20px" }}>
-                <input type="checkbox" required id="agree" />
-                <label htmlFor="agree" style={{ fontSize: "13px", color: "var(--text-muted)" }}>
+              {error && (
+                <div style={{
+                  marginBottom: "16px",
+                  padding: "12px 16px",
+                  borderRadius: "10px",
+                  background: "#fef2f2",
+                  color: "#991b1b",
+                  border: "1px solid #f87171",
+                  fontSize: "13.5px",
+                  fontWeight: "600",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "10px"
+                }}>
+                  <AlertCircle size={18} style={{ color: "#ef4444", flexShrink: 0 }} />
+                  <span>{error}</span>
+                </div>
+              )}
+
+              <div className="form-checkbox" style={{ marginBottom: "20px", display: "flex", alignItems: "center", gap: "10px" }}>
+                <input
+                  type="checkbox"
+                  id="agree"
+                  checked={agreed}
+                  onChange={(e) => setAgreed(e.target.checked)}
+                  style={{ width: "18px", height: "18px", accentColor: "var(--primary)", cursor: "pointer" }}
+                />
+                <label htmlFor="agree" style={{ fontSize: "13px", color: "var(--text-muted)", cursor: "pointer", margin: 0 }}>
                   I agree to the <Link href="/terms" style={{ color: "var(--primary)", textDecoration: "underline" }}>terms and conditions</Link> of Franchise Apply.
                 </label>
               </div>
