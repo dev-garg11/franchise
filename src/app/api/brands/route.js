@@ -147,9 +147,9 @@ export async function POST(request) {
       return NextResponse.json({ error: "Maximum investment must be greater than or equal to minimum investment." }, { status: 400 });
     }
 
-    // Phase 1 Strict Validation
+    // Phase 1 Strict Validation (Test brands quarantined as needs_fix)
     const nameVal = validateBrandName(name);
-    if (!nameVal.isValid) {
+    if (!nameVal.isValid && !nameVal.isTest) {
       return NextResponse.json({ error: nameVal.reason }, { status: 400 });
     }
 
@@ -180,6 +180,7 @@ export async function POST(request) {
       max_investment_limit: body.max_investment_limit || "Rs. 20 Lakh - 30 Lakh",
       category: body.category || "General",
       areaRequired: sanitizedArea,
+      seoStatus: nameVal.isTest ? "needs_fix" : (body.seoStatus || "Pending Review"),
       status: body.status || "Pending"
     };
 
