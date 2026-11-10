@@ -3585,28 +3585,11 @@ button {
 
 /* Add Brand CTA Premium */
 .add-brand-btn-premium {
-  background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%) !important;
-  box-shadow: 0 0 0 0 rgba(37, 99, 235, 0.4), 0 4px 14px rgba(37, 99, 235, 0.25) !important;
+  white-space: nowrap !important;
+  flex-shrink: 0 !important;
+  border-radius: 9999px !important;
   position: relative;
   overflow: hidden;
-}
-
-.add-brand-btn-premium::after {
-  content: '';
-  position: absolute;
-  top: -50%;
-  left: -60%;
-  width: 30%;
-  height: 200%;
-  background: rgba(255, 255, 255, 0.25);
-  transform: rotate(30deg);
-  transition: none;
-  animation: shine-glow-loop 4s infinite linear;
-}
-
-.add-brand-btn-premium:hover {
-  transform: translateY(-2px) !important;
-  box-shadow: 0 0 20px rgba(37, 99, 235, 0.3), 0 8px 24px rgba(37, 99, 235, 0.35) !important;
 }
 
 /* Scroll To Top Button */
@@ -5147,10 +5130,20 @@ button {
 }
 
 .site-header-shell .add-brand-btn-premium {
-  min-height: 46px;
-  border-radius: 14px;
-  background: #dc2626 !important;
-  box-shadow: 0 8px 20px rgba(220, 38, 38, .35) !important;
+  min-height: 40px !important;
+  height: 40px !important;
+  border-radius: 9999px !important;
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%) !important;
+  box-shadow: 0 4px 14px rgba(220, 38, 38, .3) !important;
+  white-space: nowrap !important;
+  flex-shrink: 0 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 7px !important;
+  padding: 0 18px !important;
+  border: 1px solid rgba(255, 255, 255, 0.25) !important;
+  font-weight: 700 !important;
+  font-size: 13.5px !important;
 }
 
 .site-header-shell .user-profile-group {
@@ -5673,9 +5666,37 @@ button {
 }
 
 .add-brand-btn-premium {
-  background: var(--fr-nav-red) !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 7px !important;
+  height: 40px !important;
+  min-height: 40px !important;
+  padding: 0 18px !important;
+  border-radius: 9999px !important;
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%) !important;
   color: #ffffff !important;
-  box-shadow: 0 6px 16px rgba(220, 38, 38, 0.2) !important;
+  border: 1px solid rgba(255, 255, 255, 0.25) !important;
+  box-shadow: 0 4px 14px rgba(220, 38, 38, 0.3) !important;
+  font-size: 13.5px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.01em !important;
+  line-height: 1 !important;
+  white-space: nowrap !important;
+  flex-shrink: 0 !important;
+  cursor: pointer !important;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+.add-brand-btn-premium:hover {
+  background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%) !important;
+  box-shadow: 0 6px 20px rgba(220, 38, 38, 0.42) !important;
+  transform: translateY(-1.5px) !important;
+}
+
+.add-brand-btn-premium:active {
+  transform: translateY(0.5px) !important;
+  box-shadow: 0 2px 8px rgba(220, 38, 38, 0.3) !important;
 }
 
 .user-avatar-btn {

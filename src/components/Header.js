@@ -805,7 +805,7 @@ export default function Header() {
                   )}
                 </div>
               ) : (
-                <div className="auth-buttons-group" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <div className="auth-buttons-group" style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'nowrap', flexShrink: 0 }}>
                   <button
                     type="button"
                     onClick={() => {
@@ -823,10 +823,12 @@ export default function Header() {
                       borderRadius: '9999px',
                       background: '#ffffff',
                       border: '1px solid #e2e8f0',
-                      padding: '8px 18px',
+                      padding: '8px 16px',
                       fontSize: '13.5px',
                       fontWeight: '700',
                       color: 'var(--text-dark)',
+                      whiteSpace: 'nowrap',
+                      flexShrink: 0,
                       cursor: 'pointer'
                     }}
                   >
@@ -851,9 +853,11 @@ export default function Header() {
                       background: '#eff6ff',
                       color: '#2563eb',
                       border: '1px solid #dbeafe',
-                      padding: '8px 18px',
+                      padding: '8px 16px',
                       fontSize: '13.5px',
                       fontWeight: '700',
+                      whiteSpace: 'nowrap',
+                      flexShrink: 0,
                       cursor: 'pointer'
                     }}
                   >
@@ -868,30 +872,33 @@ export default function Header() {
                       setTimeout(() => {
                         setLoadingAddBrand(false);
                         router.push("/brand-registration");
-                      }, 400);
+                      }, 300);
                     }}
                     className="btn btn-primary add-brand-btn-premium"
                     style={{
                       display: 'inline-flex',
                       alignItems: 'center',
-                      gap: '6px',
-                      background: 'linear-gradient(90deg, #7c3aed 0%, #ff5a36 100%)',
+                      gap: '7px',
+                      background: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
                       color: '#ffffff',
                       borderRadius: '9999px',
                       padding: '9px 20px',
-                      border: 'none',
-                      boxShadow: '0 4px 14px rgba(124, 58, 237, 0.25)',
+                      border: '1px solid rgba(255, 255, 255, 0.25)',
+                      boxShadow: '0 4px 14px rgba(220, 38, 38, 0.3)',
                       fontSize: '13.5px',
                       fontWeight: '700',
+                      whiteSpace: 'nowrap',
+                      flexShrink: 0,
+                      lineHeight: 1,
                       cursor: 'pointer'
                     }}
                   >
                     {loadingAddBrand ? (
                       <div className="spinner" style={{ width: "14px", height: "14px", borderWidth: "2px", borderTopColor: "white" }}></div>
                     ) : (
-                      <Building size={15} />
+                      <Building size={15} style={{ flexShrink: 0 }} />
                     )}
-                    + Add Brand
+                    <span>+ Add Brand</span>
                   </button>
                 </div>
               )}
