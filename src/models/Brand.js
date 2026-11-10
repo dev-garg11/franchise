@@ -160,7 +160,7 @@ const BrandSchema = new mongoose.Schema({
     },
     seoStatus: {
         type: String,
-        enum: ['Pending Review', 'Approved', 'Rejected'],
+        enum: ['Pending Review', 'Approved', 'Rejected', 'needs_fix', 'good', 'Quarantined'],
         default: 'Pending Review'
     }
 });

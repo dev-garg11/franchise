@@ -12,6 +12,7 @@ import { toast, Swal } from "@/lib/swal";
 import { REGISTRATION_INVESTMENT_OPTIONS, getFilteredMaxLimits } from "@/lib/investmentData";
 import { BRAND_CATEGORIES, BRAND_SECTORS_MAP, ALL_INDIAN_STATES } from "@/lib/brandConstants";
 import { DISTRICTS_BY_STATE } from "@/lib/districtsData";
+import { validateArea, validateBrandName } from "@/lib/seo/validate";
 
 const INVESTMENT_OPTIONS = [
   "Rs. 10,000 - 50,000",
