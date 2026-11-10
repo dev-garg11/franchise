@@ -127,6 +127,14 @@ export async function POST(request) {
       return NextResponse.json({ error: "Missing required fields: Name, email, and phone are required." }, { status: 400 });
     }
 
+    if (name.length > 30) {
+      return NextResponse.json({ error: "Brand Name cannot exceed 30 characters." }, { status: 400 });
+    }
+
+    if (body.company && String(body.company).trim().length > 30) {
+      return NextResponse.json({ error: "Parent Company Name cannot exceed 30 characters." }, { status: 400 });
+    }
+
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       return NextResponse.json({ error: "Please enter a valid email address." }, { status: 400 });
     }

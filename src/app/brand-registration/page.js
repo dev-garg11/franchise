@@ -111,7 +111,12 @@ export default function BrandRegistration() {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    if (name === "investment_range") {
+    if (name === "name" || name === "company") {
+      setFormData((prev) => ({
+        ...prev,
+        [name]: value.slice(0, 30),
+      }));
+    } else if (name === "investment_range") {
       const validMaxOptions = getFilteredMaxLimits(value);
       setFormData((prev) => {
         let maxVal = prev.max_investment_limit;
@@ -442,8 +447,14 @@ export default function BrandRegistration() {
     if (!formData.name?.trim()) {
       return scrollAndWarn("name", "Please enter Brand Name.");
     }
+    if (formData.name.trim().length > 30) {
+      return scrollAndWarn("name", "Brand Name cannot exceed 30 characters.");
+    }
     if (!formData.company?.trim()) {
       return scrollAndWarn("company", "Please enter Parent Company Name.");
+    }
+    if (formData.company.trim().length > 30) {
+      return scrollAndWarn("company", "Parent Company Name cannot exceed 30 characters.");
     }
     if (!formData.pincode?.trim() || !/^\d{6}$/.test(formData.pincode.trim())) {
       return scrollAndWarn("pincode", "Please enter a valid 6-digit Pincode.");
@@ -628,6 +639,7 @@ export default function BrandRegistration() {
                   type="text"
                   name="name"
                   required
+                  maxLength={30}
                   placeholder="e.g. Bombay Kulfi"
                   value={formData.name}
                   onChange={handleChange}
@@ -641,6 +653,7 @@ export default function BrandRegistration() {
                   type="text"
                   name="company"
                   required
+                  maxLength={30}
                   placeholder="e.g. Bombay Kulfi Foods Pvt Ltd"
                   value={formData.company}
                   onChange={handleChange}

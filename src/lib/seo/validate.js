@@ -82,14 +82,14 @@ export function validateImageUrl(url) {
 
   const clean = url.trim();
   if (clean.startsWith("data:image")) {
-    return { isValid: false, value: clean, reason: "Base64 data URI is not allowed. Must be a real image URL." };
+    return { isValid: true, value: clean, reason: null };
   }
 
   if (clean.startsWith("https://") || clean.startsWith("http://") || clean.startsWith("/uploads/") || clean.startsWith("/")) {
     return { isValid: true, value: clean, reason: null };
   }
 
-  return { isValid: false, value: clean, reason: "Image must be a valid HTTPS URL or /uploads/ path" };
+  return { isValid: false, value: clean, reason: "Image must be a valid image URL or uploaded photo" };
 }
 
 // 4. Validate Brand Name (No Test / Dummy Names in Production)
@@ -101,6 +101,9 @@ export function validateBrandName(name) {
   const clean = name.trim();
   if (clean.length < 2) {
     return { isValid: false, reason: "Brand name must be at least 2 characters long" };
+  }
+  if (clean.length > 30) {
+    return { isValid: false, reason: "Brand name cannot exceed 30 characters" };
   }
 
   if (/^(test|demo|dummy|testing|sample|ajay)$/i.test(clean) || /\b(test brand|dummy brand|demo brand)\b/i.test(clean)) {
