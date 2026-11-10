@@ -5130,20 +5130,22 @@ button {
 }
 
 .site-header-shell .add-brand-btn-premium {
-  min-height: 40px !important;
-  height: 40px !important;
+  min-height: 36px !important;
+  height: 36px !important;
   border-radius: 9999px !important;
   background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%) !important;
-  box-shadow: 0 4px 14px rgba(220, 38, 38, .3) !important;
+  box-shadow: 0 4px 12px rgba(220, 38, 38, .25) !important;
   white-space: nowrap !important;
   flex-shrink: 0 !important;
   display: inline-flex !important;
   align-items: center !important;
-  gap: 7px !important;
-  padding: 0 18px !important;
+  justify-content: center !important;
+  gap: 6px !important;
+  padding: 8px 16px !important;
   border: 1px solid rgba(255, 255, 255, 0.25) !important;
   font-weight: 700 !important;
   font-size: 13.5px !important;
+  line-height: 1 !important;
 }
 
 .site-header-shell .user-profile-group {
@@ -5669,15 +5671,15 @@ button {
   display: inline-flex !important;
   align-items: center !important;
   justify-content: center !important;
-  gap: 7px !important;
-  height: 40px !important;
-  min-height: 40px !important;
-  padding: 0 18px !important;
+  gap: 6px !important;
+  height: 36px !important;
+  min-height: 36px !important;
+  padding: 8px 16px !important;
   border-radius: 9999px !important;
   background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%) !important;
   color: #ffffff !important;
   border: 1px solid rgba(255, 255, 255, 0.25) !important;
-  box-shadow: 0 4px 14px rgba(220, 38, 38, 0.3) !important;
+  box-shadow: 0 4px 12px rgba(220, 38, 38, 0.25) !important;
   font-size: 13.5px !important;
   font-weight: 700 !important;
   letter-spacing: 0.01em !important;
