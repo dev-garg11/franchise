@@ -89,6 +89,10 @@ const BrandSchema = new mongoose.Schema({
         type: String,
         default: ''
     },
+    images: {
+        type: [String],
+        default: []
+    },
     user: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User',

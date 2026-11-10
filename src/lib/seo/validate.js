@@ -45,8 +45,8 @@ export function validateArea(rawArea) {
   const minNum = Math.min(...parsedNumbers);
   const maxNum = Math.max(...parsedNumbers);
 
-  if (maxNum > 50000) {
-    return { isValid: false, value: null, reason: `Area ${maxNum} sq ft exceeds maximum allowed (50,000 sq ft)` };
+  if (maxNum > 10000) {
+    return { isValid: false, value: null, reason: `Area ${maxNum} sq ft exceeds maximum allowed (10,000 sq ft)` };
   }
   if (minNum < 50) {
     return { isValid: false, value: null, reason: `Area ${minNum} sq ft is below minimum allowed (50 sq ft)` };

@@ -157,10 +157,25 @@ export async function POST(request) {
     if (body.areaRequired && String(body.areaRequired).trim()) {
       const areaVal = validateArea(body.areaRequired);
       if (!areaVal.isValid) {
-        return NextResponse.json({ error: `Invalid Area: ${areaVal.reason}. Must be between 50 and 50,000 sq ft.` }, { status: 400 });
+        return NextResponse.json({ error: `Invalid Area: ${areaVal.reason}. Must be between 50 and 10,000 sq ft.` }, { status: 400 });
       }
       sanitizedArea = areaVal.value;
     }
+
+    let cleanRoyalty = body.royaltyFee ? String(body.royaltyFee).trim() : "0%";
+    const royaltyNum = parseFloat(cleanRoyalty.replace(/[^\d.]/g, ""));
+    if (!isNaN(royaltyNum) && royaltyNum > 100) {
+      return NextResponse.json({ error: "Royalty / Commission Fee cannot exceed 100%." }, { status: 400 });
+    }
+
+    let cleanWebsite = body.website ? String(body.website).trim() : "";
+    if (cleanWebsite && !/^https?:\/\//i.test(cleanWebsite)) {
+      cleanWebsite = `https://${cleanWebsite}`;
+    }
+
+    const imagesList = Array.isArray(body.images) && body.images.length > 0 
+      ? body.images 
+      : (body.image ? [body.image] : []);
 
     if (body.image && typeof body.image === "string") {
       const imgVal = validateImageUrl(body.image);
@@ -180,8 +195,12 @@ export async function POST(request) {
       max_investment_limit: body.max_investment_limit || "Rs. 20 Lakh - 30 Lakh",
       category: body.category || "General",
       areaRequired: sanitizedArea,
+      royaltyFee: cleanRoyalty,
+      website: cleanWebsite,
+      image: body.image || imagesList[0] || "",
+      images: imagesList,
       businessModel: body.businessModel || "FOFO",
-      currentOutlets: body.currentOutlets || "0 - 5",
+      currentOutlets: body.currentOutlets || "0 - 5 Outlets",
       establishedYear: Number(body.establishedYear) || new Date().getFullYear(),
       seoStatus: nameVal.isTest ? "needs_fix" : (body.seoStatus || "Pending Review"),
       status: body.status || "Pending"

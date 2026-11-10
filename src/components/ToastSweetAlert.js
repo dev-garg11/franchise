@@ -16,24 +16,24 @@ const COLOR_MAP = {
     buttonText: "#041c0e"
   },
   error: {
-    base: "#ff1744",
-    glow: "rgba(255, 23, 68, 0.5)",
-    bg: "#240409",
-    border: "#ff1744",
-    gradient: "linear-gradient(135deg, #ff1744 0%, #d50000 100%)",
-    iconColor: "#ff1744",
+    base: "#f43f5e",
+    glow: "rgba(244, 63, 94, 0.5)",
+    bg: "#1e050b",
+    border: "#f43f5e",
+    gradient: "linear-gradient(135deg, #f43f5e 0%, #e11d48 100%)",
+    iconColor: "#f43f5e",
     textLight: "#fecdd3",
     buttonText: "#ffffff"
   },
   warning: {
-    base: "#ffab00",
-    glow: "rgba(255, 171, 0, 0.45)",
-    bg: "#261502",
-    border: "#ffab00",
-    gradient: "linear-gradient(135deg, #ffab00 0%, #ff8f00 100%)",
-    iconColor: "#ffab00",
-    textLight: "#fef08a",
-    buttonText: "#1f1300"
+    base: "#ef4444",
+    glow: "rgba(239, 68, 68, 0.45)",
+    bg: "#1c0609",
+    border: "#ef4444",
+    gradient: "linear-gradient(135deg, #ef4444 0%, #dc2626 100%)",
+    iconColor: "#ef4444",
+    textLight: "#fca5a5",
+    buttonText: "#ffffff"
   },
   info: {
     base: "#00b0ff",

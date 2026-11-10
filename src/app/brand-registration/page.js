@@ -72,9 +72,11 @@ export default function BrandRegistration() {
     phone: "",
     website: "",
     image: "",
+    images: [],
     businessModel: "FOFO",
     currentOutlets: "0 - 5",
     establishedYear: "",
+    establishedDate: "",
   });
 
   const [submitted, setSubmitted] = useState(false);
@@ -82,6 +84,9 @@ export default function BrandRegistration() {
   const [error, setError] = useState("");
   const [errorField, setErrorField] = useState("");
   const [agreed, setAgreed] = useState(true);
+  const [establishedError, setEstablishedError] = useState("");
+  const [areaError, setAreaError] = useState("");
+  const [royaltyError, setRoyaltyError] = useState("");
 
   // Upload & preview states
   const [rawFile, setRawFile] = useState(null);
@@ -138,6 +143,41 @@ export default function BrandRegistration() {
       setFormData((prev) => ({
         ...prev,
         phone: sanitized,
+      }));
+    } else if (name === "areaRequired") {
+      const numMatch = value.replace(/,/g, "").match(/\d+/g);
+      if (numMatch) {
+        const maxVal = Math.max(...numMatch.map(Number));
+        if (maxVal > 10000) {
+          setAreaError("⚠ Property Area cannot exceed 10,000 Sq. Ft.");
+        } else {
+          setAreaError("");
+        }
+      } else {
+        setAreaError("");
+      }
+      setFormData((prev) => ({ ...prev, areaRequired: value }));
+    } else if (name === "royaltyFee") {
+      const num = parseFloat(value.replace(/[^\d.]/g, ""));
+      if (!isNaN(num) && num > 100) {
+        setRoyaltyError("⚠ Royalty / Commission Fee cannot exceed 100%.");
+      } else {
+        setRoyaltyError("");
+      }
+      setFormData((prev) => ({ ...prev, royaltyFee: value }));
+    } else if (name === "establishedDate") {
+      const selDate = new Date(value);
+      const today = new Date();
+      today.setHours(23, 59, 59, 999);
+      if (value && selDate > today) {
+        setEstablishedError("⚠ Established date cannot be in the future. Please select a past date.");
+      } else {
+        setEstablishedError("");
+      }
+      setFormData((prev) => ({
+        ...prev,
+        establishedDate: value,
+        establishedYear: value ? new Date(value).getFullYear().toString() : ""
       }));
     } else {
       setFormData((prev) => ({
@@ -220,53 +260,111 @@ export default function BrandRegistration() {
     e.stopPropagation();
     setDragActive(false);
 
-    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      handleFile(e.dataTransfer.files[0]);
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      handleFiles(e.dataTransfer.files);
     }
   };
 
-  const handleFile = (file) => {
+  const handleFiles = (files) => {
     setImageError("");
     setUploadStatus("idle");
     setUploadProgress(0);
 
+    const fileList = Array.from(files).slice(0, 5);
+    if (fileList.length === 0) return;
+
     const allowedTypes = ["image/png", "image/jpeg", "image/jpg", "image/webp", "image/svg+xml"];
-    if (!allowedTypes.includes(file.type)) {
-      setUploadStatus("error");
-      setImageError("Unsupported format. Please upload PNG, JPG, JPEG, WEBP, or SVG.");
-      return;
+    for (const file of fileList) {
+      if (!allowedTypes.includes(file.type)) {
+        setUploadStatus("error");
+        setImageError("Unsupported format. Please upload PNG, JPG, JPEG, WEBP, or SVG.");
+        return;
+      }
+      if (file.size > 5 * 1024 * 1024) {
+        setUploadStatus("error");
+        setImageError("One of the files is too large. Maximum size allowed is 5 MB.");
+        return;
+      }
     }
-
-    const maxSize = 5 * 1024 * 1024;
-    if (file.size > maxSize) {
-      setUploadStatus("error");
-      setImageError("File is too large. Maximum size allowed is 5 MB.");
-      return;
-    }
-
-    setRawFile(file);
-    const sizeStr = (file.size / (1024 * 1024)).toFixed(2) + " MB";
-    setImageMeta({
-      name: file.name,
-      size: sizeStr,
-      type: file.type.split("/")[1].toUpperCase(),
-      resolution: "Calculating...",
-      width: 0,
-      height: 0,
-      url: ""
-    });
 
     setUploadStatus("uploading");
-    let progress = 0;
-    const interval = setInterval(() => {
-      progress += 10;
-      setUploadProgress(progress);
-      if (progress >= 100) {
-        clearInterval(interval);
-        setUploadStatus("success");
-        processImage(file, 0, 1);
-      }
-    }, 60);
+    setUploadProgress(15);
+
+    const newImages = [];
+    let processedCount = 0;
+
+    fileList.forEach((file) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement("canvas");
+          const ctx = canvas.getContext("2d");
+          const maxDim = 800;
+          let width = img.width;
+          let height = img.height;
+          if (width > maxDim || height > maxDim) {
+            if (width > height) {
+              height = Math.round((height * maxDim) / width);
+              width = maxDim;
+            } else {
+              width = Math.round((width * maxDim) / height);
+              height = maxDim;
+            }
+          }
+          canvas.width = width;
+          canvas.height = height;
+          ctx.drawImage(img, 0, 0, width, height);
+          const base64 = canvas.toDataURL("image/jpeg", 0.85);
+          newImages.push(base64);
+          processedCount++;
+          setUploadProgress(Math.min(95, Math.round((processedCount / fileList.length) * 90) + 10));
+
+          if (processedCount === fileList.length) {
+            setFormData((prev) => {
+              const combined = [...(prev.images || []), ...newImages].slice(0, 5);
+              return {
+                ...prev,
+                images: combined,
+                image: combined[0] || ""
+              };
+            });
+            setUploadStatus("success");
+            setUploadProgress(100);
+            setRawFile(fileList[0]);
+            setImageMeta({
+              name: fileList[0].name,
+              size: (fileList[0].size / (1024 * 1024)).toFixed(2) + " MB",
+              type: fileList[0].type.split("/")[1].toUpperCase(),
+              resolution: `${width} × ${height} px`,
+              width,
+              height,
+              url: newImages[0]
+            });
+          }
+        };
+        img.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const handleFile = (file) => {
+    handleFiles([file]);
+  };
+
+  const removeImageAt = (idx) => {
+    setFormData((prev) => {
+      const filtered = (prev.images || []).filter((_, i) => i !== idx);
+      return {
+        ...prev,
+        images: filtered,
+        image: filtered[0] || ""
+      };
+    });
+    if ((formData.images || []).length <= 1) {
+      removeImage();
+    }
   };
 
   const removeImage = () => {
@@ -287,7 +385,8 @@ export default function BrandRegistration() {
     });
     setFormData(prev => ({
       ...prev,
-      image: ""
+      image: "",
+      images: []
     }));
   };
 
@@ -330,7 +429,7 @@ export default function BrandRegistration() {
     const scrollAndWarn = (name, msg) => {
       setError(msg);
       setErrorField(name);
-      toast.warning(msg);
+      toast.error(msg);
       setLoading(false);
       const el = name === "agree" ? document.getElementById("agree") : document.getElementsByName(name)[0];
       if (el) {
@@ -376,11 +475,23 @@ export default function BrandRegistration() {
     if (!/^[6-9]\d{9}$/.test(cleanPhone)) {
       return scrollAndWarn("phone", "Please enter a valid 10-digit Indian Mobile Number starting with 6, 7, 8, or 9.");
     }
-    if (formData.establishedYear) {
+    if (formData.establishedDate) {
+      const selDate = new Date(formData.establishedDate);
+      const today = new Date();
+      if (selDate > today) {
+        return scrollAndWarn("establishedDate", "Established date cannot be in the future. Please select a past date.");
+      }
+    } else if (formData.establishedYear) {
       const yearNum = Number(formData.establishedYear);
       const curYear = new Date().getFullYear();
       if (isNaN(yearNum) || yearNum < 1900 || yearNum > curYear) {
-        return scrollAndWarn("establishedYear", `Established Year must be a valid year between 1900 and ${curYear}.`);
+        return scrollAndWarn("establishedDate", `Established Year must be a valid year between 1900 and ${curYear}.`);
+      }
+    }
+    if (formData.royaltyFee && formData.royaltyFee.trim()) {
+      const royaltyNum = parseFloat(formData.royaltyFee.replace(/[^\d.]/g, ""));
+      if (!isNaN(royaltyNum) && royaltyNum > 100) {
+        return scrollAndWarn("royaltyFee", "Royalty / Commission Fee cannot exceed 100%.");
       }
     }
     if (!agreed) {
@@ -395,11 +506,23 @@ export default function BrandRegistration() {
 
     let sanitizedArea = formData.areaRequired;
     if (formData.areaRequired && formData.areaRequired.trim()) {
+      const numMatch = formData.areaRequired.replace(/,/g, "").match(/\d+/g);
+      if (numMatch) {
+        const maxArea = Math.max(...numMatch.map(Number));
+        if (maxArea > 10000) {
+          return scrollAndWarn("areaRequired", "Property Area cannot exceed 10,000 Sq. Ft.");
+        }
+      }
       const areaVal = validateArea(formData.areaRequired);
       if (!areaVal.isValid) {
-        return scrollAndWarn("areaRequired", `Invalid Area: ${areaVal.reason}. Space required must be between 50 and 50,000 sq ft.`);
+        return scrollAndWarn("areaRequired", `Invalid Area: ${areaVal.reason}. Space required must be between 50 and 10,000 sq ft.`);
       }
       sanitizedArea = areaVal.value;
+    }
+
+    let cleanWebsite = formData.website ? formData.website.trim() : "";
+    if (cleanWebsite && !/^https?:\/\//i.test(cleanWebsite)) {
+      cleanWebsite = `https://${cleanWebsite}`;
     }
 
     setLoading(true);
@@ -407,10 +530,17 @@ export default function BrandRegistration() {
       const rangeMinVal = mapRangeToNumeric(formData.investment_range, false);
       const rangeMaxVal = mapRangeToNumeric(formData.max_investment_limit, true);
 
+      const allImgs = (formData.images && formData.images.length > 0) 
+        ? formData.images 
+        : (formData.image ? [formData.image] : []);
+
       const payload = {
         ...formData,
         phone: cleanPhone,
-        establishedYear: formData.establishedYear ? Number(formData.establishedYear) : undefined,
+        website: cleanWebsite,
+        image: allImgs[0] || "",
+        images: allImgs,
+        establishedYear: formData.establishedYear ? Number(formData.establishedYear) : (formData.establishedDate ? new Date(formData.establishedDate).getFullYear() : undefined),
         minInvestment: rangeMinVal,
         maxInvestment: rangeMaxVal,
         areaRequired: sanitizedArea,
@@ -609,17 +739,21 @@ export default function BrandRegistration() {
               </div>
 
               <div className="form-group">
-                <label>Established Year</label>
+                <label>Established Date / Year</label>
                 <input
-                  type="number"
-                  name="establishedYear"
-                  min="1900"
-                  max={new Date().getFullYear()}
-                  placeholder="e.g. 2018"
-                  value={formData.establishedYear}
+                  type="date"
+                  name="establishedDate"
+                  max={new Date().toISOString().split("T")[0]}
+                  value={formData.establishedDate || ""}
                   onChange={handleChange}
                   className="form-input"
+                  style={establishedError ? { borderColor: "#ef4444", boxShadow: "0 0 0 3px rgba(239, 68, 68, 0.2)" } : undefined}
                 />
+                {establishedError && (
+                  <span style={{ fontSize: "12px", color: "#ef4444", fontWeight: "700", marginTop: "4px", display: "block" }}>
+                    {establishedError}
+                  </span>
+                )}
               </div>
 
               <div className="form-group">
@@ -631,8 +765,8 @@ export default function BrandRegistration() {
                   className="form-input"
                 >
                   <option value="0 - 5">0 - 5 Outlets</option>
-                  <option value="5 - 15">5 - 15 Outlets</option>
-                  <option value="15 - 50">15 - 50 Outlets</option>
+                  <option value="6 - 15">6 - 15 Outlets</option>
+                  <option value="16 - 50">16 - 50 Outlets</option>
                   <option value="50+">50+ Outlets</option>
                 </select>
               </div>
@@ -647,13 +781,11 @@ export default function BrandRegistration() {
                 >
                   <option value="FOFO">FOFO (Franchise Owned, Franchise Operated)</option>
                   <option value="FOCO">FOCO (Franchise Owned, Company Operated)</option>
-                  <option value="FOFO & FOCO">Both FOFO & FOCO Available</option>
-                  <option value="COCO">COCO (Company Owned, Company Operated)</option>
                 </select>
               </div>
 
               <div className="form-group form-grid-full">
-                <label style={{ fontSize: "14px", fontWeight: "700", marginBottom: "8px", display: "block" }}>Brand Logo / Cover Image (Optional)</label>
+                <label style={{ fontSize: "14px", fontWeight: "700", marginBottom: "8px", display: "block" }}>Brand Logo & Gallery Photos (Upload Multiple)</label>
 
                 <div className="upload-section-wrapper">
                   <div className="upload-grid-container">
@@ -671,8 +803,9 @@ export default function BrandRegistration() {
                         <input
                           type="file"
                           ref={fileInputRef}
-                          onChange={(e) => e.target.files?.[0] && handleFile(e.target.files[0])}
+                          onChange={(e) => e.target.files && handleFiles(e.target.files)}
                           accept=".png,.jpg,.jpeg,.webp,.svg"
+                          multiple
                           style={{ display: "none" }}
                         />
 
@@ -692,14 +825,84 @@ export default function BrandRegistration() {
                         ) : (
                           <>
                             <p style={{ fontSize: "13.5px", fontWeight: "700", color: "var(--text-dark)", margin: 0 }}>
-                              {dragActive ? "Drop your file here" : "Drag & drop image here or click to browse"}
+                              {dragActive ? "Drop your files here" : "Drag & drop photos here or click to browse"}
                             </p>
                             <span style={{ fontSize: "11px", color: "var(--text-muted)", fontWeight: "500" }}>
-                              Supports PNG, JPG, JPEG, WEBP, SVG up to 5 MB
+                              Supports multiple PNG, JPG, JPEG, WEBP, SVG up to 5 MB each
                             </span>
                           </>
                         )}
                       </div>
+
+                      {/* Multiple Images Thumbnail Gallery */}
+                      {formData.images && formData.images.length > 0 && (
+                        <div style={{ marginTop: "14px", borderTop: "1px solid #f1f5f9", paddingTop: "12px" }}>
+                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
+                            <span style={{ fontSize: "12px", fontWeight: "700", color: "var(--text-dark)" }}>
+                              Uploaded Photos ({formData.images.length}/5)
+                            </span>
+                            <span style={{ fontSize: "11px", color: "var(--primary)", fontWeight: "600" }}>
+                              First image is Primary Logo
+                            </span>
+                          </div>
+                          <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+                            {formData.images.map((imgSrc, idx) => (
+                              <div key={idx} style={{
+                                position: "relative",
+                                width: "56px",
+                                height: "56px",
+                                borderRadius: "8px",
+                                overflow: "hidden",
+                                border: idx === 0 ? "2px solid var(--primary)" : "1px solid #e2e8f0",
+                                background: "#f8fafc"
+                              }}>
+                                <img src={imgSrc} alt={`thumb-${idx}`} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                                <button
+                                  type="button"
+                                  onClick={(e) => { e.stopPropagation(); removeImageAt(idx); }}
+                                  style={{
+                                    position: "absolute",
+                                    top: "2px",
+                                    right: "2px",
+                                    background: "#ef4444",
+                                    color: "#fff",
+                                    border: "none",
+                                    borderRadius: "50%",
+                                    width: "16px",
+                                    height: "16px",
+                                    display: "flex",
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                    fontSize: "10px",
+                                    fontWeight: "bold",
+                                    cursor: "pointer",
+                                    lineHeight: 1
+                                  }}
+                                  title="Remove image"
+                                >
+                                  ✕
+                                </button>
+                                {idx === 0 && (
+                                  <span style={{
+                                    position: "absolute",
+                                    bottom: 0,
+                                    left: 0,
+                                    right: 0,
+                                    background: "rgba(99, 102, 241, 0.85)",
+                                    color: "#fff",
+                                    fontSize: "8.5px",
+                                    textAlign: "center",
+                                    fontWeight: "700",
+                                    padding: "1px 0"
+                                  }}>
+                                    LOGO
+                                  </span>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
 
                       {/* Recommended details */}
                       <div style={{ display: "flex", justifyContent: "space-between", gap: "12px", borderTop: "1px solid #f1f5f9", paddingTop: "14px" }}>
@@ -948,15 +1151,25 @@ export default function BrandRegistration() {
               </div>
 
               <div className="form-group">
-                <label>Royalty / Commission Fee</label>
+                <label>Royalty / Commission Fee (%)</label>
                 <input
                   type="text"
                   name="royaltyFee"
-                  placeholder="e.g. 8% of monthly sales or 0%"
+                  placeholder="e.g. 8% (Max 100%)"
                   value={formData.royaltyFee}
                   onChange={handleChange}
                   className="form-input"
+                  style={royaltyError ? { borderColor: "#ef4444", boxShadow: "0 0 0 3px rgba(239, 68, 68, 0.2)" } : undefined}
                 />
+                {royaltyError ? (
+                  <span style={{ fontSize: "12px", color: "#ef4444", fontWeight: "700", marginTop: "4px", display: "block" }}>
+                    {royaltyError}
+                  </span>
+                ) : (
+                  <small style={{ fontSize: "11px", color: "var(--text-muted)", display: "block", marginTop: "4px" }}>
+                    Allowed range: 0% to 100% (e.g. 8% or 0%).
+                  </small>
+                )}
               </div>
 
               <div className="form-group">
@@ -964,14 +1177,21 @@ export default function BrandRegistration() {
                 <input
                   type="text"
                   name="areaRequired"
-                  placeholder="e.g. 200 - 350 Sq. Ft."
+                  placeholder="e.g. 200 - 350 Sq. Ft. (Max 10,000)"
                   value={formData.areaRequired}
                   onChange={handleChange}
                   className="form-input"
+                  style={areaError ? { borderColor: "#ef4444", boxShadow: "0 0 0 3px rgba(239, 68, 68, 0.2)" } : undefined}
                 />
-                <small style={{ fontSize: "11px", color: "var(--text-muted)", display: "block", marginTop: "4px" }}>
-                  Unit: sq ft. Allowed range: 50 to 50,000 sq ft. Leave blank if not applicable.
-                </small>
+                {areaError ? (
+                  <span style={{ fontSize: "12px", color: "#ef4444", fontWeight: "700", marginTop: "4px", display: "block" }}>
+                    {areaError}
+                  </span>
+                ) : (
+                  <small style={{ fontSize: "11px", color: "var(--text-muted)", display: "block", marginTop: "4px" }}>
+                    Unit: sq ft. Allowed range: 50 to 10,000 sq ft. Leave blank if not applicable.
+                  </small>
+                )}
               </div>
 
               <div className="form-group form-grid-full" style={{ background: "rgba(99, 102, 241, 0.04)", border: "1px solid rgba(99, 102, 241, 0.15)", borderRadius: "12px", padding: "16px", marginTop: "10px" }}>
@@ -1184,13 +1404,16 @@ export default function BrandRegistration() {
               <div className="form-group form-grid-full">
                 <label>Official Brand Website URL</label>
                 <input
-                  type="url"
+                  type="text"
                   name="website"
-                  placeholder="https://www.yourbrand.com"
+                  placeholder="e.g. www.yourbrand.com or https://yourbrand.com"
                   value={formData.website}
                   onChange={handleChange}
                   className="form-input"
                 />
+                <small style={{ fontSize: "11px", color: "var(--text-muted)", display: "block", marginTop: "4px" }}>
+                  Supports www.example.com, http://, and https:// web addresses.
+                </small>
               </div>
             </div>
 
