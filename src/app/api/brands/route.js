@@ -157,15 +157,15 @@ export async function POST(request) {
     if (body.areaRequired && String(body.areaRequired).trim()) {
       const areaVal = validateArea(body.areaRequired);
       if (!areaVal.isValid) {
-        return NextResponse.json({ error: `Invalid Area: ${areaVal.reason}. Must be between 50 and 10,000 sq ft.` }, { status: 400 });
+        return NextResponse.json({ error: `Invalid Area: ${areaVal.reason}. Must be between 50 and 5,000 sq ft.` }, { status: 400 });
       }
       sanitizedArea = areaVal.value;
     }
 
     let cleanRoyalty = body.royaltyFee ? String(body.royaltyFee).trim() : "0%";
     const royaltyNum = parseFloat(cleanRoyalty.replace(/[^\d.]/g, ""));
-    if (!isNaN(royaltyNum) && royaltyNum > 100) {
-      return NextResponse.json({ error: "Royalty / Commission Fee cannot exceed 100%." }, { status: 400 });
+    if (!isNaN(royaltyNum) && royaltyNum > 25) {
+      return NextResponse.json({ error: "Royalty / Commission Fee cannot exceed 25%." }, { status: 400 });
     }
 
     let cleanWebsite = body.website ? String(body.website).trim() : "";

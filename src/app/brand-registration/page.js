@@ -148,8 +148,8 @@ export default function BrandRegistration() {
       const numMatch = value.replace(/,/g, "").match(/\d+/g);
       if (numMatch) {
         const maxVal = Math.max(...numMatch.map(Number));
-        if (maxVal > 10000) {
-          setAreaError("⚠ Property Area cannot exceed 10,000 Sq. Ft.");
+        if (maxVal > 5000) {
+          setAreaError("⚠ Property Area cannot exceed 5,000 Sq. Ft.");
         } else {
           setAreaError("");
         }
@@ -159,25 +159,26 @@ export default function BrandRegistration() {
       setFormData((prev) => ({ ...prev, areaRequired: value }));
     } else if (name === "royaltyFee") {
       const num = parseFloat(value.replace(/[^\d.]/g, ""));
-      if (!isNaN(num) && num > 100) {
-        setRoyaltyError("⚠ Royalty / Commission Fee cannot exceed 100%.");
+      if (!isNaN(num) && num > 25) {
+        setRoyaltyError("⚠ Royalty / Commission Fee cannot exceed 25%.");
       } else {
         setRoyaltyError("");
       }
       setFormData((prev) => ({ ...prev, royaltyFee: value }));
-    } else if (name === "establishedDate") {
-      const selDate = new Date(value);
-      const today = new Date();
-      today.setHours(23, 59, 59, 999);
-      if (value && selDate > today) {
-        setEstablishedError("⚠ Established date cannot be in the future. Please select a past date.");
+    } else if (name === "establishedYear") {
+      const yearNum = Number(value);
+      const curYear = new Date().getFullYear();
+      if (value && (isNaN(yearNum) || yearNum > curYear)) {
+        setEstablishedError(`⚠ Established year cannot be in the future (Max: ${curYear}).`);
+      } else if (value && yearNum < 1900 && value.length >= 4) {
+        setEstablishedError("⚠ Please enter a valid year (1900 onwards).");
       } else {
         setEstablishedError("");
       }
       setFormData((prev) => ({
         ...prev,
-        establishedDate: value,
-        establishedYear: value ? new Date(value).getFullYear().toString() : ""
+        establishedYear: value,
+        establishedDate: value ? `${value}-01-01` : ""
       }));
     } else {
       setFormData((prev) => ({
@@ -475,23 +476,17 @@ export default function BrandRegistration() {
     if (!/^[6-9]\d{9}$/.test(cleanPhone)) {
       return scrollAndWarn("phone", "Please enter a valid 10-digit Indian Mobile Number starting with 6, 7, 8, or 9.");
     }
-    if (formData.establishedDate) {
-      const selDate = new Date(formData.establishedDate);
-      const today = new Date();
-      if (selDate > today) {
-        return scrollAndWarn("establishedDate", "Established date cannot be in the future. Please select a past date.");
-      }
-    } else if (formData.establishedYear) {
+    if (formData.establishedYear) {
       const yearNum = Number(formData.establishedYear);
       const curYear = new Date().getFullYear();
       if (isNaN(yearNum) || yearNum < 1900 || yearNum > curYear) {
-        return scrollAndWarn("establishedDate", `Established Year must be a valid year between 1900 and ${curYear}.`);
+        return scrollAndWarn("establishedYear", `Established Year must be a valid year between 1900 and ${curYear}.`);
       }
     }
     if (formData.royaltyFee && formData.royaltyFee.trim()) {
       const royaltyNum = parseFloat(formData.royaltyFee.replace(/[^\d.]/g, ""));
-      if (!isNaN(royaltyNum) && royaltyNum > 100) {
-        return scrollAndWarn("royaltyFee", "Royalty / Commission Fee cannot exceed 100%.");
+      if (!isNaN(royaltyNum) && royaltyNum > 25) {
+        return scrollAndWarn("royaltyFee", "Royalty / Commission Fee cannot exceed 25%.");
       }
     }
     if (!agreed) {
@@ -509,13 +504,13 @@ export default function BrandRegistration() {
       const numMatch = formData.areaRequired.replace(/,/g, "").match(/\d+/g);
       if (numMatch) {
         const maxArea = Math.max(...numMatch.map(Number));
-        if (maxArea > 10000) {
-          return scrollAndWarn("areaRequired", "Property Area cannot exceed 10,000 Sq. Ft.");
+        if (maxArea > 5000) {
+          return scrollAndWarn("areaRequired", "Property Area cannot exceed 5,000 Sq. Ft.");
         }
       }
       const areaVal = validateArea(formData.areaRequired);
       if (!areaVal.isValid) {
-        return scrollAndWarn("areaRequired", `Invalid Area: ${areaVal.reason}. Space required must be between 50 and 10,000 sq ft.`);
+        return scrollAndWarn("areaRequired", `Invalid Area: ${areaVal.reason}. Space required must be between 50 and 5,000 sq ft.`);
       }
       sanitizedArea = areaVal.value;
     }
@@ -739,12 +734,14 @@ export default function BrandRegistration() {
               </div>
 
               <div className="form-group">
-                <label>Established Date / Year</label>
+                <label>Established Year</label>
                 <input
-                  type="date"
-                  name="establishedDate"
-                  max={new Date().toISOString().split("T")[0]}
-                  value={formData.establishedDate || ""}
+                  type="number"
+                  name="establishedYear"
+                  min="1900"
+                  max={new Date().getFullYear()}
+                  placeholder="e.g. 2018"
+                  value={formData.establishedYear || ""}
                   onChange={handleChange}
                   className="form-input"
                   style={establishedError ? { borderColor: "#ef4444", boxShadow: "0 0 0 3px rgba(239, 68, 68, 0.2)" } : undefined}
@@ -1155,7 +1152,7 @@ export default function BrandRegistration() {
                 <input
                   type="text"
                   name="royaltyFee"
-                  placeholder="e.g. 8% (Max 100%)"
+                  placeholder="e.g. 8% (Max 25%)"
                   value={formData.royaltyFee}
                   onChange={handleChange}
                   className="form-input"
@@ -1167,7 +1164,7 @@ export default function BrandRegistration() {
                   </span>
                 ) : (
                   <small style={{ fontSize: "11px", color: "var(--text-muted)", display: "block", marginTop: "4px" }}>
-                    Allowed range: 0% to 100% (e.g. 8% or 0%).
+                    Allowed range: 0% to 25% (e.g. 8% or 0%).
                   </small>
                 )}
               </div>
@@ -1177,7 +1174,7 @@ export default function BrandRegistration() {
                 <input
                   type="text"
                   name="areaRequired"
-                  placeholder="e.g. 200 - 350 Sq. Ft. (Max 10,000)"
+                  placeholder="e.g. 200 - 350 Sq. Ft. (Max 5,000)"
                   value={formData.areaRequired}
                   onChange={handleChange}
                   className="form-input"
@@ -1189,7 +1186,7 @@ export default function BrandRegistration() {
                   </span>
                 ) : (
                   <small style={{ fontSize: "11px", color: "var(--text-muted)", display: "block", marginTop: "4px" }}>
-                    Unit: sq ft. Allowed range: 50 to 10,000 sq ft. Leave blank if not applicable.
+                    Unit: sq ft. Allowed range: 50 to 5,000 sq ft. Leave blank if not applicable.
                   </small>
                 )}
               </div>
