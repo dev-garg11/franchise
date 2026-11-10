@@ -180,6 +180,14 @@ export default function AuthModal({ isOpen, onClose, initialTab = "login" }) {
       return;
     }
 
+    if (otpSent) {
+      if (!/^\d{6}$/.test(otpCode)) {
+        setError("Please enter the 6-digit OTP sent to your email.");
+        return;
+      }
+      return handleVerifyOtp();
+    }
+
     setLoading(true);
     setError("");
     setSuccess("");
@@ -210,35 +218,47 @@ export default function AuthModal({ isOpen, onClose, initialTab = "login" }) {
         localStorage.removeItem("login_lockout_until");
         setLockoutRemaining(0);
 
-        setSuccess("Signed in successfully! Redirecting...");
-
         if (rememberMe) {
           localStorage.setItem("rememberedUser", loginIdentifier);
         } else {
           localStorage.removeItem("rememberedUser");
         }
 
-        setTimeout(() => {
-          // Store auth flags in localStorage for current user state
-          if (user.role === "admin") {
+        // 1. ADMIN BYPASS: Admin does NOT require OTP!
+        if (user.role === "admin") {
+          setSuccess("Signed in successfully! Redirecting to Admin Dashboard...");
+          setTimeout(() => {
             localStorage.setItem("adminLoggedIn", "true");
             localStorage.setItem("adminUsername", user.username || "admin");
             window.location.href = "/admin";
-          } else if (user.role === "investor") {
-            localStorage.setItem("investorLoggedIn", "true");
-            localStorage.setItem("investorEmail", user.email);
-            localStorage.setItem("investorName", user.name);
-            localStorage.setItem("investorPhone", user.phone || "");
-            localStorage.setItem("investorId", user.id || "");
-            window.location.href = "/investor-panel";
+          }, 800);
+          return;
+        }
+
+        // 2. NORMAL USERS (Brand / Investor): Send OTP to email upon valid credentials
+        setSuccess("Credentials verified! Sending 6-digit OTP to your registered email...");
+        
+        try {
+          const otpRes = await fetch("/api/auth/request-otp", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ identifier: loginIdentifier.trim() })
+          });
+          const otpData = await otpRes.json().catch(() => ({}));
+          
+          if (otpRes.ok) {
+            setOtpSent(true);
+            setOtpDestination(otpData.destination || user.email || "your registered email");
+            setSuccess(`Credentials verified! We sent a 6-digit OTP to ${otpData.destination || user.email || "your registered Gmail"}. Please enter the code below to complete sign in.`);
+            setLoading(false);
           } else {
-            localStorage.setItem("brandLoggedIn", "true");
-            localStorage.setItem("brandEmail", user.email);
-            localStorage.setItem("brandId", user.id);
-            localStorage.setItem("brandName", user.name);
-            window.location.href = "/brand-panel";
+            setError(otpData.error || otpData.message || "Failed to deliver OTP to your Gmail. Please try again.");
+            setLoading(false);
           }
-        }, 1000);
+        } catch (otpErr) {
+          setError("Failed to deliver OTP to your email. Please check your internet connection.");
+          setLoading(false);
+        }
       } else {
         if (res.status === 429 || data.locked) {
           const remainingSec = data.remainingSeconds || 120;
@@ -680,25 +700,12 @@ export default function AuthModal({ isOpen, onClose, initialTab = "login" }) {
               </div>
             </div>
 
-            <div style={{ marginTop: "-8px" }}>
-              <button
-                type="button"
-                disabled={loading}
-                onClick={handleRequestOtp}
-                style={{
-                  border: "none",
-                  background: "transparent",
-                  color: "#4F46E5",
-                  fontSize: "13px",
-                  fontWeight: "700",
-                  padding: 0,
-                  cursor: loading ? "not-allowed" : "pointer"
-                }}
-              >
-                {otpSent ? "Resend OTP" : "Login with OTP"}
-              </button>
-              {otpSent && (
-                <div style={{ display: "flex", gap: "8px", marginTop: "10px" }}>
+            {otpSent && (
+              <div style={{ marginTop: "-4px", padding: "14px", background: "#f0fdf4", border: "1.5px solid #86efac", borderRadius: "10px" }}>
+                <label style={{ fontSize: "12.5px", fontWeight: "700", color: "#166534", display: "block", marginBottom: "8px" }}>
+                  ✉️ Enter 6-Digit Verification OTP Sent to Email
+                </label>
+                <div style={{ display: "flex", gap: "8px" }}>
                   <input
                     type="text"
                     inputMode="numeric"
@@ -710,12 +717,15 @@ export default function AuthModal({ isOpen, onClose, initialTab = "login" }) {
                     aria-label="6-digit login OTP"
                     style={{
                       flex: 1,
-                      border: "1.5px solid #C7D2FE",
+                      border: "1.5px solid #22c55e",
                       borderRadius: "8px",
                       padding: "10px 12px",
-                      fontSize: "14px",
-                      letterSpacing: "3px",
-                      outline: "none"
+                      fontSize: "16px",
+                      letterSpacing: "4px",
+                      fontWeight: "700",
+                      textAlign: "center",
+                      outline: "none",
+                      background: "#ffffff"
                     }}
                   />
                   <button
@@ -725,23 +735,42 @@ export default function AuthModal({ isOpen, onClose, initialTab = "login" }) {
                     style={{
                       border: "none",
                       borderRadius: "8px",
-                      padding: "0 14px",
-                      background: otpCode.length === 6 ? "#10B981" : "#CBD5E1",
+                      padding: "0 18px",
+                      background: otpCode.length === 6 ? "#16a34a" : "#94a3b8",
                       color: "#fff",
                       fontWeight: "700",
-                      cursor: otpCode.length === 6 ? "pointer" : "not-allowed"
+                      fontSize: "13.5px",
+                      cursor: otpCode.length === 6 ? "pointer" : "not-allowed",
+                      transition: "background 0.2s"
                     }}
                   >
                     Verify
                   </button>
                 </div>
-              )}
-              {otpSent && (
-                <p style={{ margin: "6px 0 0", color: "#475569", fontSize: "12px", lineHeight: "1.4" }}>
-                  Check your Gmail inbox or spam folder for your 6-digit verification code.
-                </p>
-              )}
-            </div>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "8px" }}>
+                  <p style={{ margin: 0, color: "#15803d", fontSize: "11.5px" }}>
+                    Check your Gmail inbox or spam folder.
+                  </p>
+                  <button
+                    type="button"
+                    disabled={loading}
+                    onClick={handleRequestOtp}
+                    style={{
+                      border: "none",
+                      background: "transparent",
+                      color: "#4f46e5",
+                      fontSize: "11.5px",
+                      fontWeight: "700",
+                      cursor: "pointer",
+                      padding: 0,
+                      textDecoration: "underline"
+                    }}
+                  >
+                    Resend Code
+                  </button>
+                </div>
+              </div>
+            )}
 
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", fontSize: "13.5px", marginTop: "2px" }}>
               <label style={{ display: "flex", alignItems: "center", gap: "8px", color: "#4B5563", cursor: "pointer", userSelect: "none" }}>
@@ -819,6 +848,8 @@ export default function AuthModal({ isOpen, onClose, initialTab = "login" }) {
                 <>
                   ⏳ Locked ({Math.floor(lockoutRemaining / 60)}:{lockoutRemaining % 60 < 10 ? '0' : ''}{lockoutRemaining % 60})
                 </>
+              ) : otpSent ? (
+                "Verify OTP & Continue"
               ) : (
                 "Sign In"
               )}
