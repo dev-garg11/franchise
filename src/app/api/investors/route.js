@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getInvestors, resetDatabaseConnection, saveInvestor } from "@/lib/db";
+import { validateArea } from "@/lib/seo/validate";
 
 let investorsMemoryCache = null;
 let investorsCacheTime = 0;
@@ -144,12 +145,16 @@ export async function POST(request) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
     }
 
+    if (name.length > 30) {
+      return NextResponse.json({ error: "Name cannot exceed 30 characters." }, { status: 400 });
+    }
+
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       return NextResponse.json({ error: "Please enter a valid email address." }, { status: 400 });
     }
 
-    if (cleanPhone.length !== 10) {
-      return NextResponse.json({ error: "Phone number must be exactly 10 digits." }, { status: 400 });
+    if (!/^[6-9]\d{9}$/.test(cleanPhone)) {
+      return NextResponse.json({ error: "Phone number must be a valid 10-digit Indian Mobile Number starting with 6, 7, 8, or 9." }, { status: 400 });
     }
 
     // Password validation only when provided
@@ -166,9 +171,19 @@ export async function POST(request) {
       return NextResponse.json({ error: "Maximum investment must be greater than or equal to minimum investment." }, { status: 400 });
     }
 
+    let sanitizedArea = body.propertyArea ? String(body.propertyArea).trim() : "";
+    if (body.propertyAvailable === "Yes" && sanitizedArea) {
+      const areaVal = validateArea(sanitizedArea);
+      if (!areaVal.isValid) {
+        return NextResponse.json({ error: `Invalid Area: ${areaVal.reason}. Available area must be between 50 and 5,000 sq ft.` }, { status: 400 });
+      }
+      sanitizedArea = areaVal.value;
+    }
+
     const saved = await saveInvestor({
       ...body,
       name,
+      propertyArea: sanitizedArea,
       phone: cleanPhone,
       pincode: body.pincode || "000000",
       investment_range: body.investment_range || body.investmentCapacity || "Not Specified",

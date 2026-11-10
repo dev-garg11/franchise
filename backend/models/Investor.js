@@ -61,7 +61,7 @@ const InvestorSchema = new mongoose.Schema({
     },
     propertyAvailable: {
         type: String,
-        enum: ['Yes', 'No'],
+        enum: ['Yes', 'No', 'Renting'],
         default: 'No'
     },
     propertyArea: {
@@ -71,7 +71,7 @@ const InvestorSchema = new mongoose.Schema({
     },
     experience: {
         type: String,
-        enum: ['Yes', 'No'],
+        enum: ['Yes', 'No', 'Corporate'],
         default: 'No'
     },
     comments: {

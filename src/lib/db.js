@@ -524,6 +524,7 @@ export async function saveInvestor(investorData) {
       max_investment_limit,
       ...investorData,
       name: investorName,
+      email: emailLower,
       user: userObj._id,
       id,
       brandId,
@@ -537,7 +538,6 @@ export async function saveInvestor(investorData) {
       createdAt: investorData.createdAt || new Date()
     };
     delete investorPayload.password;
-    delete investorPayload.email;
 
     const investor = new Investor(investorPayload);
     const saved = await investor.save();

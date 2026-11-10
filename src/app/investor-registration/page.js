@@ -2,9 +2,10 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { CheckCircle2, ShieldCheck, Mail, MapPin, IndianRupee, Lock } from "lucide-react";
+import { CheckCircle2, ShieldCheck, Mail, MapPin, IndianRupee, Lock, Phone } from "lucide-react";
 import { REGISTRATION_INVESTMENT_OPTIONS, getFilteredMaxLimits } from "@/lib/investmentData";
-import { BRAND_CATEGORIES } from "@/lib/brandConstants";
+import { BRAND_CATEGORIES, ALL_INDIAN_STATES } from "@/lib/brandConstants";
+import { validateArea } from "@/lib/seo/validate";
 import { toast, Swal } from "@/lib/swal";
 
 const INVESTMENT_OPTIONS = [
@@ -43,6 +44,7 @@ export default function InvestorRegistration() {
     email: "",
     phone: "",
     password: "",
+    confirmPassword: "",
     pincode: "",
     investment_range: "",
     max_investment_limit: "",
@@ -57,10 +59,20 @@ export default function InvestorRegistration() {
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [errorField, setErrorField] = useState("");
+  const [areaError, setAreaError] = useState("");
+  const [agreed, setAgreed] = useState(true);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    if (name === "investment_range") {
+    if (errorField === name) setErrorField("");
+
+    if (name === "name") {
+      setFormData((prev) => ({
+        ...prev,
+        name: value.slice(0, 30),
+      }));
+    } else if (name === "investment_range") {
       const validMaxOptions = getFilteredMaxLimits(value);
       setFormData((prev) => {
         let maxVal = prev.max_investment_limit;
@@ -78,6 +90,22 @@ export default function InvestorRegistration() {
       setFormData((prev) => ({
         ...prev,
         phone: sanitized,
+      }));
+    } else if (name === "propertyArea") {
+      const numMatch = value.replace(/,/g, "").match(/\d+/g);
+      if (numMatch) {
+        const maxVal = Math.max(...numMatch.map(Number));
+        if (maxVal > 5000) {
+          setAreaError("⚠ Available property area cannot exceed 5,000 Sq. Ft.");
+        } else {
+          setAreaError("");
+        }
+      } else {
+        setAreaError("");
+      }
+      setFormData((prev) => ({
+        ...prev,
+        propertyArea: value,
       }));
     } else {
       setFormData((prev) => ({
@@ -98,56 +126,83 @@ export default function InvestorRegistration() {
     });
   };
 
+  const scrollAndWarn = (name, msg) => {
+    setError(msg);
+    setErrorField(name);
+    toast.error(msg);
+    setLoading(false);
+    const el = name === "agree" ? document.getElementById("agree-investor") : document.getElementsByName(name)[0];
+    if (el) {
+      el.focus();
+      el.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError("");
+    setErrorField("");
 
-    if (
-      !formData.name ||
-      !formData.email ||
-      !formData.phone ||
-      !formData.password ||
-      !formData.pincode ||
-      !formData.investment_range ||
-      !formData.max_investment_limit
-    ) {
-      setError("Please fill in all mandatory fields.");
-      setLoading(false);
-      return;
+    if (!formData.name?.trim()) {
+      return scrollAndWarn("name", "Please enter Investor Full Name.");
+    }
+    if (formData.name.trim().length > 30) {
+      return scrollAndWarn("name", "Investor Name cannot exceed 30 characters.");
+    }
+
+    const cleanPhone = String(formData.phone || "").replace(/\D/g, "");
+    if (!/^[6-9]\d{9}$/.test(cleanPhone)) {
+      return scrollAndWarn("phone", "Please enter a valid 10-digit Indian Mobile Number starting with 6, 7, 8, or 9.");
     }
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(formData.email)) {
-      setError("Please enter a valid email address.");
-      setLoading(false);
-      return;
+    if (!formData.email?.trim() || !emailRegex.test(formData.email.trim())) {
+      return scrollAndWarn("email", "Please enter a valid Email Address.");
     }
 
-    if (formData.phone.length !== 10 || !/^\d{10}$/.test(formData.phone)) {
-      setError("Phone number must be exactly 10 digits.");
-      setLoading(false);
-      return;
+    if (!formData.password || formData.password.length < 6) {
+      return scrollAndWarn("password", "Password must be at least 6 characters.");
+    }
+    if (formData.confirmPassword && formData.password !== formData.confirmPassword) {
+      return scrollAndWarn("confirmPassword", "Passwords do not match. Please verify both password fields.");
     }
 
-    if (formData.password.length < 6) {
-      setError("Password must be at least 6 characters.");
-      setLoading(false);
-      return;
+    if (!formData.pincode?.trim() || !/^\d{6}$/.test(formData.pincode.trim())) {
+      return scrollAndWarn("pincode", "Please enter a valid 6-digit Pincode.");
     }
 
-    if (formData.pincode.length !== 6 || !/^\d{6}$/.test(formData.pincode)) {
-      setError("Pincode must be exactly 6 digits.");
-      setLoading(false);
-      return;
+    if (!formData.investment_range) {
+      return scrollAndWarn("investment_range", "Please select an Investment Range.");
+    }
+    if (!formData.max_investment_limit) {
+      return scrollAndWarn("max_investment_limit", "Please select a Maximum Investment Limit.");
     }
 
     const rangeIndex = INVESTMENT_OPTIONS.indexOf(formData.investment_range);
     const maxIndex = INVESTMENT_OPTIONS.indexOf(formData.max_investment_limit);
     if (maxIndex < rangeIndex) {
-      setError("Maximum investment must be greater than or equal to minimum investment.");
-      setLoading(false);
-      return;
+      return scrollAndWarn("max_investment_limit", "Maximum investment limit cannot be lower than the starting investment range.");
+    }
+
+    let sanitizedArea = formData.propertyArea ? formData.propertyArea.trim() : "";
+    if (formData.propertyAvailable === "Yes" && sanitizedArea) {
+      const numMatch = sanitizedArea.replace(/,/g, "").match(/\d+/g);
+      if (numMatch) {
+        const maxVal = Math.max(...numMatch.map(Number));
+        if (maxVal > 5000) {
+          return scrollAndWarn("propertyArea", "Property Area cannot exceed 5,000 Sq. Ft.");
+        }
+      }
+      const areaVal = validateArea(sanitizedArea);
+      if (!areaVal.isValid) {
+        return scrollAndWarn("propertyArea", `Invalid Area: ${areaVal.reason}. Available area must be between 50 and 5,000 sq ft.`);
+      }
+      sanitizedArea = areaVal.value;
+    }
+
+    if (!agreed) {
+      return scrollAndWarn("agree", "Please check the box to agree to the terms.");
     }
 
     try {
@@ -156,9 +211,12 @@ export default function InvestorRegistration() {
 
       const payload = {
         ...formData,
+        phone: cleanPhone,
+        propertyArea: sanitizedArea,
         budgetMin: rangeMinVal,
         budgetMax: rangeMaxVal,
       };
+      delete payload.confirmPassword;
 
       const res = await fetch("/api/investors", {
         method: "POST",
@@ -169,13 +227,17 @@ export default function InvestorRegistration() {
       });
 
       if (res.ok) {
-        setSubmitted(true); toast.success("Investor registration submitted successfully!");
+        setSubmitted(true);
+        toast.success("Investor registration submitted successfully!");
       } else {
         const data = await res.json();
-        setError(data.error || "Failed to submit investor registration."); toast.error(data.error || "Failed to submit investor registration.");
+        const errorMsg = data.error || "Failed to submit investor registration.";
+        setError(errorMsg);
+        toast.error(errorMsg);
       }
     } catch (err) {
       setError("Network error. Please try again.");
+      toast.error("Network error. Please check your internet connection.");
     } finally {
       setLoading(false);
     }
@@ -223,7 +285,7 @@ export default function InvestorRegistration() {
             <p>Register as a certified investor. Gain exclusive access to franchise catalogs, investment breakdowns, and direct support from brand managers.</p>
           </div>
 
-          <form onSubmit={handleSubmit} className="form-body">
+          <form onSubmit={handleSubmit} noValidate className="form-body">
             {error && <div className="alert alert-danger">{error}</div>}
 
             <h3 className="form-section-title">1. Personal & Contact Details</h3>
@@ -234,27 +296,57 @@ export default function InvestorRegistration() {
                   type="text"
                   name="name"
                   required
-                  placeholder="Full Name"
+                  maxLength={30}
+                  placeholder="Full Name (Max 30 chars)"
                   value={formData.name}
                   onChange={handleChange}
                   className="form-input"
+                  style={errorField === "name" ? { borderColor: "#ef4444", boxShadow: "0 0 0 3px rgba(239, 68, 68, 0.2)" } : undefined}
                 />
+                {errorField === "name" && (
+                  <span style={{ fontSize: "12px", color: "#ef4444", fontWeight: "700", marginTop: "4px", display: "block" }}>
+                    ⚠ Please enter Investor Full Name (Max 30 characters).
+                  </span>
+                )}
               </div>
 
               <div className="form-group">
                 <label>Contact Number <span>*</span></label>
-                <input
-                  type="tel"
-                  name="phone"
-                  required
-                  maxLength={10}
-                  inputMode="numeric"
-                  pattern="[0-9]{10}"
-                  placeholder="10-digit mobile"
-                  value={formData.phone}
-                  onChange={handleChange}
-                  className="form-input"
-                />
+                <div style={{ display: "flex", alignItems: "center" }}>
+                  <span style={{
+                    padding: "10px 14px",
+                    background: "#f1f5f9",
+                    border: "1px solid #cbd5e1",
+                    borderRight: "none",
+                    borderRadius: "6px 0 0 6px",
+                    fontSize: "14px",
+                    fontWeight: "700",
+                    color: "#334155"
+                  }}>
+                    +91
+                  </span>
+                  <input
+                    type="tel"
+                    name="phone"
+                    required
+                    maxLength={10}
+                    inputMode="numeric"
+                    pattern="[0-9]{10}"
+                    placeholder="10-digit mobile number"
+                    value={formData.phone}
+                    onChange={handleChange}
+                    className="form-input"
+                    style={{
+                      borderRadius: "0 6px 6px 0",
+                      ...(errorField === "phone" ? { borderColor: "#ef4444", boxShadow: "0 0 0 3px rgba(239, 68, 68, 0.2)" } : {})
+                    }}
+                  />
+                </div>
+                {errorField === "phone" && (
+                  <span style={{ fontSize: "12px", color: "#ef4444", fontWeight: "700", marginTop: "4px", display: "block" }}>
+                    ⚠ Enter a valid 10-digit mobile number starting with 6, 7, 8, or 9.
+                  </span>
+                )}
               </div>
 
               <div className="form-group">
@@ -267,7 +359,13 @@ export default function InvestorRegistration() {
                   value={formData.email}
                   onChange={handleChange}
                   className="form-input"
+                  style={errorField === "email" ? { borderColor: "#ef4444", boxShadow: "0 0 0 3px rgba(239, 68, 68, 0.2)" } : undefined}
                 />
+                {errorField === "email" && (
+                  <span style={{ fontSize: "12px", color: "#ef4444", fontWeight: "700", marginTop: "4px", display: "block" }}>
+                    ⚠ Please enter a valid email address.
+                  </span>
+                )}
               </div>
 
               <div className="form-group">
@@ -276,11 +374,35 @@ export default function InvestorRegistration() {
                   type="password"
                   name="password"
                   required
-                  placeholder="Create password for dashboard"
+                  placeholder="Create password for dashboard (min 6 chars)"
                   value={formData.password}
                   onChange={handleChange}
                   className="form-input"
+                  style={errorField === "password" ? { borderColor: "#ef4444", boxShadow: "0 0 0 3px rgba(239, 68, 68, 0.2)" } : undefined}
                 />
+                {errorField === "password" && (
+                  <span style={{ fontSize: "12px", color: "#ef4444", fontWeight: "700", marginTop: "4px", display: "block" }}>
+                    ⚠ Password must be at least 6 characters.
+                  </span>
+                )}
+              </div>
+
+              <div className="form-group">
+                <label>Confirm Password</label>
+                <input
+                  type="password"
+                  name="confirmPassword"
+                  placeholder="Re-enter your password"
+                  value={formData.confirmPassword}
+                  onChange={handleChange}
+                  className="form-input"
+                  style={errorField === "confirmPassword" ? { borderColor: "#ef4444", boxShadow: "0 0 0 3px rgba(239, 68, 68, 0.2)" } : undefined}
+                />
+                {errorField === "confirmPassword" && (
+                  <span style={{ fontSize: "12px", color: "#ef4444", fontWeight: "700", marginTop: "4px", display: "block" }}>
+                    ⚠ Passwords do not match.
+                  </span>
+                )}
               </div>
 
               <div className="form-group">
@@ -289,7 +411,7 @@ export default function InvestorRegistration() {
                   type="text"
                   name="pincode"
                   required
-                  placeholder="Enter Pincode"
+                  placeholder="Enter 6-digit Pincode"
                   value={formData.pincode}
                   onChange={(e) => {
                     const val = e.target.value;
@@ -298,7 +420,13 @@ export default function InvestorRegistration() {
                     }
                   }}
                   className="form-input"
+                  style={errorField === "pincode" ? { borderColor: "#ef4444", boxShadow: "0 0 0 3px rgba(239, 68, 68, 0.2)" } : undefined}
                 />
+                {errorField === "pincode" && (
+                  <span style={{ fontSize: "12px", color: "#ef4444", fontWeight: "700", marginTop: "4px", display: "block" }}>
+                    ⚠ Pincode must be exactly 6 digits.
+                  </span>
+                )}
               </div>
             </div>
 
@@ -312,12 +440,18 @@ export default function InvestorRegistration() {
                   value={formData.investment_range}
                   onChange={handleChange}
                   className="form-input"
+                  style={errorField === "investment_range" ? { borderColor: "#ef4444", boxShadow: "0 0 0 3px rgba(239, 68, 68, 0.2)" } : undefined}
                 >
                   <option value="" disabled>Select Investment Range</option>
                   {INVESTMENT_OPTIONS.map((opt) => (
                     <option key={opt} value={opt}>{opt}</option>
                   ))}
                 </select>
+                {errorField === "investment_range" && (
+                  <span style={{ fontSize: "12px", color: "#ef4444", fontWeight: "700", marginTop: "4px", display: "block" }}>
+                    ⚠ Please select an investment range.
+                  </span>
+                )}
               </div>
 
               <div className="form-group">
@@ -335,12 +469,18 @@ export default function InvestorRegistration() {
                   value={formData.max_investment_limit}
                   onChange={handleChange}
                   className="form-input"
+                  style={errorField === "max_investment_limit" ? { borderColor: "#ef4444", boxShadow: "0 0 0 3px rgba(239, 68, 68, 0.2)" } : undefined}
                 >
                   <option value="" disabled>Select Max Investment Limit</option>
                   {getFilteredMaxLimits(formData.investment_range).map((opt) => (
                     <option key={opt} value={opt}>{opt}</option>
                   ))}
                 </select>
+                {errorField === "max_investment_limit" && (
+                  <span style={{ fontSize: "12px", color: "#ef4444", fontWeight: "700", marginTop: "4px", display: "block" }}>
+                    ⚠ Please select maximum investment limit.
+                  </span>
+                )}
               </div>
 
               <div className="form-group">
@@ -351,17 +491,9 @@ export default function InvestorRegistration() {
                   onChange={handleChange}
                   className="form-input"
                 >
-                  <option value="New Delhi">New Delhi</option>
-                  <option value="Maharashtra">Maharashtra</option>
-                  <option value="Gujarat">Gujarat</option>
-                  <option value="Karnataka">Karnataka</option>
-                  <option value="Tamil Nadu">Tamil Nadu</option>
-                  <option value="Haryana">Haryana</option>
-                  <option value="Punjab">Punjab</option>
-                  <option value="Rajasthan">Rajasthan</option>
-                  <option value="Uttar Pradesh">Uttar Pradesh</option>
-                  <option value="Kerala">Kerala</option>
-                  <option value="West Bengal">West Bengal</option>
+                  {ALL_INDIAN_STATES.map((st) => (
+                    <option key={st} value={st}>{st}</option>
+                  ))}
                 </select>
               </div>
             </div>
@@ -405,12 +537,22 @@ export default function InvestorRegistration() {
                 <input
                   type="text"
                   name="propertyArea"
-                  placeholder="e.g. 500 Sq. Ft."
+                  placeholder="e.g. 500 Sq. Ft. (50 to 5,000)"
                   value={formData.propertyArea}
                   onChange={handleChange}
                   className="form-input"
                   disabled={formData.propertyAvailable === "No"}
+                  style={areaError || errorField === "propertyArea" ? { borderColor: "#ef4444", boxShadow: "0 0 0 3px rgba(239, 68, 68, 0.2)" } : undefined}
                 />
+                {areaError ? (
+                  <span style={{ fontSize: "12px", color: "#ef4444", fontWeight: "700", marginTop: "4px", display: "block" }}>
+                    {areaError}
+                  </span>
+                ) : (
+                  <small style={{ fontSize: "11px", color: "var(--text-muted)", display: "block", marginTop: "4px" }}>
+                    Allowed range: 50 to 5,000 sq ft. Leave blank if not applicable.
+                  </small>
+                )}
               </div>
 
               <div className="form-group">
@@ -442,11 +584,22 @@ export default function InvestorRegistration() {
 
             <div style={{ marginTop: "32px" }}>
               <div className="form-checkbox" style={{ marginBottom: "20px" }}>
-                <input type="checkbox" required id="agree-investor" />
-                <label htmlFor="agree-investor" style={{ fontSize: "13px", color: "var(--text-muted)" }}>
-                  I consent to receive contact calls and emails from Franchise Apply verified brand representatives regarding franchise proposals.
+                <input
+                  type="checkbox"
+                  id="agree-investor"
+                  checked={agreed}
+                  onChange={(e) => setAgreed(e.target.checked)}
+                  style={{ width: "18px", height: "18px", accentColor: "var(--primary)", cursor: "pointer" }}
+                />
+                <label htmlFor="agree-investor" style={{ fontSize: "13px", color: errorField === "agree" ? "#991b1b" : "var(--text-muted)", cursor: "pointer" }}>
+                  I consent to receive contact calls and emails from Franchise Roots verified brand representatives regarding franchise proposals. <span>*</span>
                 </label>
               </div>
+              {errorField === "agree" && (
+                <span style={{ fontSize: "12px", color: "#ef4444", fontWeight: "700", marginTop: "-12px", marginBottom: "16px", display: "block" }}>
+                  ⚠ Please check the box to agree before submitting.
+                </span>
+              )}
 
               <button
                 type="submit"
