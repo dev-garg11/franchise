@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getBrands, resetDatabaseConnection, saveBrand } from "@/lib/db";
+import { getBrands, getPublicApprovedBrands, resetDatabaseConnection, saveBrand } from "@/lib/db";
 import { validateArea, validateBrandName, validateImageUrl } from "@/lib/seo/validate";
 
 let approvedBrandsMemoryCache = null;
@@ -35,16 +35,18 @@ export async function GET(request) {
     let brands;
     if (isSimpleApprovedRequest && approvedBrandsMemoryCache && Date.now() - approvedBrandsCacheTime < APPROVED_BRANDS_CACHE_TTL) {
       brands = approvedBrandsMemoryCache;
+    } else if (isSimpleApprovedRequest) {
+      // Blazing fast path: fetch approved brands directly without joining heavy investor table
+      const rawApproved = await getPublicApprovedBrands();
+      approvedBrandsMemoryCache = rawApproved.map(toPublicBrand);
+      approvedBrandsSerializedCache = JSON.stringify(approvedBrandsMemoryCache);
+      approvedBrandsCacheTime = Date.now();
+      brands = approvedBrandsMemoryCache;
     } else if (isSimpleAllBrandsRequest && allBrandsMemoryCache && Date.now() - allBrandsCacheTime < ALL_BRANDS_CACHE_TTL) {
       brands = allBrandsMemoryCache;
     } else {
       brands = await getBrands();
-      if (isSimpleApprovedRequest) {
-        approvedBrandsMemoryCache = brands.filter((brand) => brand.status === "Approved").map(toPublicBrand);
-        approvedBrandsSerializedCache = JSON.stringify(approvedBrandsMemoryCache);
-        approvedBrandsCacheTime = Date.now();
-        brands = approvedBrandsMemoryCache;
-      } else if (isSimpleAllBrandsRequest) {
+      if (isSimpleAllBrandsRequest) {
         allBrandsMemoryCache = brands;
         allBrandsCacheTime = Date.now();
       }

@@ -33,6 +33,37 @@ export default function AuthModal({ isOpen, onClose, initialTab = "login" }) {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [loading, setLoading] = useState(false);
+  const [lockoutRemaining, setLockoutRemaining] = useState(0);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const savedLockout = localStorage.getItem("login_lockout_until");
+      if (savedLockout) {
+        const remaining = Math.ceil((parseInt(savedLockout, 10) - Date.now()) / 1000);
+        if (remaining > 0) {
+          setLockoutRemaining(remaining);
+        } else {
+          localStorage.removeItem("login_lockout_until");
+          localStorage.removeItem("login_fail_count");
+        }
+      }
+    }
+  }, [isOpen]);
+
+  useEffect(() => {
+    if (lockoutRemaining <= 0) return;
+    const interval = setInterval(() => {
+      setLockoutRemaining((prev) => {
+        if (prev <= 1) {
+          localStorage.removeItem("login_lockout_until");
+          localStorage.removeItem("login_fail_count");
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [lockoutRemaining]);
 
   useEffect(() => {
     if (isOpen) {
@@ -142,6 +173,13 @@ export default function AuthModal({ isOpen, onClose, initialTab = "login" }) {
 
   const handleLoginSubmit = async (e) => {
     e.preventDefault();
+    if (lockoutRemaining > 0) {
+      const mins = Math.floor(lockoutRemaining / 60);
+      const secs = lockoutRemaining % 60;
+      setError(`⏳ Account locked due to multiple failed attempts. Please wait ${mins}:${secs < 10 ? "0" : ""}${secs}.`);
+      return;
+    }
+
     setLoading(true);
     setError("");
     setSuccess("");
@@ -164,9 +202,13 @@ export default function AuthModal({ isOpen, onClose, initialTab = "login" }) {
         body: JSON.stringify({ identifier: loginIdentifier.trim(), password: loginPassword })
       });
 
+      const data = await res.json();
+
       if (res.ok) {
-        const result = await res.json();
-        const { user } = result;
+        const { user } = data;
+        localStorage.removeItem("login_fail_count");
+        localStorage.removeItem("login_lockout_until");
+        setLockoutRemaining(0);
 
         setSuccess("Signed in successfully! Redirecting...");
 
@@ -198,8 +240,27 @@ export default function AuthModal({ isOpen, onClose, initialTab = "login" }) {
           }
         }, 1000);
       } else {
-        const data = await res.json();
-        setError(data.error || "Invalid credentials. Please verify your Email/Mobile and Password.");
+        if (res.status === 429 || data.locked) {
+          const remainingSec = data.remainingSeconds || 120;
+          const lockUntil = Date.now() + remainingSec * 1000;
+          localStorage.setItem("login_lockout_until", lockUntil.toString());
+          setLockoutRemaining(remainingSec);
+          const mins = Math.floor(remainingSec / 60);
+          const secs = remainingSec % 60;
+          setError(`🚨 Security Alert: Too many failed attempts. Login locked for ${mins} min ${secs} sec.`);
+        } else {
+          const currentFails = (parseInt(localStorage.getItem("login_fail_count") || "0", 10)) + 1;
+          localStorage.setItem("login_fail_count", currentFails.toString());
+
+          if (currentFails >= 4) {
+            const lockUntil = Date.now() + 120 * 1000;
+            localStorage.setItem("login_lockout_until", lockUntil.toString());
+            setLockoutRemaining(120);
+            setError("🚨 Security Alert: 4 failed attempts reached. Login locked for 2 minutes.");
+          } else {
+            setError(data.error || "Invalid credentials. Please verify your Email/Mobile and Password.");
+          }
+        }
         setLoading(false);
       }
     } catch (err) {
@@ -715,40 +776,48 @@ export default function AuthModal({ isOpen, onClose, initialTab = "login" }) {
 
             <button
               type="submit"
-              disabled={loading}
+              disabled={loading || lockoutRemaining > 0}
               style={{
                 width: "100%",
-                background: "linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%)",
+                background: lockoutRemaining > 0 ? "#991b1b" : "linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%)",
                 color: "#ffffff",
                 border: "none",
                 borderRadius: "var(--radius-sm, 8px)",
                 padding: "12px",
                 fontSize: "14.5px",
                 fontWeight: "700",
-                cursor: "pointer",
+                cursor: (loading || lockoutRemaining > 0) ? "not-allowed" : "pointer",
                 transition: "all 0.2s ease-in-out",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
                 gap: "8px",
-                boxShadow: "0 4px 14px rgba(13, 23, 60, 0.15)",
+                boxShadow: lockoutRemaining > 0 ? "none" : "0 4px 14px rgba(13, 23, 60, 0.15)",
                 marginTop: "8px"
               }}
               onMouseEnter={(e) => {
-                e.currentTarget.style.background = "linear-gradient(135deg, #1D4ED8 0%, #1E40AF 100%)";
-                e.currentTarget.style.boxShadow = "0 8px 24px rgba(37, 99, 235, 0.35)";
-                e.currentTarget.style.transform = "translateY(-1px)";
+                if (lockoutRemaining <= 0) {
+                  e.currentTarget.style.background = "linear-gradient(135deg, #1D4ED8 0%, #1E40AF 100%)";
+                  e.currentTarget.style.boxShadow = "0 8px 24px rgba(37, 99, 235, 0.35)";
+                  e.currentTarget.style.transform = "translateY(-1px)";
+                }
               }}
               onMouseLeave={(e) => {
-                e.currentTarget.style.background = "linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%)";
-                e.currentTarget.style.boxShadow = "0 4px 14px rgba(13, 23, 60, 0.15)";
-                e.currentTarget.style.transform = "none";
+                if (lockoutRemaining <= 0) {
+                  e.currentTarget.style.background = "linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%)";
+                  e.currentTarget.style.boxShadow = "0 4px 14px rgba(13, 23, 60, 0.15)";
+                  e.currentTarget.style.transform = "none";
+                }
               }}
             >
               {loading ? (
                 <>
                   <Loader2 size={16} className="animate-spin" />
                   Signing In Securely...
+                </>
+              ) : lockoutRemaining > 0 ? (
+                <>
+                  ⏳ Locked ({Math.floor(lockoutRemaining / 60)}:{lockoutRemaining % 60 < 10 ? '0' : ''}{lockoutRemaining % 60})
                 </>
               ) : (
                 "Sign In"

@@ -77,7 +77,10 @@ export async function getApprovedBrands(options = {}) {
             ? window.setTimeout(() => controller.abort("Request timed out"), 30000)
             : null;
         try {
-            const res = await fetch("/api/brands?status=Approved", { cache: "no-store", signal: controller.signal });
+            const fetchOptions = forceRefresh 
+                ? { cache: "reload", signal: controller.signal } 
+                : { signal: controller.signal };
+            const res = await fetch("/api/brands?status=Approved", fetchOptions);
             if (res.ok) {
                 const data = await res.json();
                 if (Array.isArray(data)) {

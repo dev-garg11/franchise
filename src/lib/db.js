@@ -181,6 +181,50 @@ async function seedDatabase() {
 }
 
 
+let publicBrandsCache = null;
+let publicBrandsCacheTime = 0;
+const PUBLIC_BRANDS_CACHE_TTL = 30 * 1000; // 30 seconds
+
+export function clearPublicBrandsCache() {
+  publicBrandsCache = null;
+  publicBrandsCacheTime = 0;
+}
+
+export async function getPublicApprovedBrands() {
+  if (publicBrandsCache && Date.now() - publicBrandsCacheTime < PUBLIC_BRANDS_CACHE_TTL) {
+    return publicBrandsCache;
+  }
+  await dbConnect();
+  try {
+    const brands = await Brand.find({ status: "Approved" })
+      .select("-password -__v -seoData.schemaData")
+      .sort({ featured: -1, createdAt: -1 })
+      .lean();
+
+    const formatted = brands.map(b => ({
+      ...b,
+      id: b.id || b._id.toString(),
+      name: b.name || "Unnamed Brand",
+      company: b.company || b.name || "",
+      category: b.category || "General",
+      status: "Approved",
+      minInvestment: b.minInvestment || 0,
+      maxInvestment: b.maxInvestment || 0,
+      investment_range: b.investment_range || "Contact for Investment",
+      max_investment_limit: b.max_investment_limit || b.investment_range || "Contact for Investment",
+      image: b.image || (Array.isArray(b.images) && b.images[0]) || "",
+      images: Array.isArray(b.images) && b.images.length > 0 ? b.images : (b.image ? [b.image] : [])
+    }));
+
+    publicBrandsCache = formatted;
+    publicBrandsCacheTime = Date.now();
+    return formatted;
+  } catch (error) {
+    console.error("Error reading public approved brands from MongoDB:", error);
+    throw error;
+  }
+}
+
 export async function getBrands() {
   await dbConnect();
   try {
@@ -303,6 +347,7 @@ export async function saveBrand(brandData) {
 
     const brand = new Brand(brandPayload);
     const saved = await brand.save();
+    clearPublicBrandsCache();
 
     const obj = await Brand.findById(saved._id).populate('user').lean();
     const returnObj = {
@@ -371,6 +416,7 @@ export async function updateBrand(id, updatedFields, customMessage = "", adminIn
     );
 
     if (!updated) return null;
+    clearPublicBrandsCache();
 
     const obj = {
       ...updated,
@@ -1060,6 +1106,7 @@ async function _legacyUpdateInvestor(id, updatedFields, customMessage = "", admi
     ).populate('user').lean();
 
     if (!updated) return null;
+    clearPublicBrandsCache();
 
     const resObj = {
       ...updated,
@@ -1226,6 +1273,7 @@ export async function updateBlog(id, updatedFields) {
     );
 
     if (!updated) return null;
+    clearPublicBrandsCache();
 
     return {
       ...updated,
@@ -1319,6 +1367,7 @@ export async function updateService(id, updatedFields) {
     );
 
     if (!updated) return null;
+    clearPublicBrandsCache();
 
     return {
       ...updated,
