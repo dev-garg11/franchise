@@ -67,10 +67,14 @@ export default function BrandRegistration() {
     territoryOffered: "State Level Exclusivity",
     description: "",
     email: "",
-    password: "Franchise@123#",
+    password: "",
+    confirmPassword: "",
     phone: "",
     website: "",
     image: "",
+    businessModel: "FOFO",
+    currentOutlets: "0 - 5",
+    establishedYear: "",
   });
 
   const [submitted, setSubmitted] = useState(false);
@@ -365,9 +369,19 @@ export default function BrandRegistration() {
     if (!formData.password || formData.password.length < 6) {
       return scrollAndWarn("password", "Password must be at least 6 characters.");
     }
+    if (formData.password !== formData.confirmPassword) {
+      return scrollAndWarn("confirmPassword", "Passwords do not match. Please verify both password fields.");
+    }
     const cleanPhone = String(formData.phone || "").replace(/\D/g, "");
-    if (cleanPhone.length !== 10) {
-      return scrollAndWarn("phone", "Please enter a valid 10-digit Mobile Number.");
+    if (!/^[6-9]\d{9}$/.test(cleanPhone)) {
+      return scrollAndWarn("phone", "Please enter a valid 10-digit Indian Mobile Number starting with 6, 7, 8, or 9.");
+    }
+    if (formData.establishedYear) {
+      const yearNum = Number(formData.establishedYear);
+      const curYear = new Date().getFullYear();
+      if (isNaN(yearNum) || yearNum < 1900 || yearNum > curYear) {
+        return scrollAndWarn("establishedYear", `Established Year must be a valid year between 1900 and ${curYear}.`);
+      }
     }
     if (!agreed) {
       return scrollAndWarn("agree", "Please check the box to agree to the terms and conditions.");
@@ -396,12 +410,14 @@ export default function BrandRegistration() {
       const payload = {
         ...formData,
         phone: cleanPhone,
+        establishedYear: formData.establishedYear ? Number(formData.establishedYear) : undefined,
         minInvestment: rangeMinVal,
         maxInvestment: rangeMaxVal,
         areaRequired: sanitizedArea,
         franchiseFee: Number(formData.franchiseFee) || 50000,
         status: "Pending",
       };
+      delete payload.confirmPassword;
 
       const res = await fetch("/api/brands", {
         method: "POST",
@@ -590,6 +606,50 @@ export default function BrandRegistration() {
                   }}
                   className="form-input"
                 />
+              </div>
+
+              <div className="form-group">
+                <label>Established Year</label>
+                <input
+                  type="number"
+                  name="establishedYear"
+                  min="1900"
+                  max={new Date().getFullYear()}
+                  placeholder="e.g. 2018"
+                  value={formData.establishedYear}
+                  onChange={handleChange}
+                  className="form-input"
+                />
+              </div>
+
+              <div className="form-group">
+                <label>Current Outlets Count <span>*</span></label>
+                <select
+                  name="currentOutlets"
+                  value={formData.currentOutlets}
+                  onChange={handleChange}
+                  className="form-input"
+                >
+                  <option value="0 - 5">0 - 5 Outlets</option>
+                  <option value="5 - 15">5 - 15 Outlets</option>
+                  <option value="15 - 50">15 - 50 Outlets</option>
+                  <option value="50+">50+ Outlets</option>
+                </select>
+              </div>
+
+              <div className="form-group">
+                <label>Business Model Type <span>*</span></label>
+                <select
+                  name="businessModel"
+                  value={formData.businessModel}
+                  onChange={handleChange}
+                  className="form-input"
+                >
+                  <option value="FOFO">FOFO (Franchise Owned, Franchise Operated)</option>
+                  <option value="FOCO">FOCO (Franchise Owned, Company Operated)</option>
+                  <option value="FOFO & FOCO">Both FOFO & FOCO Available</option>
+                  <option value="COCO">COCO (Company Owned, Company Operated)</option>
+                </select>
               </div>
 
               <div className="form-group form-grid-full">
@@ -1011,41 +1071,12 @@ export default function BrandRegistration() {
             <h3 className="form-section-title">4. Owner Credentials & Contact Details</h3>
             <div className="form-grid">
               <div className="form-group">
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "6px" }}>
-                  <label style={{ margin: 0 }}>Enquiry Email Address (Login Username) <span>*</span></label>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const clean = (formData.name || "brand").toLowerCase().replace(/[^a-z0-9]/g, "_").replace(/_+/g, "_").replace(/^_+|_+$/g, "");
-                      const rand = Math.floor(1000 + Math.random() * 9000);
-                      setFormData(prev => ({
-                        ...prev,
-                        email: `${clean || "brand"}_${rand}@yopmail.com`,
-                        password: "Franchise@123#",
-                        phone: prev.phone || "9876543210"
-                      }));
-                      setAgreed(true);
-                      toast.info("Auto-generated test credentials with verified format!");
-                    }}
-                    style={{
-                      background: "rgba(99, 102, 241, 0.1)",
-                      color: "var(--primary)",
-                      border: "none",
-                      padding: "4px 10px",
-                      borderRadius: "6px",
-                      fontSize: "12px",
-                      fontWeight: "700",
-                      cursor: "pointer"
-                    }}
-                  >
-                    ⚡ Generate Yopmail Email
-                  </button>
-                </div>
+                <label>Enquiry Email Address (Login Username) <span>*</span></label>
                 <input
                   type="email"
                   name="email"
                   required
-                  placeholder="e.g. brand_1234@yopmail.com"
+                  placeholder="e.g. contact@yourbrand.com"
                   value={formData.email}
                   onChange={(e) => {
                     if (errorField === "email") setErrorField("");
@@ -1062,47 +1093,95 @@ export default function BrandRegistration() {
               </div>
 
               <div className="form-group">
-                <label>Account Password <span>*</span></label>
-                <input
-                  type="password"
-                  name="password"
-                  required
-                  placeholder="Set password for brand dashboard"
-                  value={formData.password}
-                  onChange={handleChange}
-                  className="form-input"
-                />
-                <span style={{ fontSize: "11.5px", color: "var(--text-muted)", marginTop: "4px", display: "block" }}>
-                  Default password set to <strong>Franchise@123#</strong>
-                </span>
-              </div>
-
-              <div className="form-group">
                 <label>Mobile Number <span>*</span></label>
-                <input
-                  type="tel"
-                  name="phone"
-                  required
-                  maxLength={10}
-                  inputMode="numeric"
-                  pattern="[0-9]{10}"
-                  placeholder="10 digit mobile number"
-                  value={formData.phone}
-                  onChange={(e) => {
-                    if (errorField === "phone") setErrorField("");
-                    handleChange(e);
-                  }}
-                  className="form-input"
-                  style={errorField === "phone" ? { borderColor: "#ef4444", boxShadow: "0 0 0 3px rgba(239, 68, 68, 0.2)" } : undefined}
-                />
+                <div style={{ display: "flex", alignItems: "stretch" }}>
+                  <span style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    padding: "0 14px",
+                    background: "#f1f5f9",
+                    border: errorField === "phone" ? "1px solid #ef4444" : "1px solid #cbd5e1",
+                    borderRight: "none",
+                    borderRadius: "8px 0 0 8px",
+                    fontWeight: "700",
+                    fontSize: "14px",
+                    color: "#334155"
+                  }}>
+                    +91
+                  </span>
+                  <input
+                    type="tel"
+                    name="phone"
+                    required
+                    maxLength={10}
+                    inputMode="numeric"
+                    pattern="[6-9][0-9]{9}"
+                    placeholder="10-digit mobile number"
+                    value={formData.phone}
+                    onChange={(e) => {
+                      if (errorField === "phone") setErrorField("");
+                      const val = e.target.value.replace(/\D/g, '').slice(0, 10);
+                      setFormData(prev => ({ ...prev, phone: val }));
+                    }}
+                    className="form-input"
+                    style={{
+                      borderRadius: "0 8px 8px 0",
+                      ...(errorField === "phone" ? { borderColor: "#ef4444", boxShadow: "0 0 0 3px rgba(239, 68, 68, 0.2)" } : {})
+                    }}
+                  />
+                </div>
                 {errorField === "phone" && (
                   <span style={{ fontSize: "12px", color: "#ef4444", fontWeight: "700", marginTop: "4px", display: "block" }}>
-                    ⚠ Please enter a valid 10-digit Mobile Number.
+                    ⚠ Please enter a valid 10-digit Indian Mobile Number starting with 6, 7, 8, or 9.
                   </span>
                 )}
               </div>
 
               <div className="form-group">
+                <label>Account Password <span>*</span></label>
+                <input
+                  type="password"
+                  name="password"
+                  required
+                  placeholder="Create password for brand dashboard (min 6 chars)"
+                  value={formData.password}
+                  onChange={(e) => {
+                    if (errorField === "password") setErrorField("");
+                    handleChange(e);
+                  }}
+                  className="form-input"
+                  style={errorField === "password" ? { borderColor: "#ef4444", boxShadow: "0 0 0 3px rgba(239, 68, 68, 0.2)" } : undefined}
+                />
+                {errorField === "password" && (
+                  <span style={{ fontSize: "12px", color: "#ef4444", fontWeight: "700", marginTop: "4px", display: "block" }}>
+                    ⚠ Password must be at least 6 characters.
+                  </span>
+                )}
+              </div>
+
+              <div className="form-group">
+                <label>Confirm Password <span>*</span></label>
+                <input
+                  type="password"
+                  name="confirmPassword"
+                  required
+                  placeholder="Re-enter your password"
+                  value={formData.confirmPassword}
+                  onChange={(e) => {
+                    if (errorField === "confirmPassword") setErrorField("");
+                    handleChange(e);
+                  }}
+                  className="form-input"
+                  style={errorField === "confirmPassword" ? { borderColor: "#ef4444", boxShadow: "0 0 0 3px rgba(239, 68, 68, 0.2)" } : undefined}
+                />
+                {errorField === "confirmPassword" && (
+                  <span style={{ fontSize: "12px", color: "#ef4444", fontWeight: "700", marginTop: "4px", display: "block" }}>
+                    ⚠ Passwords do not match. Please verify both password fields.
+                  </span>
+                )}
+              </div>
+
+              <div className="form-group form-grid-full">
                 <label>Official Brand Website URL</label>
                 <input
                   type="url"
@@ -1157,7 +1236,7 @@ export default function BrandRegistration() {
                     style={{ width: "18px", height: "18px", accentColor: "var(--primary)", cursor: "pointer" }}
                   />
                   <label htmlFor="agree" style={{ fontSize: "13.5px", fontWeight: "600", color: errorField === "agree" ? "#991b1b" : "var(--text-muted)", cursor: "pointer", margin: 0 }}>
-                    I agree to the <Link href="/terms" style={{ color: "var(--primary)", textDecoration: "underline" }}>terms and conditions</Link> of Franchise Apply. <span>*</span>
+                    I agree to the <Link href="/terms" style={{ color: "var(--primary)", textDecoration: "underline" }}>terms and conditions</Link> of Franchise Roots. <span>*</span>
                   </label>
                 </div>
                 {errorField === "agree" && (

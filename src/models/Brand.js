@@ -123,6 +123,20 @@ const BrandSchema = new mongoose.Schema({
         type: String,
         default: 'No'
     },
+    businessModel: {
+        type: String,
+        enum: ['FOFO', 'FOCO', 'FOFO & FOCO', 'COCO'],
+        default: 'FOFO'
+    },
+    currentOutlets: {
+        type: String,
+        trim: true,
+        default: '0 - 5'
+    },
+    establishedYear: {
+        type: Number,
+        default: 2024
+    },
     website: {
         type: String,
         default: ''

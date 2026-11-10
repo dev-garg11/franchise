@@ -180,6 +180,9 @@ export async function POST(request) {
       max_investment_limit: body.max_investment_limit || "Rs. 20 Lakh - 30 Lakh",
       category: body.category || "General",
       areaRequired: sanitizedArea,
+      businessModel: body.businessModel || "FOFO",
+      currentOutlets: body.currentOutlets || "0 - 5",
+      establishedYear: Number(body.establishedYear) || new Date().getFullYear(),
       seoStatus: nameVal.isTest ? "needs_fix" : (body.seoStatus || "Pending Review"),
       status: body.status || "Pending"
     };
