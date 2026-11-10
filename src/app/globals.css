@@ -7257,8 +7257,8 @@ button {
 .public-ads-grid--2 { grid-template-columns: repeat(2, 1fr); }
 .public-ads-grid--4 { grid-template-columns: 1.25fr 1fr; grid-auto-rows: minmax(190px, 1fr); }
 .public-ads-carousel { display: grid; grid-template-columns: 32px minmax(0, 1fr) 32px; align-items: center; gap: 10px; }
-.public-ads-grid.public-ads-grid--compact { grid-template-columns: repeat(3, minmax(0, 1fr)); grid-auto-rows: 300px; gap: 16px; }
-.public-ads-grid--compact .public-ad-card { min-height: 300px; }
+.public-ads-grid.public-ads-grid--compact { grid-template-columns: repeat(3, minmax(0, 1fr)); grid-auto-rows: 340px; gap: 16px; }
+.public-ads-grid--compact .public-ad-card { min-height: 340px; }
 .public-ads-carousel-button { display: grid; place-items: center; width: 32px; height: 42px; padding: 0; color: var(--public-blue); background: #fff; border: 1px solid #dbe5f5; border-radius: 999px; box-shadow: 0 8px 20px rgba(29, 78, 216, .12); cursor: pointer; transition: transform .2s ease, background-color .2s ease, opacity .2s ease; }
 .public-ads-carousel-button:hover:not(:disabled) { background: #eff6ff; transform: scale(1.06); }
 .public-ads-carousel-button:disabled { opacity: .35; cursor: default; }
@@ -7858,7 +7858,7 @@ body:has(.public-home) .nav-link.active::after { background: #2563eb !important;
   .public-section-heading-row, .public-partner-heading { align-items: flex-start; flex-direction: column; }
   .public-ad-card--featured { grid-row: auto; min-height: 300px; }
   .public-ads-carousel { grid-template-columns: 28px minmax(0, 1fr) 28px; gap: 6px; }
-  .public-ads-grid.public-ads-grid--compact { grid-template-columns: 1fr; grid-auto-rows: 300px; }
+  .public-ads-grid.public-ads-grid--compact { grid-template-columns: 1fr; grid-auto-rows: 340px; }
   .public-ads-carousel-button { width: 28px; height: 38px; }
   .public-join-card:last-child { grid-column: auto; }
   .public-marquee span { padding-inline: 20px; font-size: 16px; }
@@ -10649,14 +10649,44 @@ textarea:focus-visible {
   border: 1px solid rgba(255, 255, 255, 0.1) !important;
 }
 
+.public-ad-top-bar {
+  position: absolute !important;
+  top: 18px !important;
+  left: 20px !important;
+  right: 20px !important;
+  z-index: 4 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 8px !important;
+  pointer-events: none !important;
+}
+
+.public-ad-video-badge {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 5px !important;
+  padding: 5px 11px !important;
+  color: #ffffff !important;
+  background: rgba(15, 23, 42, 0.85) !important;
+  backdrop-filter: blur(8px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.25) !important;
+  border-radius: 9999px !important;
+  font-size: 11px !important;
+  font-weight: 800 !important;
+  letter-spacing: 0.06em !important;
+  text-transform: uppercase !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
+}
+
 .public-ad-content {
   position: relative !important;
   z-index: 2 !important;
-  padding: 24px !important;
+  padding: 22px !important;
   display: flex !important;
   flex-direction: column !important;
   align-items: flex-start !important;
-  gap: 10px !important;
+  gap: 8px !important;
 }
 
 .public-ad-badge {
@@ -10664,7 +10694,7 @@ textarea:focus-visible {
   display: inline-flex !important;
   align-items: center !important;
   align-self: flex-start !important;
-  padding: 5px 12px !important;
+  padding: 6px 14px !important;
   color: #1d4ed8 !important;
   background: #ffffff !important;
   border-radius: 9999px !important;
@@ -10672,28 +10702,58 @@ textarea:focus-visible {
   font-weight: 800 !important;
   letter-spacing: 0.06em !important;
   text-transform: uppercase !important;
-  margin-bottom: 4px !important;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25) !important;
+  margin: 0 !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25) !important;
+  border: 1px solid rgba(255, 255, 255, 0.6) !important;
 }
 
 .public-ad-badge--featured {
   color: #78350f !important;
   background: #fde047 !important;
+  border: 1px solid rgba(253, 224, 71, 0.8) !important;
 }
 
 .public-ad-content strong {
   color: var(--public-ad-text-color, #ffffff) !important;
-  font-size: clamp(20px, 2.2vw, 26px) !important;
+  font-size: clamp(17px, 1.7vw, 21px) !important;
   font-weight: 800 !important;
   line-height: 1.25 !important;
   text-shadow: 0 2px 6px rgba(0, 0, 0, 0.7) !important;
+  display: -webkit-box !important;
+  -webkit-line-clamp: 2 !important;
+  -webkit-box-orient: vertical !important;
+  overflow: hidden !important;
 }
 
 .public-ad-content > span:not(.public-ad-link):not(.public-ad-badge) {
   color: var(--public-ad-text-color, #e2e8f0) !important;
-  font-size: 14px !important;
-  line-height: 1.5 !important;
+  font-size: 13.5px !important;
+  line-height: 1.4 !important;
   text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6) !important;
+  display: -webkit-box !important;
+  -webkit-line-clamp: 2 !important;
+  -webkit-box-orient: vertical !important;
+  overflow: hidden !important;
+}
+
+.public-ad-link {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  margin-top: 4px !important;
+  padding: 9px 18px !important;
+  color: #fff !important;
+  background: #16a34a !important;
+  border-radius: 10px !important;
+  font-weight: 800 !important;
+  font-size: 13.5px !important;
+  transition: all 0.2s ease !important;
+  box-shadow: 0 4px 12px rgba(22, 163, 74, 0.3) !important;
+}
+
+.public-ad-link:hover {
+  background: #15803d !important;
+  transform: translateX(3px) !important;
 }
 
 /* 4. Top Franchise Opportunities & Section Header Text Visibility */

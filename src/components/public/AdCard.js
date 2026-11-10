@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, Play } from "lucide-react";
 import ImageRotator, { getImageSources } from "./ImageRotator";
 
 export default function AdCard({ ad, featured = false, large = featured }) {
@@ -19,8 +19,15 @@ export default function AdCard({ ad, featured = false, large = featured }) {
         />
       )}
       <span className="public-ad-overlay" aria-hidden="true" />
-      <span className="public-ad-content" style={{ color: textColor, "--public-ad-text-color": textColor }}>
+      <div className="public-ad-top-bar">
         <span className={`public-ad-badge${featured ? " public-ad-badge--featured" : ""}`}>{badge}</span>
+        {mediaType === "video" && (
+          <span className="public-ad-video-badge">
+            <Play size={10} fill="currentColor" /> VIDEO
+          </span>
+        )}
+      </div>
+      <span className="public-ad-content" style={{ color: textColor, "--public-ad-text-color": textColor }}>
         <strong style={{ color: textColor }}>{ad.title}</strong>
         {ad.subtitle && <span style={{ color: textColor }}>{ad.subtitle}</span>}
         <span className="public-ad-link">Learn More <ArrowRight size={15} /></span>
