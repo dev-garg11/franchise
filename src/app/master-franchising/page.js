@@ -230,8 +230,7 @@ export default function MasterFranchisingPage() {
               </button>
               <a
                 href="#master-listings"
-                className="btn btn-outline"
-                style={{ padding: "14px 28px", fontSize: "15px", color: "white", borderColor: "rgba(255, 255, 255, 0.3)" }}
+                className="master-hero-outline-btn"
               >
                 Explore Master Brands
               </a>

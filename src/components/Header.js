@@ -6,7 +6,8 @@ import { usePathname, useRouter } from "next/navigation";
 import {
   LogIn, PlusCircle, Shield, User, LogOut, Building, Menu, X,
   Bell, Search, ChevronDown, Sparkles, HelpCircle, Layers, Star,
-  Trash2, CheckCircle, ArrowRight, Clock, ArrowUp, Crown, MessageCircle
+  Trash2, CheckCircle, ArrowRight, Clock, ArrowUp, Crown, MessageCircle,
+  Utensils, ShoppingBag, GraduationCap, Car, HeartPulse
 } from "lucide-react";
 import { getApprovedBrands } from "@/lib/brandsCache";
 import { decodeHtmlEntities } from "@/lib/brandFormatters";
@@ -925,7 +926,7 @@ export default function Header() {
           <div className="search-modal-content" onClick={(e) => e.stopPropagation()}>
             <div className="search-modal-header">
               <div className="search-modal-input-wrapper">
-                <Search size={22} style={{ color: "var(--primary)" }} />
+                <Search size={20} className="search-modal-input-icon" />
                 <input
                   ref={searchInputRef}
                   type="text"
@@ -935,13 +936,23 @@ export default function Header() {
                   onChange={(e) => setSearchQuery(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && handleSearchSubmit(e)}
                 />
+                {searchQuery && (
+                  <button
+                    type="button"
+                    onClick={() => setSearchQuery("")}
+                    className="search-input-clear-btn"
+                    aria-label="Clear search input"
+                  >
+                    <X size={15} />
+                  </button>
+                )}
               </div>
               <button
                 className="search-modal-close-btn"
                 onClick={() => setSearchModalOpen(false)}
                 aria-label="Close search"
               >
-                <X size={20} />
+                <X size={18} />
               </button>
             </div>
 
@@ -970,7 +981,7 @@ export default function Header() {
                     <span className="search-section-title">Trending Searches</span>
                     <div className="search-tags-row">
                       {["Bombay Kulfi", "Garage", "Tea Franchise", "Education", "Low Budget"].map((term, index) => (
-                        <div key={index} className="search-tag-chip" onClick={() => handleRecentSearchClick(term)}>
+                        <div key={index} className="search-tag-chip trending" onClick={() => handleRecentSearchClick(term)}>
                           <Sparkles size={12} />
                           {term}
                         </div>
@@ -981,22 +992,38 @@ export default function Header() {
                   <div>
                     <span className="search-section-title">Popular Categories</span>
                     <div className="search-tags-row">
-                      {["Food and Beverage", "Retail", "Education", "Automotive", "Beauty & Health"].map((category, index) => (
-                        <div key={index} className="search-tag-chip" style={{ background: "rgba(124, 58, 237, 0.05)", color: "var(--secondary)", borderColor: "rgba(124, 58, 237, 0.1)" }} onClick={() => {
-                          setSearchModalOpen(false);
-                          router.push(`/brands?category=${encodeURIComponent(category)}`);
-                        }}>
-                          <Building size={12} />
-                          {category}
-                        </div>
-                      ))}
+                      {[
+                        { name: "Food and Beverage", icon: Utensils, chipClass: "cat-fnb" },
+                        { name: "Retail", icon: ShoppingBag, chipClass: "cat-retail" },
+                        { name: "Education", icon: GraduationCap, chipClass: "cat-edu" },
+                        { name: "Automotive", icon: Car, chipClass: "cat-auto" },
+                        { name: "Beauty & Health", icon: HeartPulse, chipClass: "cat-beauty" },
+                      ].map((item, index) => {
+                        const Icon = item.icon;
+                        return (
+                          <div
+                            key={index}
+                            className={`search-tag-chip category-chip ${item.chipClass}`}
+                            onClick={() => {
+                              setSearchModalOpen(false);
+                              router.push(`/brands?category=${encodeURIComponent(item.name)}`);
+                            }}
+                          >
+                            <Icon size={13} />
+                            {item.name}
+                          </div>
+                        );
+                      })}
                     </div>
                   </div>
                 </>
               ) : (
                 /* Search Results display */
                 <div>
-                  <span className="search-section-title">Matching Results ({filteredBrands.length})</span>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
+                    <span className="search-section-title">Matching Results ({filteredBrands.length})</span>
+                    <span style={{ fontSize: "12px", color: "var(--text-muted)" }}>Press Enter for all</span>
+                  </div>
 
                   {loadingSearch ? (
                     <div className="flex-center" style={{ padding: "30px 0", flexDirection: "column", gap: "10px" }}>
@@ -1029,6 +1056,12 @@ export default function Header() {
                               <span className="search-result-badge">{decodeHtmlEntities(brand.category)}</span>
                               <span>•</span>
                               <span>HQ: {decodeHtmlEntities(brand.hq || "India")}</span>
+                              {brand.minInvestment ? (
+                                <>
+                                  <span>•</span>
+                                  <span style={{ color: "#16a34a", fontWeight: "700" }}>₹{brand.minInvestment}</span>
+                                </>
+                              ) : null}
                             </div>
                           </div>
                           <ArrowRight size={16} style={{ color: "var(--text-muted)" }} />
