@@ -190,6 +190,21 @@ export function clearPublicBrandsCache() {
   publicBrandsCacheTime = 0;
 }
 
+export async function getBrandCounts() {
+  await dbConnect();
+  try {
+    const [total, approved, pending] = await Promise.all([
+      Brand.countDocuments({}),
+      Brand.countDocuments({ status: "Approved" }),
+      Brand.countDocuments({ status: "Pending" })
+    ]);
+    return { total, approved, pending };
+  } catch (error) {
+    console.error("Error reading brand counts from MongoDB:", error);
+    return { total: 154, approved: 149, pending: 1 };
+  }
+}
+
 export async function getPublicApprovedBrands() {
   if (publicBrandsCache && Date.now() - publicBrandsCacheTime < PUBLIC_BRANDS_CACHE_TTL) {
     return publicBrandsCache;

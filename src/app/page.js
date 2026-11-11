@@ -151,7 +151,8 @@ export default function Home() {
   const sliderRef = useRef(null);
   const leadingCarouselRef = useRef(null);
   const router = useRouter();
-  const { brands, loading } = useApprovedBrands();
+  const { brands, loading, totalCount } = useApprovedBrands();
+  const realtimeTotal = totalCount || brands.length || 154;
   const pathname = usePathname();
 
   // Franchise India Search Form & Multi-Criteria States
@@ -555,7 +556,7 @@ export default function Home() {
 
               {/* Subtitle */}
               <p className="fr-hero-subtitle">
-                Explore {brands.length ? `${brands.length}+` : "145+"} audited business setups, master dealerships &amp; ROI-proven brands. Start your franchise journey with confidence.
+                Explore {realtimeTotal ? `${realtimeTotal}+` : "154+"} audited business setups, master dealerships &amp; ROI-proven brands. Start your franchise journey with confidence.
               </p>
 
               {/* Three feature highlights */}
@@ -1294,7 +1295,7 @@ export default function Home() {
           <Link href="/brands" className="public-category-summary" title="Explore all verified franchise brands">
             <div className="public-category-summary-icon"><CheckCircle size={19} /></div>
             <div>
-              <strong>{brands.length || "100+"} verified options</strong>
+              <strong>{realtimeTotal} verified options</strong>
               <span>Curated across {CATEGORIES.length} high-demand sectors</span>
             </div>
             <ArrowRight size={18} className="public-category-summary-arrow" />

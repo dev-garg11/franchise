@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getBrands, getPublicApprovedBrands, resetDatabaseConnection, saveBrand } from "@/lib/db";
+import { getBrands, getPublicApprovedBrands, getBrandCounts, resetDatabaseConnection, saveBrand } from "@/lib/db";
 import { validateArea, validateBrandName, validateImageUrl } from "@/lib/seo/validate";
 
 let approvedBrandsMemoryCache = null;
@@ -24,6 +24,15 @@ function toPublicBrand(brand) {
 export async function GET(request) {
   try {
     const { searchParams } = new URL(request.url);
+    if (searchParams.get("stats") === "true") {
+      const stats = await getBrandCounts();
+      return NextResponse.json(stats, {
+        headers: {
+          "Cache-Control": "no-store, max-age=0"
+        }
+      });
+    }
+
     const filterStatus = searchParams.get("status"); // Approved, Pending, etc.
     const featured = searchParams.get("featured"); // true/false
     const search = searchParams.get("search") || "";

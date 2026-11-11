@@ -211,7 +211,7 @@ const matchBudgetRange = (brand, selectedBudget, minBudgetParam, maxBudgetParam)
 };
 
 function BrandsDirectoryPage() {
-    const { brands, loading } = useApprovedBrands();
+    const { brands, loading, totalCount } = useApprovedBrands();
     const [filteredBrands, setFilteredBrands] = useState([]);
 
     // Search Filters State
@@ -442,7 +442,7 @@ function BrandsDirectoryPage() {
                     titleBefore="Explore "
                     titleAccent="Franchise Brands"
                     subtitle="Discover premium high-ROI investments, contact brand owners directly, and expand your franchise footprint."
-                    leftExtra={<span className="page-header-count-chip">{brands.length > 0 ? `${brands.length}+ verified brands` : "Verified brands"}</span>}
+                    leftExtra={<span className="page-header-count-chip">{(totalCount || brands.length) > 0 ? `${totalCount || brands.length}+ verified brands` : "Verified brands"}</span>}
                     rightVisual={brands.length > 0 ? (
                         <div className="page-header-tile-stack">
                             {brands.slice(0, 3).map((brand, index) => (
