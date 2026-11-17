@@ -12391,23 +12391,54 @@ textarea:focus-visible {
    ========================================================================== */
 
 .fr-hero-section.fr-hero-bright {
-  background-color: #070b14;
+  background-color: #060b17;
   background-image: 
-    radial-gradient(circle at 15% 15%, rgba(30, 58, 138, 0.45) 0%, transparent 45%),
-    radial-gradient(circle at 85% 75%, rgba(34, 197, 94, 0.25) 0%, transparent 45%),
-    linear-gradient(180deg, rgba(7, 11, 20, 0.88) 0%, rgba(11, 17, 32, 0.92) 50%, rgba(7, 11, 20, 0.96) 100%),
+    radial-gradient(circle at 18% 25%, rgba(30, 58, 138, 0.35) 0%, transparent 55%),
+    radial-gradient(circle at 82% 70%, rgba(34, 197, 94, 0.18) 0%, transparent 50%),
+    linear-gradient(180deg, rgba(6, 11, 24, 0.6) 0%, rgba(8, 15, 30, 0.72) 50%, rgba(6, 11, 24, 0.88) 100%),
     url("/Modern%20Franchise%20Roots%20Office%20at%20Dusk.png");
-  background-size: cover;
-  background-position: center 30%;
+  background-size: auto, auto, auto, cover;
+  background-position: center, center, center, center 35%;
   background-repeat: no-repeat;
-  padding: 40px 0 52px;
+  padding: 42px 0 56px;
   position: relative;
   overflow: hidden;
+  min-height: 580px;
 }
 
 .fr-hero-section.fr-hero-bright::after {
   display: none !important;
   content: none !important;
+}
+
+/* Dedicated background layer to guarantee the office photo renders with perfect clarity */
+.fr-hero-bg-layer {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.fr-hero-bg-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 32%;
+  filter: brightness(0.68) contrast(1.18) saturate(1.12);
+  transform: scale(1.02);
+}
+
+.fr-hero-bg-overlay {
+  position: absolute;
+  inset: 0;
+  background: 
+    radial-gradient(circle at 18% 25%, rgba(30, 58, 138, 0.35) 0%, transparent 55%),
+    radial-gradient(circle at 82% 70%, rgba(34, 197, 94, 0.18) 0%, transparent 50%),
+    linear-gradient(180deg, rgba(6, 11, 24, 0.58) 0%, rgba(8, 15, 30, 0.7) 50%, rgba(6, 11, 24, 0.88) 100%);
+  pointer-events: none;
 }
 
 .fr-hero-left-card {
@@ -12437,9 +12468,23 @@ textarea:focus-visible {
   }
 }
 
-/* NO TEAL! Bright vibrant emerald-lime-gold high-contrast gradient */
+/* Two-tone highlights matching Screenshot 2: Franchise (Green) Opportunities (Cyan/Blue) */
+.fr-hero-title-green {
+  color: #22c55e;
+  font-weight: 900;
+  display: inline-block;
+  text-shadow: 0 0 20px rgba(34, 197, 94, 0.35);
+}
+
+.fr-hero-title-blue {
+  color: #38bdf8;
+  font-weight: 900;
+  display: inline-block;
+  text-shadow: 0 0 20px rgba(56, 189, 248, 0.35);
+}
+
 .fr-hero-title-highlight {
-  background: linear-gradient(135deg, #22c55e 0%, #4ade80 40%, #a3e635 80%, #facc15 100%);
+  background: linear-gradient(135deg, #22c55e 0%, #4ade80 40%, #38bdf8 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   display: inline-block;

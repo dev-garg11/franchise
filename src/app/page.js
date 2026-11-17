@@ -518,15 +518,25 @@ export default function Home() {
 
   return (
     <div className="public-home">
-      {/* 1. Main Hero Banner matching Screenshot 3 with BRIGHT, VIBRANT COLORS */}
+      {/* 1. Main Hero Banner matching Image 2 with real Modern Office at Dusk background */}
       <section className="fr-hero-section fr-hero-bright">
-        <div className="container">
+        <div className="fr-hero-bg-layer" aria-hidden="true">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/Modern%20Franchise%20Roots%20Office%20at%20Dusk.png"
+            alt=""
+            className="fr-hero-bg-img"
+          />
+          <div className="fr-hero-bg-overlay" />
+        </div>
+
+        <div className="container" style={{ position: "relative", zIndex: 2 }}>
           {/* Two-Column Grid: Hero Search Card (Left) + 3 Stacked Hub Cards (Right) */}
           <div className="fr-hero-grid">
             {/* Left Column: Hero Search Card */}
             <div className="fr-hero-left-card">
               <h1 className="fr-hero-title">
-                Find India&apos;s Top <span className="fr-hero-title-highlight">Franchise Opportunities</span>
+                Find India&apos;s Top <span className="fr-hero-title-green">Franchise</span> <span className="fr-hero-title-blue">Opportunities</span>
               </h1>
               <p className="fr-hero-subtitle">
                 Explore 1,200+ audited business setups, master dealerships &amp; ROI-proven brands
