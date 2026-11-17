@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getBrands, getPublicApprovedBrands, getBrandCounts, resetDatabaseConnection, saveBrand } from "@/lib/db";
-import { validateArea, validateBrandName, validateImageUrl } from "@/lib/seo/validate";
+import { validateArea, validateBrandName, validateImageUrl, validateFranchiseFee } from "@/lib/seo/validate";
+import { mapRangeToNumeric, getMaxInvestmentLimitValue } from "@/lib/investmentData";
 
 let approvedBrandsMemoryCache = null;
 let approvedBrandsSerializedCache = null;
@@ -170,6 +171,14 @@ export async function POST(request) {
 
     if (body.minInvestment && body.maxInvestment && Number(body.maxInvestment) < Number(body.minInvestment)) {
       return NextResponse.json({ error: "Maximum investment must be greater than or equal to minimum investment." }, { status: 400 });
+    }
+
+    const effectiveMax = getMaxInvestmentLimitValue(body.max_investment_limit, body.investment_range, body.maxInvestment);
+    if (effectiveMax > 0 && body.franchiseFee !== undefined && body.franchiseFee !== null && body.franchiseFee !== "") {
+      const feeCheck = validateFranchiseFee(body.franchiseFee, effectiveMax);
+      if (!feeCheck.isValid) {
+        return NextResponse.json({ error: feeCheck.reason }, { status: 400 });
+      }
     }
 
     // Phase 1 Strict Validation (Test brands quarantined as needs_fix)

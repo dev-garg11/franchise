@@ -696,8 +696,8 @@ function BrandsDirectoryPage() {
                                                 transition: "transform 0.3s ease, box-shadow 0.3s ease"
                                             }}
                                         >
-                                            <div className="franchise-card-image" style={{ height: "180px", overflow: "hidden", position: "relative", background: "#ffffff", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                                                <div className="franchise-badge" style={{
+                                            <div className="franchise-card-image" style={{ height: "180px", overflow: "hidden", position: "relative", width: "100%", padding: 0 }}>
+                                                <div className="franchise-badge franchise-category-badge public-brand-chip-category" style={{
                                                     position: "absolute",
                                                     top: "12px",
                                                     left: "12px",
@@ -710,7 +710,22 @@ function BrandsDirectoryPage() {
                                                     fontWeight: "700",
                                                     zIndex: 2
                                                 }}>
-                                                    {decodeHtmlEntities(brand.hq || "India")}
+                                                    {decodeHtmlEntities(brand.category || "Franchise")}
+                                                </div>
+                                                <div className="franchise-roi-badge public-brand-chip-roi" style={{
+                                                    position: "absolute",
+                                                    bottom: "12px",
+                                                    right: "12px",
+                                                    background: "linear-gradient(135deg, #10B981 0%, #059669 100%)",
+                                                    color: "white",
+                                                    padding: "4px 10px",
+                                                    borderRadius: "50px",
+                                                    fontSize: "11px",
+                                                    fontWeight: "700",
+                                                    zIndex: 2,
+                                                    boxShadow: "0 4px 12px rgba(16, 185, 129, 0.35)"
+                                                }}>
+                                                    {brand.roi ? (String(brand.roi).toLowerCase().startsWith("roi") ? brand.roi : `ROI: ${brand.roi}`) : (brand.paybackPeriod ? `ROI: ${brand.paybackPeriod}` : "ROI: High")}
                                                 </div>
                                                 <ImageRotator
                                                     sources={getImageSources({
@@ -720,6 +735,7 @@ function BrandsDirectoryPage() {
                                                     alt={decodeHtmlEntities(brand.name)}
                                                     interval={2000}
                                                     className="franchise-card-brand-image"
+                                                    style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
                                                 />
                                             </div>
                                             <div className="franchise-card-content" style={{ padding: "20px", display: "flex", flexDirection: "column", flexGrow: 1 }}>

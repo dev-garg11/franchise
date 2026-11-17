@@ -1054,12 +1054,13 @@ button {
 }
 
 .slider-image {
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
   object-position: center;
-  background-color: #ffffff;
-  display: block;
+  background-color: transparent !important;
+  display: block !important;
+  padding: 0 !important;
   transition: var(--transition-slow);
 }
 
@@ -1239,14 +1240,16 @@ button {
   align-items: center;
   justify-content: center;
   overflow: hidden;
+  padding: 0 !important;
 }
 
 .franchise-card-image img {
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
   object-position: center;
-  display: block;
+  display: block !important;
+  padding: 0 !important;
   transition: var(--transition-slow);
 }
 
@@ -7405,8 +7408,8 @@ button {
 .public-home .fi-carousel-btn { color: var(--public-blue); background: #fff; border: 1px solid var(--public-border); min-width: 44px; min-height: 44px; }
 .public-home .fi-brand-cards-track { gap: 20px; }
 .public-home .fi-brand-card-item { background: #fff; border: 1px solid var(--public-border); border-radius: 20px; box-shadow: 0 8px 24px rgba(29, 78, 216, .07); overflow: hidden; }
-.public-home .fi-brand-img-box { background: #f5f8ff; height: 170px; }
-.public-home .fi-brand-img-box img { object-fit: contain; padding: 22px; }
+.public-home .fi-brand-img-box { background: #f5f8ff; height: 170px; padding: 0 !important; }
+.public-home .fi-brand-img-box img { object-fit: cover !important; padding: 0 !important; width: 100% !important; height: 100% !important; display: block !important; }
 .public-home .fi-brand-cat-badge { color: var(--public-blue); background: #dbeafe; }
 .public-home .fi-brand-roi-pill { color: var(--public-green); background: #dcfce7; }
 .public-home .fi-brand-body { background: #fff; }
@@ -7551,10 +7554,10 @@ button {
 .seo-geo-panel .seo-geo-toggle:hover { color: #fff !important; background: #4f46e5 !important; box-shadow: 0 7px 14px rgba(79,70,229,.18); transform: translateY(-2px); }
 
 /* Missing brand media should look intentional instead of showing a washed-out logo. */
-.franchise-card-image { background: linear-gradient(145deg, #eef2ff, #ffffff 55%, #f5f3ff) !important; }
-.franchise-card-image img { min-height: 100%; }
+.franchise-card-image { background: linear-gradient(145deg, #eef2ff, #ffffff 55%, #f5f3ff) !important; padding: 0 !important; }
+.franchise-card-image img { min-height: 100%; width: 100% !important; height: 100% !important; object-fit: cover !important; padding: 0 !important; display: block !important; }
 .franchise-card-image .image-rotator { width: 100%; height: 100%; }
-.franchise-card-image .franchise-card-brand-image { width: 100%; height: 100%; padding: 18px; object-fit: contain; object-position: center; animation: image-rotator-fade 500ms ease both; }
+.franchise-card-image .franchise-card-brand-image { width: 100% !important; height: 100% !important; padding: 0 !important; object-fit: cover !important; object-position: center; display: block !important; animation: image-rotator-fade 500ms ease both; }
 .franchise-card-image .image-rotator-dots { bottom: 8px; }
 @keyframes public-category-in { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
 @keyframes public-seo-float { 0%, 100% { transform: translate(0,0); } 50% { transform: translate(-12px,12px); } }
@@ -7630,11 +7633,11 @@ button {
 .public-top-picks-grid, .public-business-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 22px; align-items: stretch; }
 .public-top-pick-wrap { display: flex; min-width: 0; height: 100%; }
 .public-brand-card { --brand-blue: #2563eb; --brand-red: #dc2626; display: flex; flex-direction: column; width: 100%; height: 100%; overflow: hidden; background: #fff; border: 1px solid #d9e2fa; border-radius: 24px; box-shadow: 0 12px 30px rgba(29, 78, 216, .09); animation: public-brand-card-entry 700ms cubic-bezier(.2, .8, .2, 1) both; transition: transform 300ms ease, box-shadow 300ms ease, border-color 300ms ease; }
-.public-brand-media { position: relative; height: 150px; padding: 14px; overflow: hidden; background: linear-gradient(135deg, #eaf0ff, #fff 70%); }
-.public-brand-logo-box { position: relative; z-index: 1; display: grid; place-items: center; width: 100%; height: 100%; overflow: hidden; background: #fff; border: 1px solid #e5eaf5; border-radius: 16px; transition: transform 350ms ease; }
+.public-brand-media { position: relative; height: 175px !important; padding: 0 !important; overflow: hidden; background: linear-gradient(135deg, #eaf0ff, #fff 70%); }
+.public-brand-logo-box { position: relative; z-index: 1; display: block !important; width: 100% !important; height: 100% !important; overflow: hidden; background: transparent !important; border: none !important; border-radius: 0 !important; padding: 0 !important; margin: 0 !important; transition: transform 350ms ease; }
 .public-brand-logo-box::after { position: absolute; inset: -30% auto -30% -45%; z-index: 2; width: 28%; content: ""; background: linear-gradient(90deg, transparent, rgba(255,255,255,.8), transparent); opacity: 0; transform: skewX(-20deg) translateX(-180%); pointer-events: none; }
-.public-brand-logo { object-fit: contain; padding: 16px; }
-.public-brand-logo-box > img.public-brand-logo { width: 100%; height: 100%; padding: 16px; }
+.public-brand-logo { width: 100% !important; height: 100% !important; object-fit: cover !important; padding: 0 !important; display: block !important; border-radius: 0 !important; }
+.public-brand-logo-box > img.public-brand-logo { width: 100% !important; height: 100% !important; padding: 0 !important; object-fit: cover !important; display: block !important; border-radius: 0 !important; }
 .brands-results-pane .franchise-card { content-visibility: auto; contain-intrinsic-size: 0 540px; }
 .brands-results-pane .franchise-card-image img { display: block; backface-visibility: hidden; }
 .public-brand-initials { display: grid; place-items: center; width: 76px; height: 76px; color: #1d4ed8; background: #eaf0ff; border: 1px solid #bfdbfe; border-radius: 20px; font-size: 26px; font-weight: 900; letter-spacing: .04em; }
@@ -8690,13 +8693,16 @@ body:has(.public-home) .nav-link.active::after { background: #2563eb !important;
   display: flex;
   align-items: center;
   justify-content: center;
+  padding: 0 !important;
 }
 
 .fi-brand-img-box img {
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
   object-position: center;
+  display: block !important;
+  padding: 0 !important;
   transition: transform 0.6s ease;
 }
 
@@ -10738,10 +10744,8 @@ textarea:focus-visible {
   position: relative !important;
   height: 175px !important;
   background: #f8faff !important;
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  padding: 16px !important;
+  display: block !important;
+  padding: 0 !important;
   overflow: hidden !important;
   border-bottom: 1px solid #edf2f7 !important;
 }
@@ -10749,9 +10753,11 @@ textarea:focus-visible {
 .public-brand-media img {
   width: 100% !important;
   height: 100% !important;
-  max-height: 120px !important;
-  object-fit: contain !important;
+  max-height: none !important;
+  object-fit: cover !important;
   object-position: center !important;
+  display: block !important;
+  padding: 0 !important;
 }
 
 /* Hide legacy chips that stretched into circles */

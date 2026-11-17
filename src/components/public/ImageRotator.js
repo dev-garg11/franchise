@@ -48,14 +48,14 @@ export default function ImageRotator({ sources = [], alt = "", className = "", s
   if (imageSources.length === 0) return null;
 
   return (
-    <div className="image-rotator" aria-label={imageSources.length > 1 ? "Rotating images" : undefined}>
+    <div className="image-rotator" style={{ width: "100%", height: "100%", position: "relative", overflow: "hidden" }} aria-label={imageSources.length > 1 ? "Rotating images" : undefined}>
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         key={imageSources[activeIndex]}
         src={imageSources[safeActiveIndex]}
         alt={alt}
         className={`image-rotator-image${className ? ` ${className}` : ""}`}
-        style={style}
+        style={{ width: "100%", height: "100%", objectFit: "cover", display: "block", ...style }}
         onError={handleImageError}
         loading="lazy"
       />

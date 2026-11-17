@@ -73,3 +73,32 @@ export const getFilteredMaxLimits = (selectedMinRange) => {
   if (rangeIndex === -1) return REGISTRATION_INVESTMENT_OPTIONS;
   return REGISTRATION_INVESTMENT_OPTIONS.slice(rangeIndex);
 };
+
+export const mapRangeToNumeric = (rangeStr, isMax = false) => {
+  if (!rangeStr) return 0;
+  if (rangeStr === "Rs. 10,000 - 50,000") return isMax ? 50000 : 10000;
+  if (rangeStr === "Rs. 50,000 - 2 Lakh") return isMax ? 200000 : 50000;
+  if (rangeStr === "Rs. 2 Lakh - 5 Lakh") return isMax ? 500000 : 200000;
+  if (rangeStr === "Rs. 5 Lakh - 10 Lakh") return isMax ? 1000000 : 500000;
+  if (rangeStr === "Rs. 10 Lakh - 20 Lakh") return isMax ? 2000000 : 1000000;
+  if (rangeStr === "Rs. 20 Lakh - 30 Lakh") return isMax ? 3000000 : 2000000;
+  if (rangeStr === "Rs. 30 Lakh - 50 Lakh") return isMax ? 5000000 : 3000000;
+  if (rangeStr === "Rs. 50 Lakh - 1 Crore") return isMax ? 10000000 : 5000000;
+  if (rangeStr === "Rs. 1 Crore - 2 Crore") return isMax ? 20000000 : 10000000;
+  if (rangeStr === "Rs. 2 Crore - 5 Crore") return isMax ? 50000000 : 20000000;
+  if (rangeStr === "Above Rs. 5 Crore") return isMax ? 999999999 : 50000000;
+  return 0;
+};
+
+export const getMaxInvestmentLimitValue = (maxLimitStr, rangeStr, numericMax) => {
+  if (numericMax && Number(numericMax) > 0) return Number(numericMax);
+  if (maxLimitStr) {
+    const val = mapRangeToNumeric(maxLimitStr, true);
+    if (val > 0) return val;
+  }
+  if (rangeStr) {
+    const val = mapRangeToNumeric(rangeStr, true);
+    if (val > 0) return val;
+  }
+  return 0;
+};

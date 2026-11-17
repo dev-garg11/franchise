@@ -23,29 +23,13 @@ import Pagination from "@/components/Pagination";
 import { clearBrandsCache } from "@/lib/brandsCache";
 import { getAdminCache, setAdminCache, invalidateAdminCache } from "@/lib/adminCache";
 import { logActivity } from "@/lib/logger";
-import { REGISTRATION_INVESTMENT_OPTIONS, getFilteredMaxLimits } from "@/lib/investmentData";
+import { REGISTRATION_INVESTMENT_OPTIONS, getFilteredMaxLimits, mapRangeToNumeric, getMaxInvestmentLimitValue } from "@/lib/investmentData";
 import { BRAND_CATEGORIES, BRAND_SECTORS_MAP, ALL_INDIAN_STATES } from "@/lib/brandConstants";
 import { DISTRICTS_BY_STATE } from "@/lib/districtsData";
 import { decodeHtmlEntities, cleanBrandPlainText, sanitizeBrandHtml } from "@/lib/brandFormatters";
 import { generateBrandSeoData } from "@/lib/brandSeoGenerator";
-import { validateArea, validateBrandName, validateImageUrl } from "@/lib/seo/validate";
+import { validateArea, validateBrandName, validateImageUrl, validateFranchiseFee } from "@/lib/seo/validate";
 import { toast, Swal } from "@/lib/swal";
-
-const mapRangeToNumeric = (rangeStr, isMax = false) => {
-  if (!rangeStr) return 0;
-  if (rangeStr === "Rs. 10,000 - 50,000") return isMax ? 50000 : 10000;
-  if (rangeStr === "Rs. 50,000 - 2 Lakh") return isMax ? 200000 : 50000;
-  if (rangeStr === "Rs. 2 Lakh - 5 Lakh") return isMax ? 500000 : 200000;
-  if (rangeStr === "Rs. 5 Lakh - 10 Lakh") return isMax ? 1000000 : 500000;
-  if (rangeStr === "Rs. 10 Lakh - 20 Lakh") return isMax ? 2000000 : 1000000;
-  if (rangeStr === "Rs. 20 Lakh - 30 Lakh") return isMax ? 3000000 : 2000000;
-  if (rangeStr === "Rs. 30 Lakh - 50 Lakh") return isMax ? 5000000 : 3000000;
-  if (rangeStr === "Rs. 50 Lakh - 1 Crore") return isMax ? 10000000 : 5000000;
-  if (rangeStr === "Rs. 1 Crore - 2 Crore") return isMax ? 20000000 : 10000000;
-  if (rangeStr === "Rs. 2 Crore - 5 Crore") return isMax ? 50000000 : 20000000;
-  if (rangeStr === "Above Rs. 5 Crore") return isMax ? 999999999 : 50000000;
-  return 0;
-};
 
 const isNew = (dateString) => {
   if (!dateString) return false;
@@ -500,6 +484,10 @@ export default function AdminDashboard({ initialTab = "dashboard" }) {
     agreement: "Yes"
   });
 
+  const adminMaxLimit = getMaxInvestmentLimitValue(adminBrandForm.max_investment_limit, adminBrandForm.investment_range, editingBrand?.maxInvestment);
+  const adminFeeCheck = validateFranchiseFee(adminBrandForm.franchiseFee, adminMaxLimit);
+  const adminFeeError = adminFeeCheck.isValid ? "" : adminFeeCheck.reason;
+
   const handleOpenEditBrand = (brand) => {
     setEditingBrand(brand);
     setAdminBrandForm({
@@ -613,6 +601,15 @@ export default function AdminDashboard({ initialTab = "dashboard" }) {
     if (adminBrandForm.investment_range && adminBrandForm.max_investment_limit && maxIndex < rangeIndex) {
       toast.warning("Max Investment Limit cannot be lower than the selected Investment Range.");
       return;
+    }
+
+    const effectiveAdminMax = getMaxInvestmentLimitValue(adminBrandForm.max_investment_limit, adminBrandForm.investment_range, editingBrand?.maxInvestment);
+    if (effectiveAdminMax > 0 && adminBrandForm.franchiseFee) {
+      const feeCheck = validateFranchiseFee(adminBrandForm.franchiseFee, effectiveAdminMax);
+      if (!feeCheck.isValid) {
+        toast.warning(feeCheck.reason);
+        return;
+      }
     }
 
     setIsSavingAdminBrand(true);
@@ -2648,7 +2645,13 @@ export default function AdminDashboard({ initialTab = "dashboard" }) {
                       className="form-input"
                       value={adminBrandForm.franchiseFee}
                       onChange={(e) => setAdminBrandForm({ ...adminBrandForm, franchiseFee: e.target.value })}
+                      style={adminFeeError ? { borderColor: "#ef4444", boxShadow: "0 0 0 3px rgba(239, 68, 68, 0.2)" } : undefined}
                     />
+                    {adminFeeError && (
+                      <span style={{ fontSize: "12px", color: "#ef4444", fontWeight: "700", marginTop: "4px", display: "block" }}>
+                        ⚠ {adminFeeError}
+                      </span>
+                    )}
                   </div>
                   <div className="form-group">
                     <label>Royalty Fee</label>
@@ -2876,7 +2879,7 @@ export default function AdminDashboard({ initialTab = "dashboard" }) {
                   <button
                     type="submit"
                     className="btn btn-primary"
-                    disabled={isSavingAdminBrand}
+                    disabled={isSavingAdminBrand || Boolean(adminFeeError)}
                   >
                     {isSavingAdminBrand ? "Saving Changes..." : "Save Brand Changes"}
                   </button>

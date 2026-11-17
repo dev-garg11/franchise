@@ -11,6 +11,8 @@
  * 6. Meta Description: Must be <= 160 characters.
  */
 
+import { formatLakhs } from "@/lib/brandFormatters";
+
 // 1. Validate Area Required
 export function validateArea(rawArea) {
   if (!rawArea || typeof rawArea !== "string" && typeof rawArea !== "number") {
@@ -187,4 +189,25 @@ export function validateBrandSeo(brand = {}) {
       validImage: imageVal.isValid ? imageVal.value : null
     }
   };
+}
+
+// 7. Validate One-Time Franchise Fee against Max Investment
+export function validateFranchiseFee(fee, maxLimit) {
+  if (fee === undefined || fee === null || fee === "") {
+    return { isValid: true, value: 0, maxLimit: 0, reason: null };
+  }
+  const numericFee = typeof fee === "number" ? fee : parseFloat(String(fee).replace(/[^\d.]/g, ""));
+  if (isNaN(numericFee) || numericFee <= 0) {
+    return { isValid: true, value: 0, maxLimit: 0, reason: null };
+  }
+  const numericMax = typeof maxLimit === "number" ? maxLimit : parseFloat(String(maxLimit).replace(/[^\d.]/g, ""));
+  if (!isNaN(numericMax) && numericMax > 0 && numericFee > numericMax) {
+    return {
+      isValid: false,
+      value: numericFee,
+      maxLimit: numericMax,
+      reason: `One-Time Franchise Fee cannot exceed the Max Investment Limit (${formatLakhs(numericMax)})`
+    };
+  }
+  return { isValid: true, value: numericFee, maxLimit: isNaN(numericMax) ? 0 : numericMax, reason: null };
 }

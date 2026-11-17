@@ -14,8 +14,9 @@ import { logActivity } from "@/lib/logger";
 import { clearBrandsCache } from "@/lib/brandsCache";
 import { BRAND_CATEGORIES, BRAND_SECTORS_MAP, ALL_INDIAN_STATES } from "@/lib/brandConstants";
 import { DISTRICTS_BY_STATE } from "@/lib/districtsData";
-import { getFilteredMaxLimits } from "@/lib/investmentData";
+import { getFilteredMaxLimits, mapRangeToNumeric, getMaxInvestmentLimitValue } from "@/lib/investmentData";
 import { decodeHtmlEntities, sanitizeBrandHtml, cleanBrandPlainText } from "@/lib/brandFormatters";
+import { validateFranchiseFee } from "@/lib/seo/validate";
 import { toast, Swal } from "@/lib/swal";
 
 const INVESTMENT_OPTIONS = [
@@ -31,22 +32,6 @@ const INVESTMENT_OPTIONS = [
   "Rs. 2 Crore - 5 Crore",
   "Above Rs. 5 Crore"
 ];
-
-const mapRangeToNumeric = (rangeStr, isMax = false) => {
-  if (!rangeStr) return 0;
-  if (rangeStr === "Rs. 10,000 - 50,000") return isMax ? 50000 : 10000;
-  if (rangeStr === "Rs. 50,000 - 2 Lakh") return isMax ? 200000 : 50000;
-  if (rangeStr === "Rs. 2 Lakh - 5 Lakh") return isMax ? 500000 : 200000;
-  if (rangeStr === "Rs. 5 Lakh - 10 Lakh") return isMax ? 1000000 : 500000;
-  if (rangeStr === "Rs. 10 Lakh - 20 Lakh") return isMax ? 2000000 : 1000000;
-  if (rangeStr === "Rs. 20 Lakh - 30 Lakh") return isMax ? 3000000 : 2000000;
-  if (rangeStr === "Rs. 30 Lakh - 50 Lakh") return isMax ? 5000000 : 3000000;
-  if (rangeStr === "Rs. 50 Lakh - 1 Crore") return isMax ? 10000000 : 5000000;
-  if (rangeStr === "Rs. 1 Crore - 2 Crore") return isMax ? 20000000 : 10000000;
-  if (rangeStr === "Rs. 2 Crore - 5 Crore") return isMax ? 50000000 : 20000000;
-  if (rangeStr === "Above Rs. 5 Crore") return isMax ? 999999999 : 50000000;
-  return 0;
-};
 
 const isNew = (dateString) => {
   if (!dateString) return false;
@@ -158,6 +143,10 @@ export default function BrandPanel({ initialTab = "dashboard" }) {
   const [updateLoading, setUpdateLoading] = useState(false);
   const [updateSuccess, setUpdateSuccess] = useState("");
   const [updateError, setUpdateError] = useState("");
+
+  const bpMaxLimit = getMaxInvestmentLimitValue(formFields.max_investment_limit, formFields.investment_range, brand?.maxInvestment);
+  const bpFeeCheck = validateFranchiseFee(formFields.franchiseFee, bpMaxLimit);
+  const bpFeeError = bpFeeCheck.isValid ? "" : bpFeeCheck.reason;
 
   useEffect(() => {
     const isLoggedIn = localStorage.getItem("brandLoggedIn");
@@ -292,6 +281,13 @@ export default function BrandPanel({ initialTab = "dashboard" }) {
       if (maxIndex < rangeIndex) {
         setUpdateSuccess("");
         setUpdateError("Max Investment Limit cannot be lower than the selected Investment Range.");
+        setUpdateLoading(false);
+        return;
+      }
+
+      if (bpFeeError) {
+        setUpdateSuccess("");
+        setUpdateError(bpFeeError);
         setUpdateLoading(false);
         return;
       }
@@ -796,8 +792,16 @@ export default function BrandPanel({ initialTab = "dashboard" }) {
                         placeholder="e.g. 100000"
                         value={formFields.franchiseFee}
                         onChange={(e) => setFormFields({ ...formFields, franchiseFee: e.target.value })}
-                        style={{ background: "#f8fafc" }}
+                        style={{
+                          background: "#f8fafc",
+                          ...(bpFeeError ? { borderColor: "#ef4444", boxShadow: "0 0 0 3px rgba(239, 68, 68, 0.2)" } : {})
+                        }}
                       />
+                      {bpFeeError && (
+                        <span style={{ fontSize: "12px", color: "#ef4444", fontWeight: "700", marginTop: "4px", display: "block" }}>
+                          ⚠ {bpFeeError}
+                        </span>
+                      )}
                     </div>
 
                     <div className="form-group">
@@ -905,7 +909,7 @@ export default function BrandPanel({ initialTab = "dashboard" }) {
                     </div>
                   </div>
 
-                  <button type="submit" className="btn btn-primary" style={{ width: "100%", padding: "14px", marginTop: "24px" }} disabled={updateLoading}>
+                  <button type="submit" className="btn btn-primary" style={{ width: "100%", padding: "14px", marginTop: "24px" }} disabled={updateLoading || Boolean(bpFeeError)}>
                     {updateLoading ? "Saving Listing..." : brand ? "Update Listing (Triggers Admin Approval)" : "Add Listing & Submit for Approval"}
                   </button>
                 </form>

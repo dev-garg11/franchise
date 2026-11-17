@@ -9,10 +9,10 @@ import {
 } from "lucide-react";
 import { clearBrandsCache } from "@/lib/brandsCache";
 import { toast, Swal } from "@/lib/swal";
-import { REGISTRATION_INVESTMENT_OPTIONS, getFilteredMaxLimits } from "@/lib/investmentData";
+import { REGISTRATION_INVESTMENT_OPTIONS, getFilteredMaxLimits, mapRangeToNumeric, getMaxInvestmentLimitValue } from "@/lib/investmentData";
 import { BRAND_CATEGORIES, BRAND_SECTORS_MAP, ALL_INDIAN_STATES } from "@/lib/brandConstants";
 import { DISTRICTS_BY_STATE } from "@/lib/districtsData";
-import { validateArea, validateBrandName } from "@/lib/seo/validate";
+import { validateArea, validateBrandName, validateFranchiseFee } from "@/lib/seo/validate";
 
 const INVESTMENT_OPTIONS = [
   "Rs. 10,000 - 50,000",
@@ -27,22 +27,6 @@ const INVESTMENT_OPTIONS = [
   "Rs. 2 Crore - 5 Crore",
   "Above Rs. 5 Crore"
 ];
-
-const mapRangeToNumeric = (rangeStr, isMax = false) => {
-  if (!rangeStr) return 0;
-  if (rangeStr === "Rs. 10,000 - 50,000") return isMax ? 50000 : 10000;
-  if (rangeStr === "Rs. 50,000 - 2 Lakh") return isMax ? 200000 : 50000;
-  if (rangeStr === "Rs. 2 Lakh - 5 Lakh") return isMax ? 500000 : 200000;
-  if (rangeStr === "Rs. 5 Lakh - 10 Lakh") return isMax ? 1000000 : 500000;
-  if (rangeStr === "Rs. 10 Lakh - 20 Lakh") return isMax ? 2000000 : 1000000;
-  if (rangeStr === "Rs. 20 Lakh - 30 Lakh") return isMax ? 3000000 : 2000000;
-  if (rangeStr === "Rs. 30 Lakh - 50 Lakh") return isMax ? 5000000 : 3000000;
-  if (rangeStr === "Rs. 50 Lakh - 1 Crore") return isMax ? 10000000 : 5000000;
-  if (rangeStr === "Rs. 1 Crore - 2 Crore") return isMax ? 20000000 : 10000000;
-  if (rangeStr === "Rs. 2 Crore - 5 Crore") return isMax ? 50000000 : 20000000;
-  if (rangeStr === "Above Rs. 5 Crore") return isMax ? 999999999 : 50000000;
-  return 0;
-};
 
 export default function BrandRegistration() {
   const [formData, setFormData] = useState({
@@ -87,6 +71,7 @@ export default function BrandRegistration() {
   const [establishedError, setEstablishedError] = useState("");
   const [areaError, setAreaError] = useState("");
   const [royaltyError, setRoyaltyError] = useState("");
+  const [franchiseFeeError, setFranchiseFeeError] = useState("");
 
   // Upload & preview states
   const [rawFile, setRawFile] = useState(null);
@@ -123,12 +108,33 @@ export default function BrandRegistration() {
         if (maxVal && !validMaxOptions.includes(maxVal)) {
           maxVal = value;
         }
+        const effectiveMax = getMaxInvestmentLimitValue(maxVal, value);
+        if (effectiveMax > 0 && prev.franchiseFee) {
+          const check = validateFranchiseFee(prev.franchiseFee, effectiveMax);
+          setFranchiseFeeError(check.isValid ? "" : check.reason);
+        }
         return {
           ...prev,
           investment_range: value,
           max_investment_limit: maxVal,
         };
       });
+    } else if (name === "max_investment_limit") {
+      const effectiveMax = getMaxInvestmentLimitValue(value, formData.investment_range);
+      if (effectiveMax > 0 && formData.franchiseFee) {
+        const check = validateFranchiseFee(formData.franchiseFee, effectiveMax);
+        setFranchiseFeeError(check.isValid ? "" : check.reason);
+      }
+      setFormData((prev) => ({ ...prev, max_investment_limit: value }));
+    } else if (name === "franchiseFee") {
+      const effectiveMax = getMaxInvestmentLimitValue(formData.max_investment_limit, formData.investment_range);
+      if (effectiveMax > 0 && value) {
+        const check = validateFranchiseFee(value, effectiveMax);
+        setFranchiseFeeError(check.isValid ? "" : check.reason);
+      } else {
+        setFranchiseFeeError("");
+      }
+      setFormData((prev) => ({ ...prev, franchiseFee: value }));
     } else if (name === "category") {
       const availableSectors = BRAND_SECTORS_MAP[value] || [];
       setFormData((prev) => ({
@@ -469,6 +475,14 @@ export default function BrandRegistration() {
     const maxIndex = INVESTMENT_OPTIONS.indexOf(formData.max_investment_limit);
     if (maxIndex < rangeIndex) {
       return scrollAndWarn("max_investment_limit", "Maximum investment limit cannot be lower than the starting investment range.");
+    }
+    const effectiveMax = getMaxInvestmentLimitValue(formData.max_investment_limit, formData.investment_range);
+    if (effectiveMax > 0 && formData.franchiseFee) {
+      const feeCheck = validateFranchiseFee(formData.franchiseFee, effectiveMax);
+      if (!feeCheck.isValid) {
+        setFranchiseFeeError(feeCheck.reason);
+        return scrollAndWarn("franchiseFee", feeCheck.reason);
+      }
     }
     if (!formData.description?.trim()) {
       return scrollAndWarn("description", "Please enter a brief Business Overview / Description.");
@@ -1157,7 +1171,17 @@ export default function BrandRegistration() {
                   value={formData.franchiseFee}
                   onChange={handleChange}
                   className="form-input"
+                  style={franchiseFeeError ? { borderColor: "#ef4444", boxShadow: "0 0 0 3px rgba(239, 68, 68, 0.2)" } : undefined}
                 />
+                {franchiseFeeError ? (
+                  <span style={{ fontSize: "12px", color: "#ef4444", fontWeight: "700", marginTop: "4px", display: "block" }}>
+                    ⚠ {franchiseFeeError}
+                  </span>
+                ) : (
+                  <small style={{ fontSize: "11px", color: "var(--text-muted)", display: "block", marginTop: "4px" }}>
+                    Must be less than or equal to the selected Max Investment Limit.
+                  </small>
+                )}
               </div>
 
               <div className="form-group">
@@ -1481,7 +1505,7 @@ export default function BrandRegistration() {
 
               <button
                 type="submit"
-                disabled={loading}
+                disabled={loading || Boolean(franchiseFeeError)}
                 className="btn btn-primary"
                 style={{ width: "100%", padding: "14px 28px", fontSize: "16px" }}
               >

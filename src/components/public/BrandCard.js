@@ -67,6 +67,8 @@ export default function BrandCard({ brand, topPick = false, onEnquire, compact =
   const imageSources = getImageSources(brand);
   const initials = name.split(/\s+/).filter(Boolean).slice(0, 2).map((word) => word[0]).join("").toUpperCase() || "FR";
   const isVerified = brand.verified === true || brand.isVerified === true || brand.is_verified === true;
+  const roiValue = brand.roi || brand.paybackPeriod;
+  const roiText = roiValue ? (String(roiValue).toLowerCase().startsWith("roi") ? roiValue : `ROI: ${roiValue}`) : "ROI: High";
 
   const handleEnquire = () => {
     if (onEnquire) {
@@ -91,7 +93,12 @@ export default function BrandCard({ brand, topPick = false, onEnquire, compact =
             <span className="public-brand-initials" aria-label={`${name} initials`}>{initials}</span>
           )}
         </div>
-        {brand.category && <span className="public-brand-chip-category" title={brand.category}>{brand.category}</span>}
+        {(brand.category || "Franchise") && (
+          <span className="public-brand-chip-category" title={brand.category || "Franchise"}>
+            {brand.category || "Franchise"}
+          </span>
+        )}
+        <span className="public-brand-chip-roi" title={roiText}>{roiText}</span>
         {topPick && <span className="public-card-badge">★ TOP PICK</span>}
       </div>
 

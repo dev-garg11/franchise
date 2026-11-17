@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getBrandById, updateBrand, deleteBrand, clearPublicBrandsCache } from "@/lib/db";
-import { validateArea, validateBrandName, validateImageUrl } from "@/lib/seo/validate";
+import { validateArea, validateBrandName, validateImageUrl, validateFranchiseFee } from "@/lib/seo/validate";
+import { getMaxInvestmentLimitValue } from "@/lib/investmentData";
 import { clearBrandApiCache } from "../route";
 
 export async function GET(request, { params }) {
@@ -56,6 +57,15 @@ export async function PATCH(request, { params }) {
       const imgVal = validateImageUrl(brandFields.image);
       if (!imgVal.isValid) {
         return NextResponse.json({ error: `Invalid Image: ${imgVal.reason}` }, { status: 400 });
+      }
+    }
+
+    // 4. Validate Franchise Fee
+    const effectiveMax = getMaxInvestmentLimitValue(brandFields.max_investment_limit, brandFields.investment_range, brandFields.maxInvestment);
+    if (effectiveMax > 0 && brandFields.franchiseFee !== undefined && brandFields.franchiseFee !== null && brandFields.franchiseFee !== "") {
+      const feeCheck = validateFranchiseFee(brandFields.franchiseFee, effectiveMax);
+      if (!feeCheck.isValid) {
+        return NextResponse.json({ error: feeCheck.reason }, { status: 400 });
       }
     }
 

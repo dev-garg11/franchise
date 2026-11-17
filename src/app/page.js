@@ -9,7 +9,7 @@ import {
   GraduationCap, Utensils, Store, Car, HeartPulse, Building2, HelpCircle,
   CheckCircle, ShieldCheck, Award, ThumbsUp, ChevronRight, MessageSquare, Mail,
   Phone, Globe, Eye, ChevronLeft, Send, Sparkles, ShieldAlert, MessageCircle,
-  Filter, Layers, Briefcase, Crown, X, TrendingUp, FileText, Headphones, Dumbbell, Coffee, ShoppingBag, Heart, Cpu, Factory, MoreHorizontal, ChevronDown, LayoutGrid
+  Filter, Layers, Briefcase, Crown, X, FileText, ChevronDown, LayoutGrid
 } from "lucide-react";
 import SEOGeoTags from "@/components/SEOGeoTags";
 import TopFranchiseOpportunities from "@/components/TopFranchiseOpportunities";
@@ -102,18 +102,6 @@ const FI_BUSINESS_TYPES = [
   "Kiosk & Express Setup"
 ];
 
-const HERO_PILLS = [
-  { name: "Food & Beverage", category: "Food and Beverage", icon: Coffee, color: "#e11d48" },
-  { name: "Retail", category: "Retail", icon: ShoppingBag, color: "#f59e0b" },
-  { name: "Fitness", category: "Sports, Fitness & Entertainment", icon: Dumbbell, color: "#ec4899" },
-  { name: "Education", category: "Education", icon: GraduationCap, color: "#2563eb" },
-  { name: "Healthcare", category: "Beauty & Health", icon: Heart, color: "#ef4444" },
-  { name: "Beauty & Wellness", category: "Beauty & Health", icon: Sparkles, color: "#d946ef" },
-  { name: "Technology", category: "Business Services", icon: Cpu, color: "#0284c7" },
-  { name: "Manufacturing", category: "Dealers & Distributors", icon: Factory, color: "#6366f1" },
-  { name: "More", category: "", icon: MoreHorizontal, color: "#64748b" }
-];
-
 const HERO_AVATARS = [
   { src: "https://randomuser.me/api/portraits/men/32.jpg", label: "Entrepreneur 1" },
   { src: "https://randomuser.me/api/portraits/women/44.jpg", label: "Entrepreneur 2" },
@@ -147,7 +135,6 @@ const FAQS = [
 ];
 
 export default function Home() {
-  const pillsRef = useRef(null);
   const sliderRef = useRef(null);
   const leadingCarouselRef = useRef(null);
   const router = useRouter();
@@ -805,68 +792,6 @@ export default function Home() {
               </div>
             </div>
           </div>
-
-          {/* Quick Trending Categories Strip */}
-          <div className="fr-quick-categories-bright">
-            <span className="fr-quick-label-bright">Trending Sectors:</span>
-            <div className="fr-quick-tags-bright">
-              {HERO_PILLS.map((pill, idx) => {
-                const PillIcon = pill.icon;
-                return (
-                  <button
-                    key={idx}
-                    type="button"
-                    className="fr-quick-pill-bright"
-                    onClick={() => {
-                      router.push(`/brands?category=${encodeURIComponent(pill.category || pill.name)}`);
-                    }}
-                  >
-                    <span className="fr-quick-pill-icon-bright" style={{ color: pill.color }}>
-                      <PillIcon size={13} />
-                    </span>
-                    <span>{pill.name}</span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Trust Highlights Bar */}
-          <div className="fr-trust-action-bar-bright">
-            <div className="fr-trust-item-bright">
-              <div className="fr-trust-icon-bright fr-icon-green">
-                <ShieldCheck size={18} />
-              </div>
-              <div className="fr-trust-text-bright">
-                <strong>100% Verified Brands</strong>
-                <span>Audited listings &amp; financials</span>
-              </div>
-            </div>
-
-            <div className="fr-trust-divider-bright" />
-
-            <div className="fr-trust-item-bright">
-              <div className="fr-trust-icon-bright fr-icon-blue">
-                <TrendingUp size={18} />
-              </div>
-              <div className="fr-trust-text-bright">
-                <strong>High ROI Business Models</strong>
-                <span>Proven payback periods</span>
-              </div>
-            </div>
-
-            <div className="fr-trust-divider-bright" />
-
-            <div className="fr-trust-item-bright">
-              <div className="fr-trust-icon-bright fr-icon-purple">
-                <Headphones size={18} />
-              </div>
-              <div className="fr-trust-text-bright">
-                <strong>Free Expert Support</strong>
-                <span>From search to setup</span>
-              </div>
-            </div>
-          </div>
         </div>
 
         {/* Floating Stat Bar over Bottom Wave */}
@@ -1005,9 +930,11 @@ export default function Home() {
               })).map((b) => (
                 <div key={b.id} className="fi-brand-card-item">
                   <div className="fi-brand-img-box">
-                    <ImageRotator sources={getImageSources(b)} alt={b.name} />
+                    <ImageRotator sources={getImageSources(b)} alt={b.name} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
                     <span className="fi-brand-cat-badge">{b.category}</span>
-                    {b.roi && <span className="fi-brand-roi-pill">ROI: {b.roi}</span>}
+                    <span className="fi-brand-roi-pill">
+                      {b.roi ? (String(b.roi).toLowerCase().startsWith("roi") ? b.roi : `ROI: ${b.roi}`) : (b.paybackPeriod ? `ROI: ${b.paybackPeriod}` : "ROI: High")}
+                    </span>
                   </div>
 
                   <div className="fi-brand-body">
@@ -1321,14 +1248,29 @@ export default function Home() {
                   {brands.slice(0, 9).map((brand) => (
                     <div key={brand.id} className="slider-card">
                     <div className="slider-image-wrapper">
-                      <div className="slider-badge">{decodeHtmlEntities(brand.hq || "India")}</div>
+                      <div className="slider-badge">{decodeHtmlEntities(brand.category || "Franchise")}</div>
                       <div className="slider-overlay-gradient"></div>
                       <ImageRotator
                         sources={getImageSources(brand).length > 0 ? getImageSources(brand) : ["https://images.unsplash.com/photo-1524178232363-1fb2b075b655?auto=format&fit=crop&q=80&w=400"]}
                         alt={decodeHtmlEntities(brand.name)}
                         className="slider-image"
+                        style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
                       />
-                      
+                      <div className="slider-roi-badge public-brand-chip-roi" style={{
+                        position: "absolute",
+                        bottom: "16px",
+                        right: "16px",
+                        zIndex: 10,
+                        background: "linear-gradient(135deg, #10B981 0%, #059669 100%)",
+                        color: "white",
+                        padding: "4px 10px",
+                        borderRadius: "50px",
+                        fontSize: "11px",
+                        fontWeight: "700",
+                        boxShadow: "0 4px 12px rgba(16, 185, 129, 0.35)"
+                      }}>
+                        {brand.roi ? (String(brand.roi).toLowerCase().startsWith("roi") ? brand.roi : `ROI: ${brand.roi}`) : (brand.paybackPeriod ? `ROI: ${brand.paybackPeriod}` : "ROI: High")}
+                      </div>
                     </div>
                     <div className="slider-card-content">
                       <span className="slider-category">{decodeHtmlEntities(brand.category)}</span>
