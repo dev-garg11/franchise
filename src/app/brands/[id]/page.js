@@ -79,6 +79,11 @@ export default function BrandDetailPage({ params }) {
       .then((data) => {
         if (data.brand) {
           setBrand(data.brand);
+          // Canonical URL auto-correction: if current URL is legacy (like brand-1794908388778), update browser address bar to SEO slug!
+          const canonicalSlug = data.brand.slug || data.brand.id;
+          if (canonicalSlug && brandId !== canonicalSlug && typeof window !== "undefined") {
+            window.history.replaceState(null, "", `/brands/${canonicalSlug}`);
+          }
           // Set default budget in form
           setEnquiryForm((prev) => ({
             ...prev,

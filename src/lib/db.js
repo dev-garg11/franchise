@@ -217,21 +217,26 @@ export async function getPublicApprovedBrands() {
       .sort({ createdAt: -1 })
       .lean();
 
-    const formatted = brands.map(b => ({
-      ...b,
-      id: b.id || b._id.toString(),
-      name: b.name || "Unnamed Brand",
-      company: b.company || b.name || "",
-      category: b.category || "General",
-      status: "Approved",
-      minInvestment: b.minInvestment || 0,
-      maxInvestment: b.maxInvestment || 0,
-      investment_range: b.investment_range || "Contact for Investment",
-      max_investment_limit: b.max_investment_limit || b.investment_range || "Contact for Investment",
-      image: b.image || (Array.isArray(b.images) && b.images[0]) || "",
-      images: Array.isArray(b.images) && b.images.length > 0 ? b.images : (b.image ? [b.image] : []),
-      createdAt: b.createdAt || (b._id && typeof b._id.getTimestamp === "function" ? b._id.getTimestamp() : new Date())
-    }));
+    const formatted = brands.map(b => {
+      const canonicalSlug = generateBrandSlug(b);
+      return {
+        ...b,
+        slug: canonicalSlug,
+        id: canonicalSlug,
+        rawId: b.id || b._id.toString(),
+        name: b.name || "Unnamed Brand",
+        company: b.company || b.name || "",
+        category: b.category || "General",
+        status: "Approved",
+        minInvestment: b.minInvestment || 0,
+        maxInvestment: b.maxInvestment || 0,
+        investment_range: b.investment_range || "Contact for Investment",
+        max_investment_limit: b.max_investment_limit || b.investment_range || "Contact for Investment",
+        image: b.image || (Array.isArray(b.images) && b.images[0]) || "",
+        images: Array.isArray(b.images) && b.images.length > 0 ? b.images : (b.image ? [b.image] : []),
+        createdAt: b.createdAt || (b._id && typeof b._id.getTimestamp === "function" ? b._id.getTimestamp() : new Date())
+      };
+    });
 
     publicBrandsCache = formatted;
     publicBrandsCacheTime = Date.now();
@@ -309,10 +314,37 @@ export async function getBrandById(id) {
         brand = await Brand.findOne({ id: new RegExp(`^${idPrefix.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}(?:-|$)`, "i") }).populate('user').lean();
       }
     }
+    // Match by brand name extracted from SEO slug (e.g. "shahid-franchise-cost-..." -> name: "Shahid")
+    if (!brand && typeof id === "string") {
+      const slugNamePart = id.split("-franchise-cost")[0].replace(/-/g, " ").trim();
+      if (slugNamePart) {
+        brand = await Brand.findOne({
+          name: { $regex: new RegExp(`^${slugNamePart.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}$`, "i") }
+        }).populate('user').lean();
+      }
+    }
+    // Universal fallback: scan approved brands to match computed slug
+    if (!brand && typeof id === "string") {
+      const allBrands = await Brand.find({}).select('id name sector category hq location company').lean();
+      const match = allBrands.find(b => generateBrandSlug(b) === id || (b.id && b.id.toLowerCase() === id.toLowerCase()));
+      if (match) {
+        brand = await Brand.findById(match._id).populate('user').lean();
+      }
+    }
     if (!brand) return null;
+
+    const canonicalSlug = generateBrandSlug(brand);
+
+    // Auto-migrate legacy brand-* or ObjectId id in DB to canonical slug
+    if (brand.id && (brand.id.startsWith("brand-") || mongoose.Types.ObjectId.isValid(brand.id))) {
+      await Brand.updateOne({ _id: brand._id }, { $set: { id: canonicalSlug } }).catch(() => {});
+    }
+
     const finalBrand = {
       ...brand,
-      id: brand.id || brand._id.toString(),
+      slug: canonicalSlug,
+      id: canonicalSlug,
+      rawId: brand.id || brand._id.toString(),
       email: brand.user ? brand.user.email : brand.email
     };
 

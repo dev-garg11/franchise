@@ -247,12 +247,12 @@ export function extractCommercialSpecs(brand = {}) {
  * Example: "Shahid" + "QSR Fast Food" + "Punjab" -> "shahid-franchise-cost-qsr-fast-food-punjab"
  */
 export function generateBrandSlug(brandData = {}) {
-  // 1. If an explicit custom SEO slug is provided (and not a generic brand-timestamp), sanitize and return it
-  if (brandData.id && typeof brandData.id === "string" && !brandData.id.startsWith("brand-") && brandData.id.includes("-")) {
-    return brandData.id
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, "-")
-      .replace(/^-+|-+$/g, "");
+  // 1. If an explicit full SEO slug with franchise-cost is provided, return it
+  if (brandData.slug && typeof brandData.slug === "string" && brandData.slug.includes("-franchise-cost")) {
+    return brandData.slug.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+  }
+  if (brandData.id && typeof brandData.id === "string" && brandData.id.includes("-franchise-cost")) {
+    return brandData.id.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
   }
 
   // 2. Extract brand name

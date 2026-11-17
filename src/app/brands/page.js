@@ -761,14 +761,14 @@ function BrandsDirectoryPage() {
 
                                                     <div className="franchise-actions" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
                                                         <Link
-                                                            href={`/brands/${brand.id || brand._id}`}
+                                                            href={`/brands/${brand.slug || brand.id || brand._id}`}
                                                             className="btn btn-outline"
                                                             style={{ padding: "10px 0", fontSize: "12.5px", fontWeight: "700", display: "flex", justifyContent: "center", textDecoration: "none" }}
                                                         >
                                                             Details
                                                         </Link>
                                                         <Link
-                                                            href={`/brands/${brand.id || brand._id}`}
+                                                            href={`/brands/${brand.slug || brand.id || brand._id}`}
                                                             className="btn btn-primary"
                                                             style={{ padding: "10px 0", fontSize: "12.5px", fontWeight: "700", display: "flex", justifyContent: "center", textDecoration: "none" }}
                                                         >

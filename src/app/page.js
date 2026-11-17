@@ -1020,7 +1020,7 @@ export default function Home() {
                       </div>
 
                       <Link
-                        href={`/brands/${b.id || b._id}`}
+                        href={`/brands/${b.slug || b.id || b._id}`}
                         className="fi-btn-know-more"
                         style={{ textDecoration: "none" }}
                       >
@@ -1342,10 +1342,10 @@ export default function Home() {
                       </div>
 
                       <div className="slider-actions">
-                        <Link href={`/brands/${brand.id || brand._id}`} className="btn btn-outline" style={{ padding: '8px 12px', fontSize: '13px', textDecoration: 'none', textAlign: 'center' }}>
+                        <Link href={`/brands/${brand.slug || brand.id || brand._id}`} className="btn btn-outline" style={{ padding: '8px 12px', fontSize: '13px', textDecoration: 'none', textAlign: 'center' }}>
                           Learn More
                         </Link>
-                        <Link href={`/brands/${brand.id || brand._id}`} className="btn btn-primary" style={{ padding: '8px 12px', fontSize: '13px', textDecoration: 'none', textAlign: 'center' }}>
+                        <Link href={`/brands/${brand.slug || brand.id || brand._id}`} className="btn btn-primary" style={{ padding: '8px 12px', fontSize: '13px', textDecoration: 'none', textAlign: 'center' }}>
                           Apply Now
                         </Link>
                       </div>

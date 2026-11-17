@@ -723,7 +723,7 @@ export default function SeoTab({
                         <div style={{ display: "inline-flex", alignItems: "center", gap: "8px" }}>
                           {/* Live preview */}
                           <Link
-                            href={`/brands/${brand.id}`}
+                            href={`/brands/${brand.slug || brand.id}`}
                             target="_blank"
                             title="View Public Brand Page"
                             style={{

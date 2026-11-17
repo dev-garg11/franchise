@@ -59,7 +59,7 @@ function Stat({ label, value, tone }) {
 }
 
 export default function BrandCard({ brand, topPick = false, onEnquire, compact = false }) {
-  const id = brand.id || brand._id;
+  const id = brand.slug || brand.id || brand._id;
   const name = brand.name || brand.brandName || "Franchise opportunity";
   const description = cleanText(brand.description) || "Verified franchise opportunity listed on Franchise Roots.";
   const minInvestment = formatInvestment(brand.investment_range || brand.minInvestment);
