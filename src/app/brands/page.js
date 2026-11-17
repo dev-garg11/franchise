@@ -12,7 +12,7 @@ import { ProductSkeletonGrid } from "@/components/SkeletonLoader";
 import { useApprovedBrands } from "@/lib/brandsCache";
 import { DISTRICTS_BY_STATE, ALL_DISTRICTS } from "@/lib/districtsData";
 import { getFilteredMinBudgets, getFilteredMaxBudgets, parseRupeeValue } from "@/lib/investmentData";
-import { decodeHtmlEntities, cleanBrandPlainText } from "@/lib/brandFormatters";
+import { decodeHtmlEntities, cleanBrandPlainText, generateBrandSlug } from "@/lib/brandFormatters";
 import PageHeader from "@/components/public/PageHeader";
 import ImageRotator, { getImageSources } from "@/components/public/ImageRotator";
 import { toast } from "@/lib/swal";
@@ -372,7 +372,14 @@ function BrandsDirectoryPage() {
         });
 
         // Ensure newly registered and latest approved brands always appear at the top
-        result.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+        result.sort((a, b) => {
+            const timeA = new Date(a.approvedAt || a.createdAt || 0).getTime();
+            const timeB = new Date(b.approvedAt || b.createdAt || 0).getTime();
+            if (timeB !== timeA) return timeB - timeA;
+            const idA = String(a.rawId || a._id || a.id || "");
+            const idB = String(b.rawId || b._id || b.id || "");
+            return idB.localeCompare(idA);
+        });
 
         setFilteredBrands(result);
         /* eslint-enable react-hooks/set-state-in-effect */
@@ -761,14 +768,14 @@ function BrandsDirectoryPage() {
 
                                                     <div className="franchise-actions" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
                                                         <Link
-                                                            href={`/brands/${brand.slug || brand.id || brand._id}`}
+                                                            href={`/brands/${generateBrandSlug(brand)}`}
                                                             className="btn btn-outline"
                                                             style={{ padding: "10px 0", fontSize: "12.5px", fontWeight: "700", display: "flex", justifyContent: "center", textDecoration: "none" }}
                                                         >
                                                             Details
                                                         </Link>
                                                         <Link
-                                                            href={`/brands/${brand.slug || brand.id || brand._id}`}
+                                                            href={`/brands/${generateBrandSlug(brand)}`}
                                                             className="btn btn-primary"
                                                             style={{ padding: "10px 0", fontSize: "12.5px", fontWeight: "700", display: "flex", justifyContent: "center", textDecoration: "none" }}
                                                         >

@@ -35,7 +35,7 @@ import {
 } from "lucide-react";
 import SEOGeoTags from "@/components/SEOGeoTags";
 import CommercialSpecsBreakdown from "@/components/CommercialSpecsBreakdown";
-import { decodeHtmlEntities, sanitizeBrandHtml, formatLakhs } from "@/lib/brandFormatters";
+import { decodeHtmlEntities, sanitizeBrandHtml, formatLakhs, generateBrandSlug } from "@/lib/brandFormatters";
 import { toast, Swal } from "@/lib/swal";
 
 export default function BrandDetailPage({ params }) {
@@ -80,7 +80,7 @@ export default function BrandDetailPage({ params }) {
         if (data.brand) {
           setBrand(data.brand);
           // Canonical URL auto-correction: if current URL is legacy (like brand-1794908388778), update browser address bar to SEO slug!
-          const canonicalSlug = data.brand.slug || data.brand.id;
+          const canonicalSlug = generateBrandSlug(data.brand) || data.brand.slug || data.brand.id;
           if (canonicalSlug && brandId !== canonicalSlug && typeof window !== "undefined") {
             window.history.replaceState(null, "", `/brands/${canonicalSlug}`);
           }
@@ -1191,7 +1191,7 @@ export default function BrandDetailPage({ params }) {
                         <h4 style={{ margin: "0 0 6px 0", fontSize: "18px", fontWeight: "800", color: "#0f172a" }}>{decodeHtmlEntities(rel.name)}</h4>
                         <p style={{ margin: "0 0 16px 0", fontSize: "13px", color: "#64748b" }}>Min Inv: <strong style={{ color: "#0f172a" }}>{formatLakhs(rel.minInvestment)}</strong></p>
                         <Link
-                          href={`/brands/${rel.id || rel._id}`}
+                          href={`/brands/${generateBrandSlug(rel) || rel.slug || rel.id || rel._id}`}
                           style={{
                             marginTop: "auto",
                             display: "block",

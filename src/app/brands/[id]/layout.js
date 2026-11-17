@@ -14,7 +14,8 @@ export async function generateMetadata({ params }) {
   const seo = brand.seoData || {};
   const title = seo.seoTitle || `${brand.name} Franchise Opportunity, Cost & Profit (2026) | Franchise Roots`;
   const description = seo.metaDescription || `Explore the ${brand.name} franchise opportunity on Franchise Roots. Minimum investment is ${brand.minInvestment} with required area of ${brand.areaRequired || 'Contact Support'}. Connect directly with brand operators now.`;
-  const canonicalUrl = seo.canonicalUrl || `https://www.franchiseroots.com/brands/${id}`;
+  const canonicalSlug = brand.slug || id;
+  const canonicalUrl = `https://www.franchiseroots.com/brands/${canonicalSlug}`;
   const keywords = Array.isArray(seo.keywords) && seo.keywords.length > 0
     ? seo.keywords
     : (seo.focusKeyword ? [seo.focusKeyword] : [`${brand.name} franchise`, `${brand.category} franchise India`]);

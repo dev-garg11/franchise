@@ -19,7 +19,7 @@ import BrandCard from "@/components/public/BrandCard";
 import { useApprovedBrands } from "@/lib/brandsCache";
 import { DISTRICTS_BY_STATE, ALL_DISTRICTS } from "@/lib/districtsData";
 import { BUDGET_OPTIONS, getFilteredMinBudgets, getFilteredMaxBudgets, parseRupeeValue } from "@/lib/investmentData";
-import { decodeHtmlEntities, cleanBrandPlainText } from "@/lib/brandFormatters";
+import { decodeHtmlEntities, cleanBrandPlainText, generateBrandSlug } from "@/lib/brandFormatters";
 import AdCard from "@/components/public/AdCard";
 import Marquee from "@/components/public/Marquee";
 import JoinCard from "@/components/public/JoinCard";
@@ -1020,7 +1020,7 @@ export default function Home() {
                       </div>
 
                       <Link
-                        href={`/brands/${b.slug || b.id || b._id}`}
+                        href={`/brands/${generateBrandSlug(b)}`}
                         className="fi-btn-know-more"
                         style={{ textDecoration: "none" }}
                       >
@@ -1342,10 +1342,10 @@ export default function Home() {
                       </div>
 
                       <div className="slider-actions">
-                        <Link href={`/brands/${brand.slug || brand.id || brand._id}`} className="btn btn-outline" style={{ padding: '8px 12px', fontSize: '13px', textDecoration: 'none', textAlign: 'center' }}>
+                        <Link href={`/brands/${generateBrandSlug(brand)}`} className="btn btn-outline" style={{ padding: '8px 12px', fontSize: '13px', textDecoration: 'none', textAlign: 'center' }}>
                           Learn More
                         </Link>
-                        <Link href={`/brands/${brand.slug || brand.id || brand._id}`} className="btn btn-primary" style={{ padding: '8px 12px', fontSize: '13px', textDecoration: 'none', textAlign: 'center' }}>
+                        <Link href={`/brands/${generateBrandSlug(brand)}`} className="btn btn-primary" style={{ padding: '8px 12px', fontSize: '13px', textDecoration: 'none', textAlign: 'center' }}>
                           Apply Now
                         </Link>
                       </div>

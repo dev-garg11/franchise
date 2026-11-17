@@ -11,7 +11,7 @@ import { useApprovedBrands } from "@/lib/brandsCache";
 import { BRAND_CATEGORIES, ALL_INDIAN_STATES } from "@/lib/brandConstants";
 import { ProductSkeletonGrid } from "@/components/SkeletonLoader";
 import SEOGeoTags from "@/components/SEOGeoTags";
-import { decodeHtmlEntities, cleanBrandPlainText } from "@/lib/brandFormatters";
+import { decodeHtmlEntities, cleanBrandPlainText, generateBrandSlug } from "@/lib/brandFormatters";
 
 const MASTER_BENEFITS = [
   {
@@ -520,7 +520,7 @@ export default function MasterFranchisingPage() {
                     {/* Action Button */}
                     <div style={{ marginTop: "auto" }}>
                       <Link
-                        href={`/brands/${brand.id || brand._id}`}
+                        href={`/brands/${generateBrandSlug(brand)}`}
                         className="btn btn-primary"
                         style={{
                           width: "100%",

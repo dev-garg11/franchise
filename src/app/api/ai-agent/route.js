@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getBlogs, getBrands, getServices } from "@/lib/db";
+import { generateBrandSlug } from "@/lib/brandFormatters";
 
 const CATEGORY_ALIASES = {
   automotive: ["automotive", "auto", "car", "bike", "vehicle", "detailing", "workshop", "ऑटो", "कार"],
@@ -116,9 +117,9 @@ function websiteOverviewAnswer(query, brands) {
 }
 
 function mapBrand(brand) {
-  const id = brand.id || brand._id?.toString();
+  const slug = generateBrandSlug(brand) || brand.slug || brand.id || brand._id?.toString();
   return {
-    id,
+    id: slug,
     name: brand.name || "Unnamed Brand",
     company: brand.company || brand.name || "",
     category: brand.category || "Franchise Opportunity",
@@ -131,7 +132,7 @@ function mapBrand(brand) {
     areaRequired: brand.areaRequired || "Not specified on the website",
     masterFranchiseAvailable: Boolean(brand.masterFranchiseAvailable),
     image: brand.image || "",
-    link: id ? `/brands/${id}` : "/brands",
+    link: slug ? `/brands/${slug}` : "/brands",
     seoSummary: brand.seoData?.metaDescription || brand.description || "Details available on the brand page."
   };
 }

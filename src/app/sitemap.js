@@ -2,6 +2,7 @@ import { connectToDatabase } from "@/lib/db";
 import Brand from "@/models/Brand";
 import Service from "@/models/Service";
 import Blog from "@/models/Blog";
+import { generateBrandSlug } from "@/lib/brandFormatters";
 
 export default async function sitemap() {
     const baseUrl = "https://www.franchiseroots.com";

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ArrowRight, CheckCircle2 } from "lucide-react";
 import ImageRotator, { getImageSources } from "./ImageRotator";
+import { generateBrandSlug } from "@/lib/brandFormatters";
 
 const DISCLOSED = "Not disclosed";
 
@@ -59,7 +60,7 @@ function Stat({ label, value, tone }) {
 }
 
 export default function BrandCard({ brand, topPick = false, onEnquire, compact = false }) {
-  const id = brand.slug || brand.id || brand._id;
+  const id = generateBrandSlug(brand) || brand.slug || brand.id || brand._id;
   const name = brand.name || brand.brandName || "Franchise opportunity";
   const description = cleanText(brand.description) || "Verified franchise opportunity listed on Franchise Roots.";
   const minInvestment = formatInvestment(brand.investment_range || brand.minInvestment);

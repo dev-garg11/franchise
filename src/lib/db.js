@@ -214,7 +214,7 @@ export async function getPublicApprovedBrands() {
   try {
     const brands = await Brand.find({ status: "Approved" })
       .select("-password -__v -seoData.schemaData")
-      .sort({ createdAt: -1 })
+      .sort({ createdAt: -1, _id: -1 })
       .lean();
 
     const formatted = brands.map(b => {
@@ -223,7 +223,7 @@ export async function getPublicApprovedBrands() {
         ...b,
         slug: canonicalSlug,
         id: canonicalSlug,
-        rawId: b.id || b._id.toString(),
+        rawId: b.legacyId || b.id || b._id.toString(),
         name: b.name || "Unnamed Brand",
         company: b.company || b.name || "",
         category: b.category || "General",
@@ -234,7 +234,8 @@ export async function getPublicApprovedBrands() {
         max_investment_limit: b.max_investment_limit || b.investment_range || "Contact for Investment",
         image: b.image || (Array.isArray(b.images) && b.images[0]) || "",
         images: Array.isArray(b.images) && b.images.length > 0 ? b.images : (b.image ? [b.image] : []),
-        createdAt: b.createdAt || (b._id && typeof b._id.getTimestamp === "function" ? b._id.getTimestamp() : new Date())
+        createdAt: b.createdAt || (b._id && typeof b._id.getTimestamp === "function" ? b._id.getTimestamp() : new Date()),
+        approvedAt: b.approvedAt || b.createdAt || (b._id && typeof b._id.getTimestamp === "function" ? b._id.getTimestamp() : new Date())
       };
     });
 
@@ -297,12 +298,22 @@ export async function getBrandById(id) {
       brand = await Brand.findById(id).populate('user').lean();
     }
     if (!brand) {
-      brand = await Brand.findOne({ id: id }).populate('user').lean();
+      brand = await Brand.findOne({
+        $or: [
+          { id: id },
+          { legacyId: id }
+        ]
+      }).populate('user').lean();
     }
     // Case-insensitive exact slug match
     if (!brand && typeof id === "string") {
       const escapedId = id.trim().replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-      brand = await Brand.findOne({ id: { $regex: new RegExp(`^${escapedId}$`, "i") } }).populate('user').lean();
+      brand = await Brand.findOne({
+        $or: [
+          { id: { $regex: new RegExp(`^${escapedId}$`, "i") } },
+          { legacyId: { $regex: new RegExp(`^${escapedId}$`, "i") } }
+        ]
+      }).populate('user').lean();
     }
     // Canonical SEO URLs use id-slug or prefix matching
     if (!brand && typeof id === "string" && id.includes("-")) {
@@ -311,7 +322,12 @@ export async function getBrandById(id) {
         brand = await Brand.findById(idPrefix).populate('user').lean();
       }
       if (!brand) {
-        brand = await Brand.findOne({ id: new RegExp(`^${idPrefix.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}(?:-|$)`, "i") }).populate('user').lean();
+        brand = await Brand.findOne({
+          $or: [
+            { id: new RegExp(`^${idPrefix.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}(?:-|$)`, "i") },
+            { legacyId: new RegExp(`^${idPrefix.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}(?:-|$)`, "i") }
+          ]
+        }).populate('user').lean();
       }
     }
     // Match by brand name extracted from SEO slug (e.g. "shahid-franchise-cost-..." -> name: "Shahid")
@@ -325,8 +341,13 @@ export async function getBrandById(id) {
     }
     // Universal fallback: scan approved brands to match computed slug
     if (!brand && typeof id === "string") {
-      const allBrands = await Brand.find({}).select('id name sector category hq location company').lean();
-      const match = allBrands.find(b => generateBrandSlug(b) === id || (b.id && b.id.toLowerCase() === id.toLowerCase()));
+      const allBrands = await Brand.find({}).select('id legacyId name sector category hq location company').lean();
+      const match = allBrands.find(b =>
+        generateBrandSlug(b) === id ||
+        (b.id && b.id.toLowerCase() === id.toLowerCase()) ||
+        (b.legacyId && b.legacyId.toLowerCase() === id.toLowerCase()) ||
+        (b._id && b._id.toString() === id)
+      );
       if (match) {
         brand = await Brand.findById(match._id).populate('user').lean();
       }
@@ -335,16 +356,16 @@ export async function getBrandById(id) {
 
     const canonicalSlug = generateBrandSlug(brand);
 
-    // Auto-migrate legacy brand-* or ObjectId id in DB to canonical slug
+    // Auto-migrate legacy brand-* or ObjectId id in DB to canonical slug while retaining legacyId
     if (brand.id && (brand.id.startsWith("brand-") || mongoose.Types.ObjectId.isValid(brand.id))) {
-      await Brand.updateOne({ _id: brand._id }, { $set: { id: canonicalSlug } }).catch(() => {});
+      await Brand.updateOne({ _id: brand._id }, { $set: { id: canonicalSlug, legacyId: brand.id } }).catch(() => {});
     }
 
     const finalBrand = {
       ...brand,
       slug: canonicalSlug,
       id: canonicalSlug,
-      rawId: brand.id || brand._id.toString(),
+      rawId: brand.legacyId || brand.id || brand._id.toString(),
       email: brand.user ? brand.user.email : brand.email
     };
 
@@ -462,6 +483,12 @@ export async function updateBrand(id, updatedFields, customMessage = "", adminIn
     delete payload.createdAt;
     delete payload.updatedAt;
     delete payload.__v;
+
+    // When status is changed to Approved, update timestamp so newly approved brands sort at the top
+    if (updatedFields.status === "Approved") {
+      payload.createdAt = new Date();
+      payload.approvedAt = new Date();
+    }
 
     if (updatedFields.email) {
       payload.email = updatedFields.email.toLowerCase();

@@ -242,11 +242,21 @@ export function extractCommercialSpecs(brand = {}) {
 }
 
 /**
- * Generates an SEO-optimized slug for brand URLs.
+ * Generates an SEO-optimized canonical slug for brand URLs.
  * Format: <brand-name>-franchise-cost[-<sector-category>][-<location>]
  * Example: "Shahid" + "QSR Fast Food" + "Punjab" -> "shahid-franchise-cost-qsr-fast-food-punjab"
  */
 export function generateBrandSlug(brandData = {}) {
+  if (!brandData) return "brand-franchise-cost";
+
+  // Handle string argument
+  if (typeof brandData === "string") {
+    if (brandData.includes("-franchise-cost")) {
+      return brandData.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+    }
+    brandData = { name: brandData };
+  }
+
   // 1. If an explicit full SEO slug with franchise-cost is provided, return it
   if (brandData.slug && typeof brandData.slug === "string" && brandData.slug.includes("-franchise-cost")) {
     return brandData.slug.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
@@ -256,9 +266,10 @@ export function generateBrandSlug(brandData = {}) {
   }
 
   // 2. Extract brand name
-  let rawName = brandData.name || brandData.company || "brand";
-  // Remove trailing "Franchise" or "Franchises" from brand name to avoid duplicate "franchise-franchise-cost"
-  rawName = rawName.replace(/\bfranchises?\b/gi, "").trim() || rawName;
+  let rawName = brandData.name || brandData.brandName || brandData.company || brandData.title || "brand";
+  // Remove trailing or standalone "Franchise" or "Franchises" from brand name to avoid duplicate "franchise-franchise-cost"
+  const strippedName = rawName.replace(/\bfranchises?\b/gi, "").trim();
+  rawName = strippedName || rawName;
   const cleanName = rawName
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")
@@ -267,7 +278,7 @@ export function generateBrandSlug(brandData = {}) {
   // 3. Extract sector & category
   const rawSector = (brandData.sector || "").toLowerCase();
   const rawCategory = (brandData.category || "").toLowerCase();
-  const stopwords = new Set(["and", "the", "for", "in", "of", "business", "services", "general", "others", "all"]);
+  const stopwords = new Set(["and", "the", "for", "in", "of", "business", "services", "general", "others", "all", "franchise", "franchises"]);
 
   const combinedSectorCat = `${rawSector} ${rawCategory}`
     .replace(/&/g, " ")
@@ -284,18 +295,23 @@ export function generateBrandSlug(brandData = {}) {
   }
   const sectorCatSlug = uniqueSectorCat.slice(0, 3).join("-");
 
-  // 4. Extract location / state
-  const rawLoc = (brandData.location || brandData.hq || brandData.state || "").toLowerCase();
+  // 4. Extract location / state / city
+  const rawLoc = (brandData.location || brandData.hq || brandData.state || brandData.city || "").toLowerCase();
   const locStopwords = new Set(["india", "pan", "all", "state", "city", "hq", "headquarters"]);
   const locParts = rawLoc
     .replace(/[^a-z0-9]+/g, " ")
     .split(/\s+/)
     .filter((w) => w.length > 1 && !locStopwords.has(w));
 
-  // Prefer state or primary city
-  const locSlug = locParts.length > 0 ? locParts[locParts.length - 1] : "";
+  // Handle multi-word locations like "new delhi"
+  let locSlug = "";
+  if (locParts.length > 1 && locParts[0] === "new") {
+    locSlug = `${locParts[0]}-${locParts[1]}`;
+  } else if (locParts.length > 0) {
+    locSlug = locParts[locParts.length - 1];
+  }
 
-  // 5. Construct slug
+  // 5. Construct slug: <brand-name>-franchise-cost[-<sector-category>][-<location>]
   let slug = `${cleanName}-franchise-cost`;
   if (sectorCatSlug) {
     slug += `-${sectorCatSlug}`;

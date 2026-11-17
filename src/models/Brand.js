@@ -5,6 +5,13 @@ const BrandSchema = new mongoose.Schema({
         type: String,
         trim: true
     },
+    legacyId: {
+        type: String,
+        trim: true
+    },
+    approvedAt: {
+        type: Date
+    },
     name: {
         type: String,
         required: [true, 'Brand name is required'],
