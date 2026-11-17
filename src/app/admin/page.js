@@ -3406,32 +3406,164 @@ export default function AdminDashboard({ initialTab = "dashboard" }) {
         </div>
       )}
 
-      {/* Custom Message Action Modal */}
+      {/* Professional Custom Message Action Modal */}
       {customMsgModal && customMsgModal.isOpen && (
-        <div className="modal-overlay" onClick={() => !isSubmittingCustomMsg && setCustomMsgModal(null)} style={{ zIndex: 1100 }}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: "520px", borderRadius: "16px", padding: "24px", background: "white", boxShadow: "0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04)" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px", borderBottom: "1px solid #f1f5f9", paddingBottom: "12px" }}>
-              <h3 style={{ margin: 0, fontSize: "18px", fontWeight: "700", color: "#0f172a", display: "flex", alignItems: "center", gap: "8px" }}>
-                {customMsgModal.type === "APPROVE_BRAND" && <><CheckCircle2 style={{ color: "#10b981" }} size={20} /> Approve Brand Listing</>}
-                {customMsgModal.type === "DECLINE_BRAND" && <><XCircle style={{ color: "#ef4444" }} size={20} /> Decline Brand Listing</>}
-                {customMsgModal.type === "APPROVE_INVESTOR" && <><CheckCircle2 style={{ color: "#10b981" }} size={20} /> Approve Investor Lead</>}
-                {customMsgModal.type === "DECLINE_INVESTOR" && <><XCircle style={{ color: "#ef4444" }} size={20} /> Decline Investor Lead</>}
-                {customMsgModal.type === "MARK_INVESTED" && <><CheckCircle2 style={{ color: "#7c3aed" }} size={20} /> Mark Investment Complete</>}
-                {customMsgModal.type === "ASSIGN_BRAND" && <><UserCheck style={{ color: "#4f46e5" }} size={20} /> Update Brand Assignment</>}
-              </h3>
+        <div
+          className="modal-overlay"
+          onClick={() => !isSubmittingCustomMsg && setCustomMsgModal(null)}
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 1100,
+            backgroundColor: "rgba(15, 23, 42, 0.65)",
+            backdropFilter: "blur(8px)",
+            WebkitBackdropFilter: "blur(8px)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: "20px"
+          }}
+        >
+          <div
+            className="modal-content"
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              maxWidth: "540px",
+              width: "100%",
+              borderRadius: "22px",
+              padding: "28px",
+              background: "#ffffff",
+              border: "1px solid #e2e8f0",
+              boxShadow: "0 25px 50px -12px rgba(15, 23, 42, 0.25), 0 0 1px 1px rgba(15, 23, 42, 0.05)",
+              position: "relative",
+              overflow: "hidden"
+            }}
+          >
+            {/* Modal Header with Icon Badge */}
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "20px" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
+                <div
+                  style={{
+                    width: "48px",
+                    height: "48px",
+                    borderRadius: "14px",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    flexShrink: 0,
+                    backgroundColor: customMsgModal.type.includes("DECLINE")
+                      ? "#fff1f2"
+                      : customMsgModal.type === "MARK_INVESTED"
+                        ? "#f5f3ff"
+                        : customMsgModal.type === "ASSIGN_BRAND"
+                          ? "#eff6ff"
+                          : "#ecfdf5",
+                    border: `1.5px solid ${
+                      customMsgModal.type.includes("DECLINE")
+                        ? "#fecdd3"
+                        : customMsgModal.type === "MARK_INVESTED"
+                          ? "#ddd6fe"
+                          : customMsgModal.type === "ASSIGN_BRAND"
+                            ? "#bfdbfe"
+                            : "#a7f3d0"
+                    }`,
+                    color: customMsgModal.type.includes("DECLINE")
+                      ? "#e11d48"
+                      : customMsgModal.type === "MARK_INVESTED"
+                        ? "#7c3aed"
+                        : customMsgModal.type === "ASSIGN_BRAND"
+                          ? "#2563eb"
+                          : "#059669"
+                  }}
+                >
+                  {customMsgModal.type === "APPROVE_BRAND" && <CheckCircle2 size={24} strokeWidth={2.2} />}
+                  {customMsgModal.type === "DECLINE_BRAND" && <XCircle size={24} strokeWidth={2.2} />}
+                  {customMsgModal.type === "APPROVE_INVESTOR" && <CheckCircle2 size={24} strokeWidth={2.2} />}
+                  {customMsgModal.type === "DECLINE_INVESTOR" && <XCircle size={24} strokeWidth={2.2} />}
+                  {customMsgModal.type === "MARK_INVESTED" && <CheckCircle2 size={24} strokeWidth={2.2} />}
+                  {customMsgModal.type === "ASSIGN_BRAND" && <UserCheck size={24} strokeWidth={2.2} />}
+                </div>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: "18px", fontWeight: "800", color: "#0f172a", letterSpacing: "-0.01em" }}>
+                    {customMsgModal.type === "APPROVE_BRAND" && "Approve Brand Listing"}
+                    {customMsgModal.type === "DECLINE_BRAND" && "Decline Brand Listing"}
+                    {customMsgModal.type === "APPROVE_INVESTOR" && "Approve Investor Lead"}
+                    {customMsgModal.type === "DECLINE_INVESTOR" && "Decline Investor Lead"}
+                    {customMsgModal.type === "MARK_INVESTED" && "Mark Investment Complete"}
+                    {customMsgModal.type === "ASSIGN_BRAND" && "Update Brand Assignment"}
+                  </h3>
+                  <p style={{ margin: "3px 0 0", fontSize: "12.5px", color: "#64748b" }}>
+                    {customMsgModal.type.includes("DECLINE")
+                      ? "Applicant will be notified with your feedback note."
+                      : customMsgModal.type === "MARK_INVESTED"
+                        ? "Record finalized investment and commission."
+                        : customMsgModal.type === "ASSIGN_BRAND"
+                          ? "Link vetted investors directly with this brand."
+                          : "Listing will be published live and user will be notified."}
+                  </p>
+                </div>
+              </div>
               <button
                 onClick={() => !isSubmittingCustomMsg && setCustomMsgModal(null)}
-                style={{ background: "none", border: "none", cursor: "pointer", color: "#64748b", padding: "4px" }}
+                style={{
+                  background: "#f8fafc",
+                  border: "1px solid #e2e8f0",
+                  borderRadius: "10px",
+                  cursor: "pointer",
+                  color: "#64748b",
+                  padding: "6px",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  transition: "all 0.2s"
+                }}
+                aria-label="Close modal"
               >
-                <X size={20} />
+                <X size={18} />
               </button>
             </div>
 
-            <div style={{ marginBottom: "20px" }}>
-              <p style={{ fontSize: "14px", color: "#334155", marginBottom: "12px", lineHeight: "1.5" }}>
-                Target: <strong>{customMsgModal.targetItem?.name || customMsgModal.targetItem?.title || "Item"}</strong>
-              </p>
+            {/* Target Item Summary Box */}
+            <div
+              style={{
+                backgroundColor: "#f8fafc",
+                border: "1px solid #e2e8f0",
+                borderRadius: "14px",
+                padding: "12px 16px",
+                marginBottom: "18px",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between"
+              }}
+            >
+              <div>
+                <span style={{ fontSize: "11px", fontWeight: "700", textTransform: "uppercase", letterSpacing: "0.06em", color: "#64748b", display: "block" }}>
+                  Selected Target
+                </span>
+                <strong style={{ fontSize: "15px", color: "#0f172a", fontWeight: "700" }}>
+                  {customMsgModal.targetItem?.name || customMsgModal.targetItem?.title || "Item"}
+                </strong>
+                {customMsgModal.targetItem?.category && (
+                  <span style={{ fontSize: "12px", color: "#64748b", marginLeft: "8px" }}>
+                    • {customMsgModal.targetItem.category}
+                  </span>
+                )}
+              </div>
+              <span
+                style={{
+                  fontSize: "11px",
+                  fontWeight: "700",
+                  padding: "4px 10px",
+                  borderRadius: "20px",
+                  backgroundColor: customMsgModal.type.includes("DECLINE") ? "#fee2e2" : "#dcfce7",
+                  color: customMsgModal.type.includes("DECLINE") ? "#b91c1c" : "#15803d"
+                }}
+              >
+                {customMsgModal.type.includes("DECLINE") ? "Declining" : "Approving"}
+              </span>
+            </div>
 
+            <div style={{ marginBottom: "20px" }}>
               {customMsgModal.type === "MARK_INVESTED" && (
                 <>
                   <div style={{ marginBottom: "14px" }}>
@@ -3446,7 +3578,7 @@ export default function AdminDashboard({ initialTab = "dashboard" }) {
                         const match = (allBrandsForSelect || []).find(b => String(b.id || b._id) === String(selId));
                         setInvestedBrandName(match ? match.name : "");
                       }}
-                      style={{ width: "100%", borderRadius: "8px", border: "1px solid #cbd5e1", padding: "10px 12px", fontSize: "13px", color: "#0f172a", outline: "none", backgroundColor: "#fff" }}
+                      style={{ width: "100%", borderRadius: "10px", border: "1.5px solid #cbd5e1", padding: "10px 12px", fontSize: "13px", color: "#0f172a", outline: "none", backgroundColor: "#fff" }}
                     >
                       <option value="">-- Select Finalized Franchise Brand --</option>
                       {(allBrandsForSelect || []).map((b) => (
@@ -3459,34 +3591,27 @@ export default function AdminDashboard({ initialTab = "dashboard" }) {
                       Select which franchise brand was finalized for this investor lead.
                     </p>
                   </div>
-                <div style={{ marginBottom: "14px" }}>
-                  <label style={{ display: "block", fontSize: "13px", fontWeight: "600", color: "#475569", marginBottom: "6px" }}>
-                    Investment Amount (₹) *
-                  </label>
-                  <input
-                    type="number"
-                    min="1"
-                    value={investmentAmount}
-                    onChange={(e) => setInvestmentAmount(e.target.value)}
-                    placeholder="e.g. 500000"
-                    style={{ width: "100%", borderRadius: "8px", border: "1px solid #cbd5e1", padding: "10px 12px", fontSize: "13px", color: "#0f172a", outline: "none" }}
-                  />
-                </div>
-              </>
-            )}
-            {false && (<div>
-              <input
-                placeholder="e.g. 500000"
-                    style={{ width: "100%", borderRadius: "8px", border: "1px solid #cbd5e1", padding: "10px 12px", fontSize: "13px", color: "#0f172a", outline: "none" }}
-                  />
-                </div>
+                  <div style={{ marginBottom: "14px" }}>
+                    <label style={{ display: "block", fontSize: "13px", fontWeight: "600", color: "#475569", marginBottom: "6px" }}>
+                      Investment Amount (₹) *
+                    </label>
+                    <input
+                      type="number"
+                      min="1"
+                      value={investmentAmount}
+                      onChange={(e) => setInvestmentAmount(e.target.value)}
+                      placeholder="e.g. 500000"
+                      style={{ width: "100%", borderRadius: "10px", border: "1.5px solid #cbd5e1", padding: "10px 12px", fontSize: "13px", color: "#0f172a", outline: "none" }}
+                    />
+                  </div>
+                </>
               )}
 
-              <label style={{ display: "block", fontSize: "13px", fontWeight: "600", color: "#475569", marginBottom: "6px" }}>
-                Custom Message / Admin Note (Optional):
+              <label style={{ display: "block", fontSize: "13px", fontWeight: "700", color: "#334155", marginBottom: "6px" }}>
+                Admin Note / Custom Feedback (Optional):
               </label>
               <textarea
-                rows={4}
+                rows={3}
                 value={customMessageText}
                 onChange={(e) => setCustomMessageText(e.target.value)}
                 placeholder={
@@ -3498,37 +3623,85 @@ export default function AdminDashboard({ initialTab = "dashboard" }) {
                 }
                 style={{
                   width: "100%",
-                  borderRadius: "8px",
-                  border: "1px solid #cbd5e1",
-                  padding: "10px 12px",
+                  borderRadius: "12px",
+                  border: "1.5px solid #cbd5e1",
+                  padding: "12px 14px",
                   fontSize: "13px",
                   color: "#0f172a",
                   outline: "none",
                   resize: "vertical",
-                  fontFamily: "inherit"
+                  fontFamily: "inherit",
+                  backgroundColor: "#ffffff",
+                  lineHeight: "1.5"
                 }}
               />
-              <p style={{ fontSize: "11px", color: "#94a3b8", marginTop: "4px" }}>
-                This custom message will be saved into the audit log and included in email notifications.
+              <p style={{ fontSize: "11.5px", color: "#64748b", marginTop: "6px", display: "flex", alignItems: "center", gap: "5px" }}>
+                <span>ℹ️</span> This message is saved into audit logs and delivered in email notifications.
               </p>
             </div>
 
-            <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px" }}>
+            {/* Action Buttons */}
+            <div style={{ display: "flex", justifyContent: "flex-end", alignItems: "center", gap: "12px", paddingTop: "8px" }}>
               <button
-                className="admin-btn admin-btn-details"
+                type="button"
                 onClick={() => setCustomMsgModal(null)}
                 disabled={isSubmittingCustomMsg}
-                style={{ padding: "8px 16px", fontSize: "13px" }}
+                style={{
+                  padding: "10px 18px",
+                  fontSize: "13.5px",
+                  fontWeight: "600",
+                  color: "#475569",
+                  backgroundColor: "#ffffff",
+                  border: "1.5px solid #e2e8f0",
+                  borderRadius: "12px",
+                  cursor: "pointer",
+                  transition: "all 0.2s"
+                }}
               >
                 Cancel
               </button>
               <button
-                className={`admin-btn ${customMsgModal.type.includes("DECLINE") ? "admin-btn-decline" : "admin-btn-approve"}`}
+                type="button"
                 onClick={handleConfirmCustomMsgAction}
                 disabled={isSubmittingCustomMsg}
-                style={{ padding: "8px 20px", fontSize: "13px", fontWeight: "700" }}
+                style={{
+                  padding: "10px 24px",
+                  fontSize: "13.5px",
+                  fontWeight: "700",
+                  color: "#ffffff",
+                  background: customMsgModal.type.includes("DECLINE")
+                    ? "linear-gradient(135deg, #dc2626 0%, #ef4444 100%)"
+                    : customMsgModal.type === "MARK_INVESTED"
+                      ? "linear-gradient(135deg, #6d28d9 0%, #8b5cf6 100%)"
+                      : "linear-gradient(135deg, #059669 0%, #10b981 100%)",
+                  border: "none",
+                  borderRadius: "12px",
+                  cursor: "pointer",
+                  boxShadow: customMsgModal.type.includes("DECLINE")
+                    ? "0 4px 14px rgba(239, 68, 68, 0.35)"
+                    : customMsgModal.type === "MARK_INVESTED"
+                      ? "0 4px 14px rgba(124, 58, 237, 0.35)"
+                      : "0 4px 14px rgba(16, 185, 129, 0.35)",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "8px",
+                  transition: "all 0.2s",
+                  opacity: isSubmittingCustomMsg ? 0.7 : 1
+                }}
               >
-                {isSubmittingCustomMsg ? "Processing..." : customMsgModal.type === "MARK_INVESTED" ? "Mark as Invested" : "Confirm & Save to Log"}
+                {isSubmittingCustomMsg ? (
+                  "Processing..."
+                ) : customMsgModal.type === "MARK_INVESTED" ? (
+                  "Mark as Invested"
+                ) : customMsgModal.type.includes("DECLINE") ? (
+                  <>
+                    <X size={16} /> Decline Listing
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle2 size={16} /> Approve Listing
+                  </>
+                )}
               </button>
             </div>
           </div>

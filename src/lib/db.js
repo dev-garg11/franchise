@@ -14,6 +14,7 @@ import LoginOtp from "@/models/LoginOtp";
 import bcrypt from "bcryptjs";
 import crypto from "crypto";
 import { generateBrandSeoData } from "./brandSeoGenerator";
+import { generateBrandSlug } from "./brandFormatters";
 import {
   sendBrandRegistrationEmail,
   sendInvestorRegistrationEmail,
@@ -213,7 +214,7 @@ export async function getPublicApprovedBrands() {
   try {
     const brands = await Brand.find({ status: "Approved" })
       .select("-password -__v -seoData.schemaData")
-      .sort({ featured: -1, createdAt: -1 })
+      .sort({ createdAt: -1 })
       .lean();
 
     const formatted = brands.map(b => ({
@@ -228,7 +229,8 @@ export async function getPublicApprovedBrands() {
       investment_range: b.investment_range || "Contact for Investment",
       max_investment_limit: b.max_investment_limit || b.investment_range || "Contact for Investment",
       image: b.image || (Array.isArray(b.images) && b.images[0]) || "",
-      images: Array.isArray(b.images) && b.images.length > 0 ? b.images : (b.image ? [b.image] : [])
+      images: Array.isArray(b.images) && b.images.length > 0 ? b.images : (b.image ? [b.image] : []),
+      createdAt: b.createdAt || (b._id && typeof b._id.getTimestamp === "function" ? b._id.getTimestamp() : new Date())
     }));
 
     publicBrandsCache = formatted;
@@ -292,14 +294,19 @@ export async function getBrandById(id) {
     if (!brand) {
       brand = await Brand.findOne({ id: id }).populate('user').lean();
     }
-    // Canonical SEO URLs use id-slug, while the app still resolves the stable id.
-    if (!brand && id.includes("-")) {
+    // Case-insensitive exact slug match
+    if (!brand && typeof id === "string") {
+      const escapedId = id.trim().replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      brand = await Brand.findOne({ id: { $regex: new RegExp(`^${escapedId}$`, "i") } }).populate('user').lean();
+    }
+    // Canonical SEO URLs use id-slug or prefix matching
+    if (!brand && typeof id === "string" && id.includes("-")) {
       const idPrefix = id.startsWith("brand-") ? id.split("-").slice(0, 2).join("-") : id.split("-")[0];
       if (mongoose.Types.ObjectId.isValid(idPrefix)) {
         brand = await Brand.findById(idPrefix).populate('user').lean();
       }
       if (!brand) {
-        brand = await Brand.findOne({ id: new RegExp(`^${idPrefix.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}(?:-|$)`) }).populate('user').lean();
+        brand = await Brand.findOne({ id: new RegExp(`^${idPrefix.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}(?:-|$)`, "i") }).populate('user').lean();
       }
     }
     if (!brand) return null;
@@ -342,8 +349,15 @@ export async function saveBrand(brandData) {
       });
     }
 
-    const id = brandData.id || `brand-${Date.now()}`;
-    const autoSeo = generateBrandSeoData(brandData);
+    // Generate SEO-friendly slug (e.g. shahid-franchise-cost-qsr-fast-food-punjab)
+    let slugId = generateBrandSlug(brandData);
+    let counter = 2;
+    while (await Brand.findOne({ id: slugId }).select('_id').lean()) {
+      slugId = `${generateBrandSlug(brandData)}-${counter}`;
+      counter++;
+    }
+    const id = slugId;
+    const autoSeo = generateBrandSeoData({ ...brandData, id });
 
     const brandPayload = {
       ...brandData,
@@ -354,7 +368,7 @@ export async function saveBrand(brandData) {
       email: emailLower,
       user: userObj._id,
       id,
-      status: brandData.status || "Pending",
+      status: brandData.status || "Approved",
       featured: brandData.featured || false,
       createdAt: brandData.createdAt || new Date()
     };

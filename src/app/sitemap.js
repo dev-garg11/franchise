@@ -19,14 +19,14 @@ export default async function sitemap() {
     let brands = [];
     if (isDbConnected) {
         try {
-            brands = await Brand.find({ status: "Approved" }).select("_id updatedAt").lean();
+            brands = await Brand.find({ status: "Approved" }).select("_id id updatedAt").lean();
         } catch (error) {
             console.error("Sitemap: Failed to load brands", error);
         }
     }
 
     const brandUrls = brands.map((brand) => ({
-        url: `${baseUrl}/brands/${brand._id.toString()}`,
+        url: `${baseUrl}/brands/${brand.id || brand._id.toString()}`,
         lastModified: brand.updatedAt || new Date().toISOString(),
         changeFrequency: "weekly",
         priority: 0.8,

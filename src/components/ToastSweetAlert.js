@@ -316,10 +316,10 @@ export default function ToastSweetAlert() {
               style={{
                 width: "100%",
                 maxWidth: "460px",
-                backgroundColor: "#0b0f19",
-                border: `3px solid ${theme.border}`,
+                backgroundColor: "#ffffff",
+                border: "1px solid #e2e8f0",
                 borderRadius: "24px",
-                boxShadow: `0 25px 70px -10px ${theme.glow}, 0 0 45px rgba(0, 0, 0, 0.9)`,
+                boxShadow: "0 25px 60px -15px rgba(15, 23, 42, 0.25), 0 0 1px 1px rgba(15, 23, 42, 0.05)",
                 padding: "36px 32px 30px 32px",
                 display: "flex",
                 flexDirection: "column",
@@ -330,32 +330,31 @@ export default function ToastSweetAlert() {
                 position: "relative"
               }}
             >
-              {/* Animated Pulsing Icon Badge */}
+              {/* Animated Icon Badge */}
               <div
                 style={{
-                  width: "84px",
-                  height: "84px",
+                  width: "72px",
+                  height: "72px",
                   borderRadius: "50%",
                   backgroundColor: theme.bg,
-                  border: `3px solid ${theme.border}`,
+                  border: `2px solid ${theme.border}`,
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
-                  boxShadow: `0 0 35px ${theme.glow}`,
-                  animation: "swalPulseRing 2s infinite"
+                  boxShadow: `0 4px 20px ${theme.glow}`
                 }}
               >
-                {getIcon(currentSwal.icon, 44)}
+                {getIcon(currentSwal.icon, 38)}
               </div>
 
               {/* Title & Description */}
-              <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
                 {currentSwal.title && (
                   <h3
                     style={{
-                      fontSize: "24px",
-                      fontWeight: "900",
-                      color: "#ffffff",
+                      fontSize: "22px",
+                      fontWeight: "800",
+                      color: "#0f172a",
                       margin: 0,
                       letterSpacing: "-0.02em"
                     }}
@@ -366,9 +365,9 @@ export default function ToastSweetAlert() {
                 {currentSwal.text && (
                   <p
                     style={{
-                      fontSize: "15px",
+                      fontSize: "14px",
                       fontWeight: "500",
-                      color: "#cbd5e1",
+                      color: "#64748b",
                       margin: 0,
                       lineHeight: "1.6"
                     }}
@@ -395,23 +394,23 @@ export default function ToastSweetAlert() {
                     onClick={handleSwalDismiss}
                     style={{
                       flex: 1,
-                      padding: "13px 22px",
-                      borderRadius: "14px",
-                      backgroundColor: "rgba(255, 255, 255, 0.1)",
-                      border: "1.5px solid rgba(255, 255, 255, 0.22)",
-                      color: "#ffffff",
-                      fontSize: "14.5px",
-                      fontWeight: "700",
+                      padding: "12px 20px",
+                      borderRadius: "12px",
+                      backgroundColor: "#ffffff",
+                      border: "1.5px solid #e2e8f0",
+                      color: "#475569",
+                      fontSize: "14px",
+                      fontWeight: "600",
                       cursor: "pointer",
                       transition: "all 0.15s ease"
                     }}
                     onMouseEnter={(e) => {
-                      e.currentTarget.style.backgroundColor = "rgba(255, 255, 255, 0.2)";
-                      e.currentTarget.style.borderColor = "#ffffff";
+                      e.currentTarget.style.backgroundColor = "#f8fafc";
+                      e.currentTarget.style.borderColor = "#cbd5e1";
                     }}
                     onMouseLeave={(e) => {
-                      e.currentTarget.style.backgroundColor = "rgba(255, 255, 255, 0.1)";
-                      e.currentTarget.style.borderColor = "rgba(255, 255, 255, 0.22)";
+                      e.currentTarget.style.backgroundColor = "#ffffff";
+                      e.currentTarget.style.borderColor = "#e2e8f0";
                     }}
                   >
                     {currentSwal.cancelButtonText}
@@ -424,25 +423,25 @@ export default function ToastSweetAlert() {
                   onClick={handleSwalConfirm}
                   style={{
                     flex: currentSwal.showCancelButton ? 1.3 : 1,
-                    padding: "13px 26px",
-                    borderRadius: "14px",
+                    padding: "12px 24px",
+                    borderRadius: "12px",
                     background: currentSwal.confirmButtonColor || theme.gradient,
                     border: "none",
-                    color: theme.buttonText,
-                    fontSize: "15px",
-                    fontWeight: "900",
+                    color: "#ffffff",
+                    fontSize: "14px",
+                    fontWeight: "700",
                     cursor: "pointer",
-                    boxShadow: `0 6px 20px ${theme.glow}`,
+                    boxShadow: `0 4px 14px ${theme.glow}`,
                     transition: "transform 0.15s ease, filter 0.15s ease",
                     letterSpacing: "0.01em"
                   }}
                   onMouseEnter={(e) => {
-                    e.currentTarget.style.transform = "scale(1.03)";
-                    e.currentTarget.style.filter = "brightness(1.15)";
+                    e.currentTarget.style.transform = "scale(1.02)";
+                    e.currentTarget.style.filter = "brightness(1.05)";
                   }}
                   onMouseLeave={(e) => {
                     e.currentTarget.style.transform = "scale(1)";
-                    e.currentTarget.style.filter = "brightness(1)";
+                    e.currentTarget.style.filter = "none";
                   }}
                 >
                   {currentSwal.confirmButtonText}

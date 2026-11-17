@@ -19,6 +19,7 @@ import {
   Flag,
   FileText,
   ChevronRight,
+  ChevronLeft,
   Share2,
   Heart,
   Play,
@@ -47,6 +48,8 @@ export default function BrandDetailPage({ params }) {
   const [error, setError] = useState(null);
   const [relatedBrands, setRelatedBrands] = useState([]);
   const [sidebarAds, setSidebarAds] = useState([]);
+  const [activeAdIndex, setActiveAdIndex] = useState(0);
+  const [isAdPaused, setIsAdPaused] = useState(false);
 
   // Enquiry form state
   const [enquiryForm, setEnquiryForm] = useState({
@@ -107,15 +110,26 @@ export default function BrandDetailPage({ params }) {
     fetch("/api/advertisements")
       .then((res) => res.json())
       .then((data) => {
-        if (Array.isArray(data)) {
-          const matching = data.filter(
-            (a) => a.isActive !== false && (a.position === "brand_sidebar" || a.position === "brands_sidebar")
-          );
-          setSidebarAds(matching);
+        const list = Array.isArray(data) ? data : (Array.isArray(data?.data) ? data.data : []);
+        const active = list.filter((a) => a.isActive !== false && a.image && a.title);
+        if (active.length > 0) {
+          const sidebarSpecific = active.filter((a) => a.position === "brand_sidebar" || a.position === "brands_sidebar");
+          const otherAds = active.filter((a) => a.position !== "brand_sidebar" && a.position !== "brands_sidebar");
+          const combined = [...sidebarSpecific, ...otherAds];
+          setSidebarAds(combined);
         }
       })
       .catch((err) => console.error("Error fetching sidebar ads:", err));
   }, []);
+
+  // Automatic rotation between sponsored brand advertisements every 4.5 seconds
+  useEffect(() => {
+    if (sidebarAds.length <= 1 || isAdPaused) return undefined;
+    const timer = setInterval(() => {
+      setActiveAdIndex((prev) => (prev + 1) % sidebarAds.length);
+    }, 4500);
+    return () => clearInterval(timer);
+  }, [sidebarAds.length, isAdPaused]);
 
   const handleEnquirySubmit = async (e) => {
     e.preventDefault();
@@ -680,29 +694,67 @@ export default function BrandDetailPage({ params }) {
                     </form>
                   )}
 
-                    {/* Brand Sidebar Promotional Banner */}
-                    {sidebarAds.length > 0 && (
-                      <div style={{ marginTop: "24px", paddingTop: "20px", borderTop: "1px solid #e2e8f0", display: "flex", flexDirection: "column", gap: "16px" }}>
-                        {sidebarAds.map((ad) => (
+                    {/* Brand Sidebar Promotional Carousel */}
+                    {sidebarAds.length > 0 && (() => {
+                      const safeIndex = activeAdIndex % sidebarAds.length;
+                      const ad = sidebarAds[safeIndex];
+                      if (!ad) return null;
+                      const isVideo = ad.mediaType === "video" || String(ad.image || "").startsWith("data:video/") || /\.(mp4|webm|ogg)$/i.test(String(ad.image || ""));
+
+                      return (
+                        <div
+                          style={{ marginTop: "24px", paddingTop: "20px", borderTop: "1px solid #e2e8f0" }}
+                          onMouseEnter={() => setIsAdPaused(true)}
+                          onMouseLeave={() => setIsAdPaused(false)}
+                        >
                           <div
-                            key={ad.id || ad._id}
+                            key={ad.id || ad._id || safeIndex}
                             style={{
                               borderRadius: "16px",
                               overflow: "hidden",
                               border: "1px solid #e2e8f0",
                               boxShadow: "0 4px 12px rgba(0,0,0,0.04)",
                               backgroundColor: "#ffffff",
-                              position: "relative"
+                              position: "relative",
+                              transition: "all 0.3s ease"
                             }}
                           >
-                            <div style={{ position: "relative", height: "130px", backgroundColor: "#0f172a" }}>
-                              {ad.image && (
-                                <img
+                            <div style={{ position: "relative", height: "130px", backgroundColor: "#0f172a", overflow: "hidden" }}>
+                              {isVideo ? (
+                                <video
+                                  key={`vid-${ad.id || ad._id || safeIndex}`}
                                   src={ad.image}
-                                  alt={ad.title}
-                                  style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                                  muted
+                                  autoPlay
+                                  loop
+                                  playsInline
+                                  preload="metadata"
+                                  aria-label={ad.title || "Promotional video"}
+                                  style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
+                                  onError={(e) => {
+                                    e.currentTarget.style.display = "none";
+                                    const fallback = e.currentTarget.parentElement?.querySelector(".ad-fallback-img");
+                                    if (fallback) fallback.style.display = "block";
+                                  }}
+                                />
+                              ) : (
+                                <img
+                                  key={`img-${ad.id || ad._id || safeIndex}`}
+                                  src={ad.image || "/franchise_expo_banner.jpg"}
+                                  alt={ad.title || "Advertisement"}
+                                  style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
+                                  onError={(e) => {
+                                    e.currentTarget.onerror = null;
+                                    e.currentTarget.src = "/franchise_expo_banner.jpg";
+                                  }}
                                 />
                               )}
+                              <img
+                                className="ad-fallback-img"
+                                src="/franchise_expo_banner.jpg"
+                                alt={ad.title || "Advertisement"}
+                                style={{ width: "100%", height: "100%", objectFit: "cover", display: "none" }}
+                              />
                               <span
                                 style={{
                                   position: "absolute",
@@ -717,37 +769,139 @@ export default function BrandDetailPage({ params }) {
                                   letterSpacing: "0.5px"
                                 }}
                               >
-                                {ad.badge || "PROMOTED"}
+                                {ad.badge || "SPONSORED"}
                               </span>
+                              {isVideo && (
+                                <span
+                                  style={{
+                                    position: "absolute",
+                                    top: "10px",
+                                    right: "10px",
+                                    backgroundColor: "rgba(15,23,42,0.85)",
+                                    color: "#ffffff",
+                                    fontSize: "10px",
+                                    fontWeight: "800",
+                                    padding: "3px 8px",
+                                    borderRadius: "6px",
+                                    display: "inline-flex",
+                                    alignItems: "center",
+                                    gap: "4px"
+                                  }}
+                                >
+                                  <Play size={10} fill="currentColor" /> VIDEO
+                                </span>
+                              )}
+
+                              {/* Manual Navigation Controls (if multiple sponsored brands) */}
+                              {sidebarAds.length > 1 && (
+                                <div style={{ position: "absolute", inset: "0", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 6px", pointerEvents: "none" }}>
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.preventDefault();
+                                      e.stopPropagation();
+                                      setActiveAdIndex((prev) => (prev - 1 + sidebarAds.length) % sidebarAds.length);
+                                    }}
+                                    style={{
+                                      pointerEvents: "auto",
+                                      width: "24px",
+                                      height: "24px",
+                                      borderRadius: "50%",
+                                      backgroundColor: "rgba(15, 23, 42, 0.65)",
+                                      color: "#ffffff",
+                                      border: "none",
+                                      display: "flex",
+                                      alignItems: "center",
+                                      justifyContent: "center",
+                                      cursor: "pointer",
+                                      backdropFilter: "blur(4px)"
+                                    }}
+                                    aria-label="Previous sponsored brand"
+                                  >
+                                    <ChevronLeft size={14} />
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.preventDefault();
+                                      e.stopPropagation();
+                                      setActiveAdIndex((prev) => (prev + 1) % sidebarAds.length);
+                                    }}
+                                    style={{
+                                      pointerEvents: "auto",
+                                      width: "24px",
+                                      height: "24px",
+                                      borderRadius: "50%",
+                                      backgroundColor: "rgba(15, 23, 42, 0.65)",
+                                      color: "#ffffff",
+                                      border: "none",
+                                      display: "flex",
+                                      alignItems: "center",
+                                      justifyContent: "center",
+                                      cursor: "pointer",
+                                      backdropFilter: "blur(4px)"
+                                    }}
+                                    aria-label="Next sponsored brand"
+                                  >
+                                    <ChevronRight size={14} />
+                                  </button>
+                                </div>
+                              )}
                             </div>
                             <div style={{ padding: "14px 16px" }}>
-                              <h4 style={{ fontSize: "14px", fontWeight: "800", color: "#0f172a", marginBottom: "4px" }}>
+                              <h4 style={{ fontSize: "14px", fontWeight: "800", color: "#0f172a", marginBottom: "4px", minHeight: "36px", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
                                 {ad.title}
                               </h4>
                               {ad.subtitle && (
-                                <p style={{ fontSize: "12px", color: "#64748b", margin: "0 0 10px 0", lineHeight: "1.4" }}>
+                                <p style={{ fontSize: "12px", color: "#64748b", margin: "0 0 10px 0", lineHeight: "1.4", minHeight: "34px", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
                                   {ad.subtitle}
                                 </p>
                               )}
-                              <Link
-                                href={ad.link || "/brand-registration"}
-                                style={{
-                                  display: "inline-flex",
-                                  alignItems: "center",
-                                  gap: "6px",
-                                  fontSize: "12px",
-                                  fontWeight: "700",
-                                  color: "#2563eb",
-                                  textDecoration: "none"
-                                }}
-                              >
-                                Learn More <ChevronRight size={14} />
-                              </Link>
+                              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: "4px" }}>
+                                <Link
+                                  href={ad.link || "/brand-registration"}
+                                  style={{
+                                    display: "inline-flex",
+                                    alignItems: "center",
+                                    gap: "6px",
+                                    fontSize: "12px",
+                                    fontWeight: "700",
+                                    color: "#2563eb",
+                                    textDecoration: "none"
+                                  }}
+                                >
+                                  Learn More <ChevronRight size={14} />
+                                </Link>
+
+                                {/* Slide indicator dots */}
+                                {sidebarAds.length > 1 && (
+                                  <div style={{ display: "flex", alignItems: "center", gap: "5px" }}>
+                                    {sidebarAds.map((_, dotIdx) => (
+                                      <button
+                                        key={dotIdx}
+                                        type="button"
+                                        onClick={() => setActiveAdIndex(dotIdx)}
+                                        style={{
+                                          width: dotIdx === safeIndex ? "16px" : "6px",
+                                          height: "6px",
+                                          borderRadius: "999px",
+                                          backgroundColor: dotIdx === safeIndex ? "#2563eb" : "#cbd5e1",
+                                          border: "none",
+                                          padding: 0,
+                                          cursor: "pointer",
+                                          transition: "all 0.25s ease"
+                                        }}
+                                        aria-label={`Go to sponsored brand ${dotIdx + 1}`}
+                                      />
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
                             </div>
                           </div>
-                        ))}
-                      </div>
-                  )}
+                        </div>
+                      );
+                    })()}
                 </div>
               </div>
             </div>

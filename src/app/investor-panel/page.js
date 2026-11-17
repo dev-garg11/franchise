@@ -675,14 +675,40 @@ export default function InvestorPanel({ initialTab = "dashboard" }) {
                               boxShadow: "0 4px 14px rgba(37,99,235,0.06)"
                             }}
                           >
-                            <div style={{ position: "relative", height: "130px", backgroundColor: "#0f172a" }}>
-                              {ad.image && (
-                                <img
+                            <div style={{ position: "relative", height: "130px", backgroundColor: "#0f172a", overflow: "hidden" }}>
+                              {(ad.mediaType === "video" || String(ad.image || "").startsWith("data:video/") || /\.(mp4|webm|ogg)$/i.test(String(ad.image || ""))) ? (
+                                <video
                                   src={ad.image}
-                                  alt={ad.title}
-                                  style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                                  muted
+                                  autoPlay
+                                  loop
+                                  playsInline
+                                  preload="metadata"
+                                  aria-label={ad.title || "Promotional video"}
+                                  style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
+                                  onError={(e) => {
+                                    e.currentTarget.style.display = "none";
+                                    const fallback = e.currentTarget.parentElement?.querySelector(".ad-fallback-img");
+                                    if (fallback) fallback.style.display = "block";
+                                  }}
+                                />
+                              ) : (
+                                <img
+                                  src={ad.image || "/franchise_expo_banner.jpg"}
+                                  alt={ad.title || "Advertisement"}
+                                  style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
+                                  onError={(e) => {
+                                    e.currentTarget.onerror = null;
+                                    e.currentTarget.src = "/franchise_expo_banner.jpg";
+                                  }}
                                 />
                               )}
+                              <img
+                                className="ad-fallback-img"
+                                src="/franchise_expo_banner.jpg"
+                                alt={ad.title || "Advertisement"}
+                                style={{ width: "100%", height: "100%", objectFit: "cover", display: "none" }}
+                              />
                               <span
                                 style={{
                                   position: "absolute",

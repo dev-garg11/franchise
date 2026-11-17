@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
-import { getBrandById, updateBrand, deleteBrand } from "@/lib/db";
+import { getBrandById, updateBrand, deleteBrand, clearPublicBrandsCache } from "@/lib/db";
 import { validateArea, validateBrandName, validateImageUrl } from "@/lib/seo/validate";
+import { clearBrandApiCache } from "../route";
 
 export async function GET(request, { params }) {
   try {
@@ -63,6 +64,8 @@ export async function PATCH(request, { params }) {
       return NextResponse.json({ error: "Brand not found" }, { status: 404 });
     }
 
+    clearPublicBrandsCache();
+    clearBrandApiCache();
     return NextResponse.json({ success: true, brand: updated });
   } catch (error) {
     console.error("Error in PATCH /api/brands/[id]:", error);
@@ -80,6 +83,8 @@ export async function DELETE(request, { params }) {
       return NextResponse.json({ error: "Brand not found" }, { status: 404 });
     }
 
+    clearPublicBrandsCache();
+    clearBrandApiCache();
     return NextResponse.json({ success: true, message: "Brand deleted successfully" });
   } catch (error) {
     return NextResponse.json({ error: "Failed to delete brand" }, { status: 500 });

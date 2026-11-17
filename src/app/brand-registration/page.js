@@ -551,7 +551,7 @@ export default function BrandRegistration() {
         maxInvestment: rangeMaxVal,
         areaRequired: sanitizedArea,
         franchiseFee: Number(formData.franchiseFee) || 50000,
-        status: "Pending",
+        status: "Approved",
       };
       delete payload.confirmPassword;
 
@@ -565,7 +565,7 @@ export default function BrandRegistration() {
 
       if (res.ok) {
         clearBrandsCache();
-        toast.success("Brand registered successfully! Pending admin approval.");
+        toast.success("Brand registered and published successfully!");
         setSubmitted(true);
       } else {
         const data = await res.json();

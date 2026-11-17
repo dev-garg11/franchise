@@ -241,18 +241,23 @@ export function useApprovedBrands() {
         };
         window.addEventListener("brands-updated", handleUpdate);
 
-        // 4. Revalidate when tab becomes visible
+        // 4. Revalidate when tab becomes visible or receives focus
         const handleVisibilityChange = () => {
             if (document.visibilityState === "visible") {
-                loadBrands(false);
+                loadBrands(true);
             }
         };
+        const handleFocus = () => loadBrands(true);
         document.addEventListener("visibilitychange", handleVisibilityChange);
+        window.addEventListener("focus", handleFocus);
+        window.addEventListener("pageshow", handleFocus);
 
         return () => {
             isMounted = false;
             window.removeEventListener("brands-updated", handleUpdate);
             document.removeEventListener("visibilitychange", handleVisibilityChange);
+            window.removeEventListener("focus", handleFocus);
+            window.removeEventListener("pageshow", handleFocus);
         };
     }, [loadBrands]);
 

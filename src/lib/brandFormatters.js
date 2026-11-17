@@ -240,3 +240,69 @@ export function extractCommercialSpecs(brand = {}) {
     breakdown
   };
 }
+
+/**
+ * Generates an SEO-optimized slug for brand URLs.
+ * Format: <brand-name>-franchise-cost[-<sector-category>][-<location>]
+ * Example: "Shahid" + "QSR Fast Food" + "Punjab" -> "shahid-franchise-cost-qsr-fast-food-punjab"
+ */
+export function generateBrandSlug(brandData = {}) {
+  // 1. If an explicit custom SEO slug is provided (and not a generic brand-timestamp), sanitize and return it
+  if (brandData.id && typeof brandData.id === "string" && !brandData.id.startsWith("brand-") && brandData.id.includes("-")) {
+    return brandData.id
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "");
+  }
+
+  // 2. Extract brand name
+  let rawName = brandData.name || brandData.company || "brand";
+  // Remove trailing "Franchise" or "Franchises" from brand name to avoid duplicate "franchise-franchise-cost"
+  rawName = rawName.replace(/\bfranchises?\b/gi, "").trim() || rawName;
+  const cleanName = rawName
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "") || "brand";
+
+  // 3. Extract sector & category
+  const rawSector = (brandData.sector || "").toLowerCase();
+  const rawCategory = (brandData.category || "").toLowerCase();
+  const stopwords = new Set(["and", "the", "for", "in", "of", "business", "services", "general", "others", "all"]);
+
+  const combinedSectorCat = `${rawSector} ${rawCategory}`
+    .replace(/&/g, " ")
+    .replace(/[^a-z0-9]+/g, " ")
+    .split(/\s+/)
+    .filter((w) => w.length > 1 && !stopwords.has(w));
+
+  const nameParts = new Set(cleanName.split("-"));
+  const uniqueSectorCat = [];
+  for (const part of combinedSectorCat) {
+    if (!nameParts.has(part) && !uniqueSectorCat.includes(part)) {
+      uniqueSectorCat.push(part);
+    }
+  }
+  const sectorCatSlug = uniqueSectorCat.slice(0, 3).join("-");
+
+  // 4. Extract location / state
+  const rawLoc = (brandData.location || brandData.hq || brandData.state || "").toLowerCase();
+  const locStopwords = new Set(["india", "pan", "all", "state", "city", "hq", "headquarters"]);
+  const locParts = rawLoc
+    .replace(/[^a-z0-9]+/g, " ")
+    .split(/\s+/)
+    .filter((w) => w.length > 1 && !locStopwords.has(w));
+
+  // Prefer state or primary city
+  const locSlug = locParts.length > 0 ? locParts[locParts.length - 1] : "";
+
+  // 5. Construct slug
+  let slug = `${cleanName}-franchise-cost`;
+  if (sectorCatSlug) {
+    slug += `-${sectorCatSlug}`;
+  }
+  if (locSlug && !slug.includes(locSlug)) {
+    slug += `-${locSlug}`;
+  }
+
+  return slug.replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+}

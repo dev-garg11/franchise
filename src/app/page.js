@@ -172,6 +172,8 @@ export default function Home() {
   const [fiTypeIndustry, setFiTypeIndustry] = useState("");
   const [fiBusinessType, setFiBusinessType] = useState("");
   const [fiTypeSearch, setFiTypeSearch] = useState("");
+  const [unifiedBudget, setUnifiedBudget] = useState("");
+  const [expertType, setExpertType] = useState("buy"); // "expand" | "buy"
 
   const handleMinInvChange = (val) => {
     setFiMinInv(val);
@@ -268,31 +270,31 @@ export default function Home() {
     return () => window.clearTimeout(timer);
   }, [selectedBrand]);
 
-  // Franchise India Search Submit Handler
-  const handleFiSearchSubmit = (e) => {
+  // Unified Multi-Criteria Search Handler
+  const handleUnifiedSearchSubmit = (e) => {
     if (e) e.preventDefault();
     const params = new URLSearchParams();
-
     if (searchTab === "categories") {
       if (fiIndustry) params.set("category", fiIndustry);
       if (fiSector) params.set("sector", fiSector);
-      if (fiService) params.set("search", fiService);
     } else if (searchTab === "location") {
-      if (fiLocIndustry) params.set("category", fiLocIndustry);
       if (fiState) params.set("state", fiState);
       if (fiCity) params.set("location", fiCity);
     } else if (searchTab === "investment") {
-      if (fiInvIndustry) params.set("category", fiInvIndustry);
       if (fiMinInv) params.set("minBudget", fiMinInv);
       if (fiMaxInv) params.set("maxBudget", fiMaxInv);
-    } else if (searchTab === "business_type") {
-      if (fiTypeIndustry) params.set("category", fiTypeIndustry);
-      if (fiBusinessType) params.set("type", fiBusinessType);
-      const combinedSearch = [fiBusinessType, fiTypeSearch].filter(Boolean).join(" ");
-      if (combinedSearch) params.set("search", combinedSearch);
+    }
+    if (fiService && fiService.trim()) {
+      params.set("search", fiService.trim());
     }
 
     router.push(`/brands?${params.toString()}`);
+  };
+
+  // Franchise India Search Submit Handler (legacy fallback)
+  const handleFiSearchSubmit = (e) => {
+    if (e) e.preventDefault();
+    handleUnifiedSearchSubmit(e);
   };
 
   // Carousel controls for Leading Franchises
@@ -508,153 +510,73 @@ export default function Home() {
 
   const adminWhatsAppNumber = (process.env.NEXT_PUBLIC_ADMIN_WHATSAPP || "919815489999").replace(/[^0-9]/g, "");
   const heroWhatsAppUrl = `https://api.whatsapp.com/send?phone=${adminWhatsAppNumber}&text=${encodeURIComponent("Hi Franchise Roots, I am interested in Franchise Opportunities and would like a free consultation.")}`;
+  const currentExpertWhatsAppUrl = `https://api.whatsapp.com/send?phone=${adminWhatsAppNumber}&text=${encodeURIComponent(
+    expertType === "expand"
+      ? "Hi Franchise Roots, I want to Expand My Brand across India and appoint verified channel partners."
+      : "Hi Franchise Roots, I want to Buy a Franchise and would like a free expert consultation."
+  )}`;
 
   return (
     <div className="public-home">
-      {/* 1. Main Hero Banner & Multi-Criteria Search (Franchise Roots Redesign) */}
-      <section className="fr-hero-section">
-        {/* Decorative CSS background flourishes */}
-        <div className="fr-hero-flourish-tl" />
-        <div className="fr-hero-bg-glow" />
-        <div className="fr-hero-photo" aria-hidden="true" />
-
+      {/* 1. Main Hero Banner matching Screenshot 3 with BRIGHT, VIBRANT COLORS */}
+      <section className="fr-hero-section fr-hero-bright">
         <div className="container">
-          <div className="fr-hero-main-layout">
-            {/* Left Column: Badge, Heading, Subtitle, Highlights, Search Card, Pills */}
-            <div className="fr-hero-left">
-              {/* Top pill badge */}
-              <div className="fr-hero-badge-wrap">
-                <Link href="/brands" className="fr-hero-badge">
-                  <span className="fr-badge-crown-box" aria-hidden="true">
-                    <Crown size={13} className="fr-crown-icon" />
-                  </span>
-                  <span className="fr-badge-text">India&apos;s No.1 Franchise Marketplace</span>
-                  <span className="fr-badge-arrow">→</span>
-                </Link>
-              </div>
-
-              {/* Heading */}
+          {/* Two-Column Grid: Hero Search Card (Left) + 3 Stacked Hub Cards (Right) */}
+          <div className="fr-hero-grid">
+            {/* Left Column: Hero Search Card */}
+            <div className="fr-hero-left-card">
               <h1 className="fr-hero-title">
-                Find India&apos;s Best
-                <span className="fr-hero-title-row">
-                  <span className="fr-title-accent-wrap">
-                    Franchise
-                    <svg className="fr-title-brush-curve" viewBox="0 0 210 16" fill="none" preserveAspectRatio="none" aria-hidden="true">
-                      <path d="M 4 6 C 55 14, 155 14, 206 5 C 160 12, 60 12, 4 6 Z" fill="url(#fr-title-brush-grad)" />
-                      <defs>
-                        <linearGradient id="fr-title-brush-grad" x1="0%" y1="0%" x2="100%" y2="0%">
-                          <stop offset="0%" stopColor="#ff0055" />
-                          <stop offset="60%" stopColor="#e11d48" />
-                          <stop offset="100%" stopColor="#f43f5e" />
-                        </linearGradient>
-                      </defs>
-                    </svg>
-                  </span>{" "}
-                  <span className="fr-title-opp-gradient">Opportunities</span>
-                </span>
+                Find India&apos;s Top <span className="fr-hero-title-highlight">Franchise Opportunities</span>
               </h1>
-
-              {/* Subtitle */}
               <p className="fr-hero-subtitle">
-                Explore {realtimeTotal ? `${realtimeTotal}+` : "154+"} audited business setups, master dealerships &amp; ROI-proven brands. Start your franchise journey with confidence.
+                Explore 1,200+ audited business setups, master dealerships &amp; ROI-proven brands
               </p>
 
-              {/* Three feature highlights */}
-              <div className="fr-hero-highlights">
-                <div className="fr-highlight-item">
-                  <div className="fr-highlight-icon fr-hi-pink">
-                    <ShieldCheck size={20} />
-                  </div>
-                  <div className="fr-highlight-meta">
-                    <strong>Verified Brands</strong>
-                    <span>100% authentic</span>
-                  </div>
-                </div>
-
-                <div className="fr-highlight-divider" />
-
-                <div className="fr-highlight-item">
-                  <div className="fr-highlight-icon fr-hi-blue">
-                    <TrendingUp size={20} />
-                  </div>
-                  <div className="fr-highlight-meta">
-                    <strong>High ROI Options</strong>
-                    <span>Profitable businesses</span>
-                  </div>
-                </div>
-
-                <div className="fr-highlight-divider" />
-
-                <div className="fr-highlight-item">
-                  <div className="fr-highlight-icon fr-hi-purple">
-                    <Headphones size={20} />
-                  </div>
-                  <div className="fr-highlight-meta">
-                    <strong>Expert Support</strong>
-                    <span>From search to setup</span>
-                  </div>
-                </div>
+              {/* Tabs: Categories | Location | Investment */}
+              <div className="fr-hero-tabs-bar" role="tablist">
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={searchTab === "categories"}
+                  className={`fr-hero-tab-pill ${searchTab === "categories" ? "active" : ""}`}
+                  onClick={() => setSearchTab("categories")}
+                >
+                  <Filter size={14} />
+                  <span>Categories</span>
+                </button>
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={searchTab === "location"}
+                  className={`fr-hero-tab-pill ${searchTab === "location" ? "active" : ""}`}
+                  onClick={() => setSearchTab("location")}
+                >
+                  <MapPin size={14} />
+                  <span>Location</span>
+                </button>
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={searchTab === "investment"}
+                  className={`fr-hero-tab-pill ${searchTab === "investment" ? "active" : ""}`}
+                  onClick={() => setSearchTab("investment")}
+                >
+                  <IndianRupee size={14} />
+                  <span>Investment</span>
+                </button>
               </div>
 
-              {/* White search card */}
-              <div className="fr-search-card">
-                {/* 4 Rail Tabs */}
-                <div className="fr-tabs-rail" role="tablist">
-                  <button
-                    type="button"
-                    role="tab"
-                    aria-selected={searchTab === "categories"}
-                    className={`fr-tab-btn ${searchTab === "categories" ? "active" : ""}`}
-                    onClick={() => setSearchTab("categories")}
-                  >
-                    <LayoutGrid size={15} />
-                    <span>Categories</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    role="tab"
-                    aria-selected={searchTab === "location"}
-                    className={`fr-tab-btn ${searchTab === "location" ? "active" : ""}`}
-                    onClick={() => setSearchTab("location")}
-                  >
-                    <MapPin size={15} />
-                    <span>Location</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    role="tab"
-                    aria-selected={searchTab === "investment"}
-                    className={`fr-tab-btn ${searchTab === "investment" ? "active" : ""}`}
-                    onClick={() => setSearchTab("investment")}
-                  >
-                    <IndianRupee size={15} />
-                    <span>Investment</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    role="tab"
-                    aria-selected={searchTab === "business_type"}
-                    className={`fr-tab-btn ${searchTab === "business_type" ? "active" : ""}`}
-                    onClick={() => setSearchTab("business_type")}
-                  >
-                    <Building2 size={15} />
-                    <span>Business Type</span>
-                  </button>
-                </div>
-
-                {/* Form Controls */}
-                <form onSubmit={handleFiSearchSubmit} className="fr-search-form">
+              {/* Form with 3 fields */}
+              <form onSubmit={handleUnifiedSearchSubmit} className="fr-hero-form">
+                <div className="fr-hero-fields-row">
                   {searchTab === "categories" && (
-                    <div className="fr-fields-row">
-                      <div className="fr-field-box">
-                        <label className="fr-field-label">Select Industry</label>
-                        <div className="fr-input-wrap">
-                          <Building size={16} className="fr-input-icon" />
+                    <>
+                      {/* Field 1: Select Industry */}
+                      <div className="fr-hero-col">
+                        <label className="fr-hero-field-label">SELECT INDUSTRY</label>
+                        <div className="fr-hero-input-box">
                           <select
-                            className="fr-select-control"
+                            className="fr-hero-select"
                             value={fiIndustry}
                             onChange={(e) => {
                               setFiIndustry(e.target.value);
@@ -666,81 +588,41 @@ export default function Home() {
                               <option key={idx} value={ind}>{ind}</option>
                             ))}
                           </select>
-                          <ChevronDown size={14} className="fr-select-chevron" />
+                          <ChevronDown size={14} className="fr-hero-chevron" />
                         </div>
                       </div>
 
-                      <div className="fr-field-box">
-                        <label className="fr-field-label">Select Sector</label>
-                        <div className="fr-input-wrap">
-                          <Layers size={16} className="fr-input-icon" />
+                      {/* Field 2: Select Sector */}
+                      <div className="fr-hero-col">
+                        <label className="fr-hero-field-label">SELECT SECTOR</label>
+                        <div className="fr-hero-input-box">
                           <select
-                            className="fr-select-control"
+                            className="fr-hero-select"
                             value={fiSector}
                             onChange={(e) => setFiSector(e.target.value)}
                           >
                             <option value="">All Sectors</option>
-                            {fiIndustry && FI_SECTORS_MAP[fiIndustry]
-                              ? FI_SECTORS_MAP[fiIndustry].map((sec, i) => (
-                                <option key={i} value={sec}>{sec}</option>
-                              ))
-                              : ["QSR", "Preschool", "Salon", "Retail", "Services"].map((sec, i) => (
-                                <option key={i} value={sec}>{sec}</option>
-                              ))}
+                            {(fiIndustry && FI_SECTORS_MAP[fiIndustry]
+                              ? FI_SECTORS_MAP[fiIndustry]
+                              : Object.values(FI_SECTORS_MAP).flat().slice(0, 30)
+                            ).map((sec, idx) => (
+                              <option key={idx} value={sec}>{sec}</option>
+                            ))}
                           </select>
-                          <ChevronDown size={14} className="fr-select-chevron" />
+                          <ChevronDown size={14} className="fr-hero-chevron" />
                         </div>
                       </div>
-
-                      <div className="fr-field-box">
-                        <label className="fr-field-label">Search Concept</label>
-                        <div className="fr-input-wrap">
-                          <Search size={16} className="fr-input-icon" />
-                          <input
-                            type="text"
-                            className="fr-input-control"
-                            placeholder="e.g. Chai, EV, Gym, Education..."
-                            value={fiService}
-                            onChange={(e) => setFiService(e.target.value)}
-                          />
-                        </div>
-                      </div>
-
-                      <div className="fr-btn-wrap">
-                        <button type="submit" className="fr-search-submit-btn">
-                          <span>Search Franchise</span>
-                          <span>Opportunities →</span>
-                        </button>
-                      </div>
-                    </div>
+                    </>
                   )}
 
                   {searchTab === "location" && (
-                    <div className="fr-fields-row">
-                      <div className="fr-field-box">
-                        <label className="fr-field-label">Select Industry</label>
-                        <div className="fr-input-wrap">
-                          <Building size={16} className="fr-input-icon" />
+                    <>
+                      {/* Field 1: Select State */}
+                      <div className="fr-hero-col">
+                        <label className="fr-hero-field-label">SELECT STATE</label>
+                        <div className="fr-hero-input-box">
                           <select
-                            className="fr-select-control"
-                            value={fiLocIndustry}
-                            onChange={(e) => setFiLocIndustry(e.target.value)}
-                          >
-                            <option value="">All Industries</option>
-                            {FI_INDUSTRIES.map((ind, idx) => (
-                              <option key={idx} value={ind}>{ind}</option>
-                            ))}
-                          </select>
-                          <ChevronDown size={14} className="fr-select-chevron" />
-                        </div>
-                      </div>
-
-                      <div className="fr-field-box">
-                        <label className="fr-field-label">Select State</label>
-                        <div className="fr-input-wrap">
-                          <MapPin size={16} className="fr-input-icon" />
-                          <select
-                            className="fr-select-control"
+                            className="fr-hero-select"
                             value={fiState}
                             onChange={(e) => {
                               setFiState(e.target.value);
@@ -752,258 +634,226 @@ export default function Home() {
                               <option key={i} value={st}>{st}</option>
                             ))}
                           </select>
-                          <ChevronDown size={14} className="fr-select-chevron" />
+                          <ChevronDown size={14} className="fr-hero-chevron" />
                         </div>
                       </div>
 
-                      <div className="fr-field-box">
-                        <label className="fr-field-label">Select District</label>
-                        <div className="fr-input-wrap">
-                          <MapPin size={16} className="fr-input-icon" />
+                      {/* Field 2: Select City / District */}
+                      <div className="fr-hero-col">
+                        <label className="fr-hero-field-label">SELECT CITY / DISTRICT</label>
+                        <div className="fr-hero-input-box">
                           <select
-                            className="fr-select-control"
+                            className="fr-hero-select"
                             value={fiCity}
                             onChange={(e) => setFiCity(e.target.value)}
                           >
                             <option value="">All Districts</option>
                             {(fiState && DISTRICTS_BY_STATE[fiState]
                               ? DISTRICTS_BY_STATE[fiState]
-                              : ALL_DISTRICTS).map((d, i) => (
-                                <option key={i} value={d}>{d}</option>
-                              ))}
+                              : ALL_DISTRICTS.slice(0, 30)
+                            ).map((d, idx) => (
+                              <option key={idx} value={d}>{d}</option>
+                            ))}
                           </select>
-                          <ChevronDown size={14} className="fr-select-chevron" />
+                          <ChevronDown size={14} className="fr-hero-chevron" />
                         </div>
                       </div>
-
-                      <div className="fr-btn-wrap">
-                        <button type="submit" className="fr-search-submit-btn">
-                          <span>Search Franchise</span>
-                          <span>Opportunities →</span>
-                        </button>
-                      </div>
-                    </div>
+                    </>
                   )}
 
                   {searchTab === "investment" && (
-                    <div className="fr-fields-row">
-                      <div className="fr-field-box">
-                        <label className="fr-field-label">Select Industry</label>
-                        <div className="fr-input-wrap">
-                          <Building size={16} className="fr-input-icon" />
+                    <>
+                      {/* Field 1: Min Investment */}
+                      <div className="fr-hero-col">
+                        <label className="fr-hero-field-label">MIN INVESTMENT</label>
+                        <div className="fr-hero-input-box">
                           <select
-                            className="fr-select-control"
-                            value={fiInvIndustry}
-                            onChange={(e) => setFiInvIndustry(e.target.value)}
-                          >
-                            <option value="">All Industries</option>
-                            {FI_INDUSTRIES.map((ind, idx) => (
-                              <option key={idx} value={ind}>{ind}</option>
-                            ))}
-                          </select>
-                          <ChevronDown size={14} className="fr-select-chevron" />
-                        </div>
-                      </div>
-
-                      <div className="fr-field-box">
-                        <label className="fr-field-label">Min Investment</label>
-                        <div className="fr-input-wrap">
-                          <IndianRupee size={16} className="fr-input-icon" />
-                          <select
-                            className="fr-select-control"
+                            className="fr-hero-select"
                             value={fiMinInv}
                             onChange={(e) => handleMinInvChange(e.target.value)}
                           >
                             <option value="">No Min Limit</option>
-                            {availableMinBudgets.map((b, i) => (
-                              <option key={i} value={b.label}>{b.label}</option>
+                            {FI_MIN_BUDGETS.map((b, idx) => (
+                              <option key={idx} value={b}>{b}</option>
                             ))}
                           </select>
-                          <ChevronDown size={14} className="fr-select-chevron" />
+                          <ChevronDown size={14} className="fr-hero-chevron" />
                         </div>
                       </div>
 
-                      <div className="fr-field-box">
-                        <label className="fr-field-label">Max Investment</label>
-                        <div className="fr-input-wrap">
-                          <IndianRupee size={16} className="fr-input-icon" />
+                      {/* Field 2: Max Investment */}
+                      <div className="fr-hero-col">
+                        <label className="fr-hero-field-label">MAX INVESTMENT</label>
+                        <div className="fr-hero-input-box">
                           <select
-                            className="fr-select-control"
+                            className="fr-hero-select"
                             value={fiMaxInv}
                             onChange={(e) => handleMaxInvChange(e.target.value)}
                           >
                             <option value="">No Max Limit</option>
-                            {availableMaxBudgets.map((b, i) => (
-                              <option key={i} value={b.label}>{b.label}</option>
+                            {FI_MAX_BUDGETS.map((b, idx) => (
+                              <option key={idx} value={b}>{b}</option>
                             ))}
                           </select>
-                          <ChevronDown size={14} className="fr-select-chevron" />
+                          <ChevronDown size={14} className="fr-hero-chevron" />
                         </div>
                       </div>
-
-                      <div className="fr-btn-wrap">
-                        <button type="submit" className="fr-search-submit-btn">
-                          <span>Search Franchise</span>
-                          <span>Opportunities →</span>
-                        </button>
-                      </div>
-                    </div>
+                    </>
                   )}
 
-                  {searchTab === "business_type" && (
-                    <div className="fr-fields-row">
-                      <div className="fr-field-box">
-                        <label className="fr-field-label">Select Industry</label>
-                        <div className="fr-input-wrap">
-                          <Building size={16} className="fr-input-icon" />
-                          <select
-                            className="fr-select-control"
-                            value={fiTypeIndustry}
-                            onChange={(e) => setFiTypeIndustry(e.target.value)}
-                          >
-                            <option value="">All Industries</option>
-                            {FI_INDUSTRIES.map((ind, idx) => (
-                              <option key={idx} value={ind}>{ind}</option>
-                            ))}
-                          </select>
-                          <ChevronDown size={14} className="fr-select-chevron" />
-                        </div>
-                      </div>
-
-                      <div className="fr-field-box">
-                        <label className="fr-field-label">Business Type</label>
-                        <div className="fr-input-wrap">
-                          <Briefcase size={16} className="fr-input-icon" />
-                          <select
-                            className="fr-select-control"
-                            value={fiBusinessType}
-                            onChange={(e) => setFiBusinessType(e.target.value)}
-                          >
-                            <option value="">All Business Types</option>
-                            {FI_BUSINESS_TYPES.map((bt, i) => (
-                              <option key={i} value={bt}>{bt}</option>
-                            ))}
-                          </select>
-                          <ChevronDown size={14} className="fr-select-chevron" />
-                        </div>
-                      </div>
-
-                      <div className="fr-field-box">
-                        <label className="fr-field-label">Search Concept</label>
-                        <div className="fr-input-wrap">
-                          <Search size={16} className="fr-input-icon" />
-                          <input
-                            type="text"
-                            className="fr-input-control"
-                            placeholder="e.g. Chai, EV, Gym, Education..."
-                            value={fiTypeSearch}
-                            onChange={(e) => setFiTypeSearch(e.target.value)}
-                          />
-                        </div>
-                      </div>
-
-                      <div className="fr-btn-wrap">
-                        <button type="submit" className="fr-search-submit-btn">
-                          <span>Search Franchise</span>
-                          <span>Opportunities →</span>
-                        </button>
-                      </div>
+                  {/* Field 3: Search Concept */}
+                  <div className="fr-hero-col">
+                    <label className="fr-hero-field-label">SEARCH CONCEPT</label>
+                    <div className="fr-hero-input-box">
+                      <Search size={15} className="fr-hero-field-icon" />
+                      <input
+                        type="text"
+                        className="fr-hero-field-input"
+                        placeholder="e.g. Chai, EV, Gym..."
+                        value={fiService}
+                        onChange={(e) => setFiService(e.target.value)}
+                      />
                     </div>
-                  )}
-                </form>
-              </div>
-
-              {/* Sub-category pills strip */}
-              <div className="fr-pills-strip-wrap">
-                <div ref={pillsRef} className="fr-pills-strip" role="navigation" aria-label="Quick Category Filters">
-                  {HERO_PILLS.map((pill, idx) => {
-                    const PillIcon = pill.icon;
-                    return (
-                      <button
-                        key={idx}
-                        type="button"
-                        className="fr-pill-item"
-                        onClick={() => {
-                          if (pill.name === "More") {
-                            router.push("/brands");
-                          } else {
-                            router.push(`/brands?category=${encodeURIComponent(pill.category || pill.name)}`);
-                          }
-                        }}
-                      >
-                        <span className="fr-pill-icon" style={{ color: pill.color }}>
-                          <PillIcon size={14} />
-                        </span>
-                        <span className="fr-pill-label">{pill.name}</span>
-                      </button>
-                    );
-                  })}
+                  </div>
                 </div>
-                <button
-                  type="button"
-                  className="fr-pills-scroll-hint fr-pills-scroll-prev"
-                  aria-label="Show previous categories"
-                  onClick={() => pillsRef.current?.scrollBy({ left: -220, behavior: "smooth" })}
-                >
-                  <ChevronLeft size={18} aria-hidden="true" />
+
+                {/* Big Search Franchise Opportunities CTA Button */}
+                <button type="submit" className="fr-hero-search-cta-btn">
+                  <Search size={18} />
+                  <span>Search Franchise Opportunities</span>
                 </button>
-                <button
-                  type="button"
-                  className="fr-pills-scroll-hint fr-pills-scroll-next"
-                  aria-label="Show more categories"
-                  onClick={() => pillsRef.current?.scrollBy({ left: 220, behavior: "smooth" })}
+              </form>
+            </div>
+
+            {/* Right Column: 3 Stacked Hub Cards */}
+            <div className="fr-hero-right-col">
+              {/* Card 1: Investor Hub */}
+              <Link href="/investor-registration" className="fr-bright-hub-card fr-hub-investor-card">
+                <div className="fr-hub-text-wrap">
+                  <span className="fr-hub-tag-badge fr-badge-green">INVESTOR HUB</span>
+                  <h3 className="fr-hub-card-title">Start A Business Today</h3>
+                  <p className="fr-hub-card-desc">Investor Registration &amp; ROI Profiles</p>
+                </div>
+                <div className="fr-hub-arrow-btn">
+                  <ArrowRight size={18} />
+                </div>
+              </Link>
+
+              {/* Card 2: Franchisor Hub */}
+              <Link href="/brand-registration" className="fr-bright-hub-card fr-hub-franchisor-card">
+                <div className="fr-hub-text-wrap">
+                  <span className="fr-hub-tag-badge fr-badge-blue">FRANCHISOR HUB</span>
+                  <h3 className="fr-hub-card-title">Appoint Channel Partners</h3>
+                  <p className="fr-hub-card-desc">Franchisor &amp; Brand Registration</p>
+                </div>
+                <div className="fr-hub-arrow-btn">
+                  <ArrowRight size={18} />
+                </div>
+              </Link>
+
+              {/* Card 3: Ask Our Experts */}
+              <div className="fr-bright-hub-card fr-hub-expert-card">
+                <div className="fr-expert-header-row">
+                  <div className="fr-expert-header-title">
+                    <Sparkles size={16} className="fr-sparkle-icon" />
+                    <span>Ask Our Experts</span>
+                  </div>
+                  <div className="fr-expert-live-badge">
+                    <span className="fr-expert-pulsing-dot" />
+                    <span>Live Support</span>
+                  </div>
+                </div>
+
+                {/* Toggle: Expand My Brand / Buy a Franchise */}
+                <div className="fr-expert-toggle-group">
+                  <button
+                    type="button"
+                    className={`fr-expert-toggle-pill ${expertType === "expand" ? "active" : ""}`}
+                    onClick={() => setExpertType("expand")}
+                  >
+                    Expand My Brand
+                  </button>
+                  <button
+                    type="button"
+                    className={`fr-expert-toggle-pill ${expertType === "buy" ? "active" : ""}`}
+                    onClick={() => setExpertType("buy")}
+                  >
+                    Buy a Franchise
+                  </button>
+                </div>
+
+                {/* WhatsApp Consultation Button */}
+                <a
+                  href={currentExpertWhatsAppUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="fr-expert-whatsapp-cta"
                 >
-                  <ChevronRight size={18} aria-hidden="true" />
-                </button>
+                  <MessageCircle size={17} />
+                  <span>Consult Franchise Expert on WhatsApp</span>
+                </a>
+              </div>
+            </div>
+          </div>
+
+          {/* Quick Trending Categories Strip */}
+          <div className="fr-quick-categories-bright">
+            <span className="fr-quick-label-bright">Trending Sectors:</span>
+            <div className="fr-quick-tags-bright">
+              {HERO_PILLS.map((pill, idx) => {
+                const PillIcon = pill.icon;
+                return (
+                  <button
+                    key={idx}
+                    type="button"
+                    className="fr-quick-pill-bright"
+                    onClick={() => {
+                      router.push(`/brands?category=${encodeURIComponent(pill.category || pill.name)}`);
+                    }}
+                  >
+                    <span className="fr-quick-pill-icon-bright" style={{ color: pill.color }}>
+                      <PillIcon size={13} />
+                    </span>
+                    <span>{pill.name}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Trust Highlights Bar */}
+          <div className="fr-trust-action-bar-bright">
+            <div className="fr-trust-item-bright">
+              <div className="fr-trust-icon-bright fr-icon-green">
+                <ShieldCheck size={18} />
+              </div>
+              <div className="fr-trust-text-bright">
+                <strong>100% Verified Brands</strong>
+                <span>Audited listings &amp; financials</span>
               </div>
             </div>
 
-            {/* Right Column: Three Action Cards */}
-            <div className="fr-hero-right">
-              <div className="fr-action-cards-stack">
-                <Link href="/investor-registration" className="fr-action-card fr-card-investor">
-                  <div className="fr-action-icon fr-icon-pink">
-                    <TrendingUp size={22} />
-                  </div>
-                  <div className="fr-action-body">
-                    <h3 className="fr-action-title">Start A Business Today</h3>
-                    <p className="fr-action-sub">Investor Registration &amp; ROI Profiles</p>
-                  </div>
-                  <div className="fr-action-arrow fr-arrow-pink">
-                    <ArrowRight size={16} />
-                  </div>
-                </Link>
+            <div className="fr-trust-divider-bright" />
 
-                <Link href="/brand-registration" className="fr-action-card fr-card-brand">
-                  <div className="fr-action-icon fr-icon-purple">
-                    <FileText size={22} />
-                  </div>
-                  <div className="fr-action-body">
-                    <h3 className="fr-action-title">Register your Brand</h3>
-                    <p className="fr-action-sub">Franchisor &amp; Brand Registration</p>
-                  </div>
-                  <div className="fr-action-arrow fr-arrow-purple">
-                    <ArrowRight size={16} />
-                  </div>
-                </Link>
+            <div className="fr-trust-item-bright">
+              <div className="fr-trust-icon-bright fr-icon-blue">
+                <TrendingUp size={18} />
+              </div>
+              <div className="fr-trust-text-bright">
+                <strong>High ROI Business Models</strong>
+                <span>Proven payback periods</span>
+              </div>
+            </div>
 
-                <a
-                  href={heroWhatsAppUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="fr-action-card fr-card-whatsapp"
-                >
-                  <div className="fr-action-icon fr-icon-green">
-                    <MessageCircle size={22} />
-                  </div>
-                  <div className="fr-action-body">
-                    <h3 className="fr-action-title">Talk to an Expert on WhatsApp</h3>
-                    <p className="fr-action-sub">Get Free Consultation</p>
-                  </div>
-                  <div className="fr-action-arrow fr-arrow-green">
-                    <ArrowRight size={16} />
-                  </div>
-                </a>
+            <div className="fr-trust-divider-bright" />
+
+            <div className="fr-trust-item-bright">
+              <div className="fr-trust-icon-bright fr-icon-purple">
+                <Headphones size={18} />
+              </div>
+              <div className="fr-trust-text-bright">
+                <strong>Free Expert Support</strong>
+                <span>From search to setup</span>
               </div>
             </div>
           </div>

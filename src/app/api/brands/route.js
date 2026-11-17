@@ -5,11 +5,19 @@ import { validateArea, validateBrandName, validateImageUrl } from "@/lib/seo/val
 let approvedBrandsMemoryCache = null;
 let approvedBrandsSerializedCache = null;
 let approvedBrandsCacheTime = 0;
-const APPROVED_BRANDS_CACHE_TTL = 60 * 1000;
+const APPROVED_BRANDS_CACHE_TTL = 30 * 1000;
 
 let allBrandsMemoryCache = null;
 let allBrandsCacheTime = 0;
 const ALL_BRANDS_CACHE_TTL = 10 * 1000;
+
+export function clearBrandApiCache() {
+  approvedBrandsMemoryCache = null;
+  approvedBrandsSerializedCache = null;
+  approvedBrandsCacheTime = 0;
+  allBrandsMemoryCache = null;
+  allBrandsCacheTime = 0;
+}
 
 function toPublicBrand(brand) {
   const {
@@ -101,14 +109,12 @@ export async function GET(request) {
       return new NextResponse(approvedBrandsSerializedCache, {
         headers: {
           "Content-Type": "application/json",
-          "Cache-Control": "public, max-age=30, stale-while-revalidate=120"
+          "Cache-Control": "no-cache, no-store, must-revalidate"
         }
       });
     }
     const response = NextResponse.json(brands);
-    if (isSimpleApprovedRequest) {
-      response.headers.set("Cache-Control", "public, max-age=30, stale-while-revalidate=120");
-    }
+    response.headers.set("Cache-Control", "no-cache, no-store, must-revalidate");
     return response;
   } catch (error) {
     try {
@@ -222,15 +228,11 @@ export async function POST(request) {
       currentOutlets: body.currentOutlets || "0 - 5 Outlets",
       establishedYear: Number(body.establishedYear) || new Date().getFullYear(),
       seoStatus: nameVal.isTest ? "needs_fix" : (body.seoStatus || "Pending Review"),
-      status: body.status || "Pending"
+      status: body.status || "Approved"
     };
 
     const saved = await saveBrand(brandPayload);
-    approvedBrandsMemoryCache = null;
-    approvedBrandsSerializedCache = null;
-    approvedBrandsCacheTime = 0;
-    allBrandsMemoryCache = null;
-    allBrandsCacheTime = 0;
+    clearBrandApiCache();
     return NextResponse.json({ success: true, brand: saved }, { status: 201 });
   } catch (error) {
     console.error("Error in POST /api/brands:", error);

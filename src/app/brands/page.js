@@ -248,7 +248,7 @@ function BrandsDirectoryPage() {
     const availableMaxBudgets = getFilteredMaxBudgets(minBudget);
 
     // Pagination State
-    const [visibleCount, setVisibleCount] = useState(6);
+    const [visibleCount, setVisibleCount] = useState(12);
     const [, startTransition] = useTransition();
     const loadMoreRef = useRef(null);
     const isLoadingMoreRef = useRef(false);
@@ -256,7 +256,7 @@ function BrandsDirectoryPage() {
     // Reset pagination when active filters change
     useEffect(() => {
         /* eslint-disable react-hooks/set-state-in-effect -- filter changes reset the visible page. */
-        setVisibleCount(6);
+        setVisibleCount(12);
         /* eslint-enable react-hooks/set-state-in-effect */
     }, [searchTerm, selectedCategory, selectedSector, selectedState, selectedLocation, selectedBudget, minBudget, maxBudget]);
 
@@ -370,6 +370,9 @@ function BrandsDirectoryPage() {
             if (!matchBudgetRange(b, selectedBudget, minBudget, maxBudget)) return false;
             return true;
         });
+
+        // Ensure newly registered and latest approved brands always appear at the top
+        result.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
 
         setFilteredBrands(result);
         /* eslint-enable react-hooks/set-state-in-effect */
